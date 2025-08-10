@@ -112,7 +112,14 @@ export function GameDataProvider({ children }: { children: ReactNode }) {
         const q = { ...cat.questions[value], ...update };
         cat.questions = { ...cat.questions, [value]: q } as Category['questions'];
         categories[categoryIndex] = cat;
-        return { ...prev, categories };
+        const next = { ...prev, categories };
+        // Auto-save whenever a question is updated
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch (e) {
+          console.error('Auto-save failed', e);
+        }
+        return next;
       });
     },
     resetAll: () => setData(createDefaultGameData()),
