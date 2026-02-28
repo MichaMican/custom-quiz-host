@@ -259,6 +259,24 @@
   font-style: italic;
 }
 
+.btn-dismiss {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.btn-dismiss:hover {
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.3);
+}
+
 .btn-return {
   width: 100%;
   padding: 14px;

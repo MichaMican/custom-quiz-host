@@ -100,6 +100,18 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task DismissQuestion()
+    {
+        if (_gameState.CurrentQuestion != null)
+        {
+            _gameState.CurrentQuestion.IsAnswered = true;
+            _gameState.CurrentQuestion = null;
+            _gameState.BuzzerActive = false;
+            _gameState.BuzzOrder.Clear();
+            await BroadcastGameState();
+        }
+    }
+
     public async Task AwardPoints(string playerId, int points)
     {
         var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
