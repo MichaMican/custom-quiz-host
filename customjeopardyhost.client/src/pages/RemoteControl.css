@@ -176,6 +176,29 @@
   text-align: right;
 }
 
+.score-value.editable {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 6px;
+  transition: background 0.2s ease;
+}
+
+.score-value.editable:hover {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.score-edit-input {
+  width: 80px;
+  padding: 4px 8px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fbbf24;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 6px;
+  text-align: right;
+}
+
 .score-actions {
   display: flex;
   gap: 4px;

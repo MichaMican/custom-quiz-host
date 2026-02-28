@@ -44,6 +44,9 @@ public class GameHub : Hub
     public async Task DeductPoints(string playerId, int points) =>
         await _gameService.DeductPoints(playerId, points);
 
+    public async Task SetPlayerScore(string playerId, int score) =>
+        await _gameService.SetPlayerScore(playerId, score);
+
     public async Task ActivateBuzzer() => await _gameService.ActivateBuzzer();
 
     public async Task DeactivateBuzzer() => await _gameService.DeactivateBuzzer();

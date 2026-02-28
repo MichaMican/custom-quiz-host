@@ -124,6 +124,16 @@ public class GameService
         }
     }
 
+    public async Task SetPlayerScore(string playerId, int score)
+    {
+        var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
+        if (player != null)
+        {
+            player.Score = score;
+            await BroadcastGameState();
+        }
+    }
+
     public async Task ActivateBuzzer()
     {
         _gameState.BuzzerActive = true;

@@ -14,6 +14,8 @@ function RemoteControl() {
   const [questionAnswer, setQuestionAnswer] = useState("");
   const [questionPoints, setQuestionPoints] = useState(200);
   const [tab, setTab] = useState<"setup" | "host">("setup");
+  const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
+  const [editScoreValue, setEditScoreValue] = useState("");
 
   const handleAddPlayer = async () => {
     if (!playerName.trim()) return;
@@ -197,7 +199,7 @@ function RemoteControl() {
                   ?.questions.map((q) => (
                     <li key={q.id}>
                       <span>
-                        ${q.points}: {q.text}
+                        {q.points}: {q.text}
                       </span>
                       <button
                         className="btn-remove"
@@ -239,7 +241,38 @@ function RemoteControl() {
               {gameState.players.map((p) => (
                 <div key={p.id} className="score-row">
                   <span className="score-name">{p.name}</span>
-                  <span className="score-value">{p.score}</span>
+                  {editingScorePlayerId === p.id ? (
+                    <input
+                      type="number"
+                      className="score-edit-input"
+                      value={editScoreValue}
+                      onChange={(e) => setEditScoreValue(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter") {
+                          await invoke("SetPlayerScore", p.id, Number(editScoreValue));
+                          setEditingScorePlayerId(null);
+                        } else if (e.key === "Escape") {
+                          setEditingScorePlayerId(null);
+                        }
+                      }}
+                      onBlur={async () => {
+                        await invoke("SetPlayerScore", p.id, Number(editScoreValue));
+                        setEditingScorePlayerId(null);
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className="score-value editable"
+                      onClick={() => {
+                        setEditingScorePlayerId(p.id);
+                        setEditScoreValue(String(p.score));
+                      }}
+                      title="Click to edit score"
+                    >
+                      {p.score}
+                    </span>
+                  )}
                   <div className="score-actions">
                     {gameState.currentQuestion && (
                       <>
@@ -317,7 +350,7 @@ function RemoteControl() {
               <h2>Current Question</h2>
               <div className="current-question-info">
                 <p>
-                  <strong>${gameState.currentQuestion.points}</strong>
+                  <strong>{gameState.currentQuestion.points}</strong>
                 </p>
                 <p>{gameState.currentQuestion.text}</p>
                 <p className="answer-text">
@@ -356,7 +389,7 @@ function RemoteControl() {
                             invoke("ShowQuestion", category.id, question.id)
                           }
                         >
-                          ${points}
+                          {points}
                         </button>
                       );
                     })}
