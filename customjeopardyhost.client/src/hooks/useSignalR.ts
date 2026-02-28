@@ -21,14 +21,14 @@ export function useSignalR() {
 
     connectionRef.current = newConnection;
 
+    newConnection.on("ReceiveGameState", (newGameState: GameState) => {
+      setGameState(newGameState);
+    });
+
     newConnection
       .start()
       .then(() => {
         setConnectionStatus("Connected");
-
-        newConnection.on("ReceiveGameState", (newGameState: GameState) => {
-          setGameState(newGameState);
-        });
       })
       .catch((err) => {
         console.error("SignalR Connection Error: ", err);
