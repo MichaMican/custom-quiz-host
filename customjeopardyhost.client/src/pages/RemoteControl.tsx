@@ -522,10 +522,7 @@ function RemoteControl() {
                     <span className="question-type-badge"> [{gameState.currentQuestion.questionType}]</span>
                   )}
                 </p>
-                {gameState.currentQuestion.questionType === "Standard" && (
-                  <p>{gameState.currentQuestion.text}</p>
-                )}
-                {gameState.currentQuestion.questionType !== "Standard" && gameState.currentQuestion.text && (
+                {gameState.currentQuestion.text && (
                   <p>{gameState.currentQuestion.text}</p>
                 )}
                 {gameState.currentQuestion.mediaFileName && (
