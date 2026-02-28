@@ -237,4 +237,19 @@ public class GameService
         _gameState.MozaikRevealing = false;
         await BroadcastGameState();
     }
+
+    public async Task DoubleRemainingPoints()
+    {
+        foreach (var category in _gameState.Categories)
+        {
+            foreach (var question in category.Questions)
+            {
+                if (!question.IsAnswered)
+                {
+                    question.Points *= 2;
+                }
+            }
+        }
+        await BroadcastGameState();
+    }
 }

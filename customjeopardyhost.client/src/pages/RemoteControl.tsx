@@ -569,6 +569,12 @@ function RemoteControl() {
           ) : (
             <section className="remote-section">
               <h2>Board</h2>
+              <button
+                className="btn-double-points"
+                onClick={() => invoke("DoubleRemainingPoints")}
+              >
+                Double Remaining Points
+              </button>
               <div className="remote-board">
                 {gameState.categories.map((category) => (
                   <div key={category.id} className="remote-board-category">

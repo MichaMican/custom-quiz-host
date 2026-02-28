@@ -538,3 +538,21 @@
   border-color: transparent;
   color: #fff;
 }
+
+.btn-double-points {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 10px;
+}
+
+.btn-double-points:hover {
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+}

@@ -68,4 +68,6 @@ public class GameHub : Hub
     public async Task StartMozaikReveal() => await _gameService.StartMozaikReveal();
 
     public async Task StopMozaikReveal() => await _gameService.StopMozaikReveal();
+
+    public async Task DoubleRemainingPoints() => await _gameService.DoubleRemainingPoints();
 }
