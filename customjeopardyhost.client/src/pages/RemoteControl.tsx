@@ -325,6 +325,12 @@ function RemoteControl() {
                 </p>
               </div>
               <button
+                className="btn-dismiss"
+                onClick={() => invoke("DismissQuestion")}
+              >
+                Dismiss Question
+              </button>
+              <button
                 className="btn-return"
                 onClick={() => invoke("ReturnToBoard")}
               >
