@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="customjeopardyhost.client/customjeopardyhost.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="CustomJeopardyHost.Server/CustomJeopardyHost.Server.csproj" />
+</Solution>

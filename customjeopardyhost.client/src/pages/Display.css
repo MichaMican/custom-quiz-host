@@ -1,0 +1,196 @@
+.display-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+}
+
+.display-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 2rem;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.display-board {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  padding: 16px 20px;
+}
+
+.display-category {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.display-category-header {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  text-align: center;
+  font-size: 1.3vw;
+  font-weight: 700;
+  padding: 14px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #c7d2fe;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.display-cell {
+  flex: 1;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.6), rgba(67, 56, 202, 0.4));
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4vw;
+  font-weight: 800;
+  color: #fbbf24;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 10px;
+  cursor: default;
+  transition: all 0.3s ease;
+  text-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.display-cell:not(.answered):hover {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.8), rgba(67, 56, 202, 0.6));
+  border-color: rgba(129, 140, 248, 0.5);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+.display-cell.answered {
+  background: rgba(15, 23, 42, 0.5);
+  border-color: rgba(51, 65, 85, 0.3);
+  color: transparent;
+}
+
+.display-question {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.display-question-points {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #fbbf24;
+  margin-bottom: 28px;
+  text-shadow: 0 2px 12px rgba(251, 191, 36, 0.4);
+  letter-spacing: 0.02em;
+}
+
+.display-question-text {
+  font-size: 2.5rem;
+  line-height: 1.5;
+  color: #f1f5f9;
+  font-weight: 500;
+  max-width: 80%;
+}
+
+.display-buzz-order {
+  padding: 0 40px 24px;
+  text-align: center;
+}
+
+.display-buzz-order h3 {
+  font-size: 1.3rem;
+  margin-bottom: 12px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.display-buzz-order ol {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.display-buzz-order li {
+  font-size: 1.2rem;
+  padding: 10px 20px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  color: #c7d2fe;
+}
+
+.display-buzz-order li.first-buzz {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: transparent;
+  color: #1e1b4b;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+}
+
+.display-scoreboard {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(99, 102, 241, 0.15);
+  flex-wrap: wrap;
+}
+
+.display-player-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 110px;
+  padding: 10px 18px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 10px;
+}
+
+.display-player-score .player-name {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.display-player-score .player-score {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fbbf24;
+  text-shadow: 0 1px 6px rgba(251, 191, 36, 0.3);
+}

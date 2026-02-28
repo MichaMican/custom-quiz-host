@@ -1,0 +1,13 @@
+## Visual Studio / IDE
+.vs/
+*.suo
+
+## OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## Build artifacts
+CustomJeopardyHost.Server/wwwroot/
+**/obj/
+**/bin/

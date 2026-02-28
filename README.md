@@ -1,1 +1,1 @@
-# custom-jeopardy-host
+# Custom Jeopardy Host

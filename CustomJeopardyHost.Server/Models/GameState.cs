@@ -1,0 +1,41 @@
+namespace CustomJeopardyHost.Server.Models;
+
+public class GameState
+{
+    public List<Player> Players { get; set; } = new();
+    public List<Category> Categories { get; set; } = new();
+    public Question? CurrentQuestion { get; set; }
+    public bool BuzzerActive { get; set; }
+    public List<BuzzIn> BuzzOrder { get; set; } = new();
+}
+
+public class Player
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = "";
+    public int Score { get; set; }
+}
+
+public class Category
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = "";
+    public List<Question> Questions { get; set; } = new();
+}
+
+public class Question
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Text { get; set; } = "";
+    public string Answer { get; set; } = "";
+    public int Points { get; set; }
+    public bool IsAnswered { get; set; }
+    public string CategoryId { get; set; } = "";
+}
+
+public class BuzzIn
+{
+    public string PlayerId { get; set; } = "";
+    public string PlayerName { get; set; } = "";
+    public DateTime Timestamp { get; set; }
+}

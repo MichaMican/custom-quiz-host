@@ -1,0 +1,172 @@
+using CustomJeopardyHost.Server.Hubs;
+using CustomJeopardyHost.Server.Models;
+using Microsoft.AspNetCore.SignalR;
+
+namespace CustomJeopardyHost.Server.Services;
+
+public class GameService
+{
+    private readonly IHubContext<GameHub> _hubContext;
+    private GameState _gameState = new();
+
+    public GameService(IHubContext<GameHub> hubContext)
+    {
+        _hubContext = hubContext;
+    }
+
+    public GameState GameState => _gameState;
+
+    public async Task BroadcastGameState()
+    {
+        await _hubContext.Clients.All.SendAsync("ReceiveGameState", _gameState);
+    }
+
+    public async Task SendGameStateToClient(string connectionId)
+    {
+        await _hubContext.Clients.Client(connectionId).SendAsync("ReceiveGameState", _gameState);
+    }
+
+    public async Task<Player> AddPlayer(string name)
+    {
+        var player = new Player { Name = name };
+        _gameState.Players.Add(player);
+        await BroadcastGameState();
+        return player;
+    }
+
+    public async Task RemovePlayer(string playerId)
+    {
+        _gameState.Players.RemoveAll(p => p.Id == playerId);
+        await BroadcastGameState();
+    }
+
+    public async Task<Category> AddCategory(string name)
+    {
+        var category = new Category { Name = name };
+        _gameState.Categories.Add(category);
+        await BroadcastGameState();
+        return category;
+    }
+
+    public async Task RemoveCategory(string categoryId)
+    {
+        _gameState.Categories.RemoveAll(c => c.Id == categoryId);
+        await BroadcastGameState();
+    }
+
+    public async Task AddQuestion(string categoryId, string text, string answer, int points)
+    {
+        var category = _gameState.Categories.FirstOrDefault(c => c.Id == categoryId);
+        if (category != null)
+        {
+            var question = new Question
+            {
+                Text = text,
+                Answer = answer,
+                Points = points,
+                CategoryId = categoryId
+            };
+            category.Questions.Add(question);
+            await BroadcastGameState();
+        }
+    }
+
+    public async Task RemoveQuestion(string categoryId, string questionId)
+    {
+        var category = _gameState.Categories.FirstOrDefault(c => c.Id == categoryId);
+        if (category != null)
+        {
+            category.Questions.RemoveAll(q => q.Id == questionId);
+            await BroadcastGameState();
+        }
+    }
+
+    public async Task ShowQuestion(string categoryId, string questionId)
+    {
+        var category = _gameState.Categories.FirstOrDefault(c => c.Id == categoryId);
+        var question = category?.Questions.FirstOrDefault(q => q.Id == questionId);
+        if (question != null)
+        {
+            _gameState.CurrentQuestion = question;
+            await BroadcastGameState();
+        }
+    }
+
+    public async Task ReturnToBoard()
+    {
+        _gameState.CurrentQuestion = null;
+        _gameState.BuzzerActive = false;
+        _gameState.BuzzOrder.Clear();
+        await BroadcastGameState();
+    }
+
+    public async Task AwardPoints(string playerId, int points)
+    {
+        var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
+        if (player != null)
+        {
+            player.Score += points;
+            if (_gameState.CurrentQuestion != null)
+            {
+                _gameState.CurrentQuestion.IsAnswered = true;
+            }
+            await BroadcastGameState();
+        }
+    }
+
+    public async Task DeductPoints(string playerId, int points)
+    {
+        var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
+        if (player != null)
+        {
+            player.Score -= points;
+            await BroadcastGameState();
+        }
+    }
+
+    public async Task ActivateBuzzer()
+    {
+        _gameState.BuzzerActive = true;
+        _gameState.BuzzOrder.Clear();
+        await BroadcastGameState();
+    }
+
+    public async Task DeactivateBuzzer()
+    {
+        _gameState.BuzzerActive = false;
+        await BroadcastGameState();
+    }
+
+    public async Task BuzzIn(string playerId)
+    {
+        if (!_gameState.BuzzerActive) return;
+        if (_gameState.BuzzOrder.Any(b => b.PlayerId == playerId)) return;
+
+        var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
+        if (player != null)
+        {
+            _gameState.BuzzOrder.Add(new BuzzIn
+            {
+                PlayerId = playerId,
+                PlayerName = player.Name,
+                Timestamp = DateTime.UtcNow
+            });
+            await BroadcastGameState();
+        }
+    }
+
+    public async Task ClearBuzzOrder()
+    {
+        _gameState.BuzzOrder.Clear();
+        await BroadcastGameState();
+    }
+
+    public async Task ImportGameSettings(GameState state)
+    {
+        state.Players ??= new();
+        state.Categories ??= new();
+        state.BuzzOrder ??= new();
+        _gameState = state;
+        await BroadcastGameState();
+    }
+}
