@@ -27,8 +27,8 @@ public class GameHub : Hub
 
     public async Task RemoveCategory(string categoryId) => await _gameService.RemoveCategory(categoryId);
 
-    public async Task AddQuestion(string categoryId, string text, string answer, int points) =>
-        await _gameService.AddQuestion(categoryId, text, answer, points);
+    public async Task AddQuestion(string categoryId, string text, string answer, int points, string questionType = "Standard", string? mediaFileName = null) =>
+        await _gameService.AddQuestion(categoryId, text, answer, points, questionType, mediaFileName);
 
     public async Task RemoveQuestion(string categoryId, string questionId) =>
         await _gameService.RemoveQuestion(categoryId, questionId);
@@ -60,4 +60,12 @@ public class GameHub : Hub
     public async Task ClearBuzzOrder() => await _gameService.ClearBuzzOrder();
 
     public async Task ImportGameSettings(GameState state) => await _gameService.ImportGameSettings(state);
+
+    public async Task StartMedia() => await _gameService.StartMedia();
+
+    public async Task StopMedia() => await _gameService.StopMedia();
+
+    public async Task StartMozaikReveal() => await _gameService.StartMozaikReveal();
+
+    public async Task StopMozaikReveal() => await _gameService.StopMozaikReveal();
 }

@@ -1,4 +1,15 @@
+using System.Text.Json.Serialization;
+
 namespace CustomJeopardyHost.Server.Models;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum QuestionType
+{
+    Standard,
+    Image,
+    ImageMozaik,
+    Audio
+}
 
 public class GameState
 {
@@ -8,6 +19,8 @@ public class GameState
     public bool QuestionRevealed { get; set; }
     public bool BuzzerActive { get; set; }
     public List<BuzzIn> BuzzOrder { get; set; } = new();
+    public bool MediaPlaying { get; set; }
+    public bool MozaikRevealing { get; set; }
 }
 
 public class Player
@@ -32,6 +45,8 @@ public class Question
     public int Points { get; set; }
     public bool IsAnswered { get; set; }
     public string CategoryId { get; set; } = "";
+    public QuestionType QuestionType { get; set; } = QuestionType.Standard;
+    public string? MediaFileName { get; set; }
 }
 
 public class BuzzIn

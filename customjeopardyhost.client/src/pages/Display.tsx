@@ -1,8 +1,111 @@
 import { useSignalR } from "../hooks/useSignalR";
-import type { Category } from "../types/GameState";
+import type { Category, Question } from "../types/GameState";
+import { useEffect, useRef, useState } from "react";
 import "./Display.css";
 
 const POINT_LEVELS = [200, 400, 600, 800, 1000];
+
+function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing }: {
+  question: Question;
+  revealed: boolean;
+  mediaPlaying: boolean;
+  mozaikRevealing: boolean;
+}) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [mozaikBlur, setMozaikBlur] = useState(40);
+
+  // Audio playback control
+  useEffect(() => {
+    if (question.questionType !== "Audio" || !audioRef.current) return;
+    if (mediaPlaying) {
+      audioRef.current.play().catch((err) => {
+        console.error("Audio playback failed:", err);
+      });
+    } else {
+      audioRef.current.pause();
+    }
+  }, [mediaPlaying, question.questionType]);
+
+  // Mozaik blur animation
+  useEffect(() => {
+    if (question.questionType !== "ImageMozaik") return;
+    if (!mozaikRevealing) return;
+
+    const interval = setInterval(() => {
+      setMozaikBlur((prev) => {
+        if (prev <= 0) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 0.5;
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [mozaikRevealing, question.questionType]);
+
+  if (!revealed) {
+    return (
+      <div className="display-question-points">
+        {question.points}
+      </div>
+    );
+  }
+
+  const mediaUrl = question.mediaFileName ? `/uploads/${question.mediaFileName}` : null;
+
+  switch (question.questionType) {
+    case "Image":
+      return (
+        <>
+          <div className="display-question-points">{question.points}</div>
+          {mediaUrl && (
+            <img
+              src={mediaUrl}
+              alt="Question"
+              className="display-question-image"
+            />
+          )}
+        </>
+      );
+
+    case "ImageMozaik":
+      return (
+        <>
+          <div className="display-question-points">{question.points}</div>
+          {mediaUrl && (
+            <img
+              src={mediaUrl}
+              alt="Question"
+              className="display-question-image mozaik"
+              style={{ filter: `blur(${mozaikBlur}px)` }}
+            />
+          )}
+        </>
+      );
+
+    case "Audio":
+      return (
+        <>
+          <div className="display-question-points">{question.points}</div>
+          <div className="display-audio-indicator">
+            {mediaPlaying ? "🔊 Playing..." : "🔇 Waiting for host..."}
+          </div>
+          {mediaUrl && (
+            <audio ref={audioRef} src={mediaUrl} preload="auto" />
+          )}
+        </>
+      );
+
+    default:
+      return (
+        <>
+          <div className="display-question-points">{question.points}</div>
+          <div className="display-question-text">{question.text}</div>
+        </>
+      );
+  }
+}
 
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
@@ -29,20 +132,13 @@ function Display() {
     return (
       <div className="display-container">
         <div className="display-question">
-          {gameState.questionRevealed ? (
-            <>
-              <div className="display-question-points">
-                {gameState.currentQuestion.points}
-              </div>
-              <div className="display-question-text">
-                {gameState.currentQuestion.text}
-              </div>
-            </>
-          ) : (
-            <div className="display-question-points">
-              {gameState.currentQuestion.points}
-            </div>
-          )}
+          <QuestionDisplay
+            key={gameState.currentQuestion.id}
+            question={gameState.currentQuestion}
+            revealed={gameState.questionRevealed}
+            mediaPlaying={gameState.mediaPlaying}
+            mozaikRevealing={gameState.mozaikRevealing}
+          />
         </div>
         {gameState.buzzerActive && gameState.buzzOrder.length > 0 && (
           <div className="display-buzz-order">

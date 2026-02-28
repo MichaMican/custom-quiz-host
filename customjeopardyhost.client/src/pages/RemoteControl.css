@@ -482,3 +482,59 @@
 .btn-confirm-reset:hover {
   box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
 }
+
+.question-type-badge {
+  color: #a5b4fc;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.media-info {
+  color: #94a3b8 !important;
+  font-size: 0.85rem;
+}
+
+.file-upload-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.file-upload-row input[type="file"] {
+  padding: 8px;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(15, 23, 42, 0.6);
+  color: #e2e8f0;
+}
+
+.file-name {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.media-controls {
+  margin-bottom: 8px;
+}
+
+.btn-media {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(30, 41, 59, 0.5);
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.btn-media.active {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  border-color: transparent;
+  color: #fff;
+}

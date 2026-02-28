@@ -118,6 +118,31 @@
   max-width: 80%;
 }
 
+.display-question-image {
+  max-width: 80%;
+  max-height: 60vh;
+  border-radius: 12px;
+  object-fit: contain;
+  transition: filter 0.1s linear;
+}
+
+.display-question-image.mozaik {
+  transition: filter 0.1s linear;
+}
+
+.display-audio-indicator {
+  font-size: 2.5rem;
+  color: #c7d2fe;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
 .display-buzz-order {
   padding: 0 40px 24px;
   text-align: center;

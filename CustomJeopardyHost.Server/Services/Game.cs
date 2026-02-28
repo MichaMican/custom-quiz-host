@@ -54,17 +54,24 @@ public class GameService
         await BroadcastGameState();
     }
 
-    public async Task AddQuestion(string categoryId, string text, string answer, int points)
+    public async Task AddQuestion(string categoryId, string text, string answer, int points, string questionType = "Standard", string? mediaFileName = null)
     {
         var category = _gameState.Categories.FirstOrDefault(c => c.Id == categoryId);
         if (category != null)
         {
+            if (!Enum.TryParse<QuestionType>(questionType, true, out var parsedType))
+            {
+                parsedType = QuestionType.Standard;
+            }
+
             var question = new Question
             {
                 Text = text,
                 Answer = answer,
                 Points = points,
-                CategoryId = categoryId
+                CategoryId = categoryId,
+                QuestionType = parsedType,
+                MediaFileName = mediaFileName
             };
             category.Questions.Add(question);
             await BroadcastGameState();
@@ -108,6 +115,8 @@ public class GameService
         _gameState.QuestionRevealed = false;
         _gameState.BuzzerActive = false;
         _gameState.BuzzOrder.Clear();
+        _gameState.MediaPlaying = false;
+        _gameState.MozaikRevealing = false;
         await BroadcastGameState();
     }
 
@@ -119,6 +128,8 @@ public class GameService
             _gameState.CurrentQuestion = null;
             _gameState.BuzzerActive = false;
             _gameState.BuzzOrder.Clear();
+            _gameState.MediaPlaying = false;
+            _gameState.MozaikRevealing = false;
             await BroadcastGameState();
         }
     }
@@ -200,6 +211,30 @@ public class GameService
         state.Categories ??= new();
         state.BuzzOrder ??= new();
         _gameState = state;
+        await BroadcastGameState();
+    }
+
+    public async Task StartMedia()
+    {
+        _gameState.MediaPlaying = true;
+        await BroadcastGameState();
+    }
+
+    public async Task StopMedia()
+    {
+        _gameState.MediaPlaying = false;
+        await BroadcastGameState();
+    }
+
+    public async Task StartMozaikReveal()
+    {
+        _gameState.MozaikRevealing = true;
+        await BroadcastGameState();
+    }
+
+    public async Task StopMozaikReveal()
+    {
+        _gameState.MozaikRevealing = false;
         await BroadcastGameState();
     }
 }

@@ -10,4 +10,8 @@ Desktop.ini
 ## Build artifacts
 CustomJeopardyHost.Server/wwwroot/
 **/obj/
+**/obj*/
 **/bin/
+
+## Uploaded media files
+CustomJeopardyHost.Server/uploads/

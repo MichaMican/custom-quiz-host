@@ -1,3 +1,5 @@
+export type QuestionType = "Standard" | "Image" | "ImageMozaik" | "Audio";
+
 export interface Player {
   id: string;
   name: string;
@@ -11,6 +13,8 @@ export interface Question {
   points: number;
   isAnswered: boolean;
   categoryId: string;
+  questionType: QuestionType;
+  mediaFileName: string | null;
 }
 
 export interface Category {
@@ -32,4 +36,6 @@ export interface GameState {
   questionRevealed: boolean;
   buzzerActive: boolean;
   buzzOrder: BuzzIn[];
+  mediaPlaying: boolean;
+  mozaikRevealing: boolean;
 }

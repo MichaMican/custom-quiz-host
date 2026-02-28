@@ -62,6 +62,10 @@ export default defineConfig({
         target,
         secure: false,
       },
+      "/uploads": {
+        target,
+        secure: false,
+      },
       "/gamehub/negotiate": {
         target,
         secure: false,

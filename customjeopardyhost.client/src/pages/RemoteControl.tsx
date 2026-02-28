@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSignalR } from "../hooks/useSignalR";
-import type { GameState } from "../types/GameState";
+import type { GameState, QuestionType } from "../types/GameState";
 import {
   saveGameState,
   loadGameState,
@@ -18,11 +18,15 @@ function RemoteControl() {
   const [questionText, setQuestionText] = useState("");
   const [questionAnswer, setQuestionAnswer] = useState("");
   const [questionPoints, setQuestionPoints] = useState(200);
+  const [questionType, setQuestionType] = useState<QuestionType>("Standard");
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [tab, setTab] = useState<"setup" | "host">("setup");
   const [showResetModal, setShowResetModal] = useState(false);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
   const [editingScoreValue, setEditingScoreValue] = useState("");
   const hasRestoredRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-save game state to localStorage whenever it changes
   useEffect(() => {
@@ -67,6 +71,8 @@ function RemoteControl() {
         questionRevealed: false,
         buzzerActive: false,
         buzzOrder: [],
+        mediaPlaying: false,
+        mozaikRevealing: false,
       };
       await invoke("ImportGameSettings", emptyState);
       setShowResetModal(false);
@@ -88,16 +94,51 @@ function RemoteControl() {
   };
 
   const handleAddQuestion = async () => {
-    if (!selectedCategoryId || !questionText.trim()) return;
+    if (!selectedCategoryId) return;
+    if (questionType === "Standard" && !questionText.trim()) return;
+    if (questionType !== "Standard" && !mediaFile) return;
+
+    let mediaFileName: string | null = null;
+
+    if (mediaFile) {
+      setUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", mediaFile);
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          alert("Failed to upload file.");
+          setUploading(false);
+          return;
+        }
+        const data = await response.json();
+        mediaFileName = data.fileName;
+      } catch {
+        alert("Failed to upload file.");
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
+
     await invoke(
       "AddQuestion",
       selectedCategoryId,
       questionText.trim(),
       questionAnswer.trim(),
       questionPoints,
+      questionType,
+      mediaFileName,
     );
     setQuestionText("");
     setQuestionAnswer("");
+    setMediaFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleExport = () => {
@@ -229,12 +270,36 @@ function RemoteControl() {
                   </option>
                 ))}
               </select>
-              <input
-                type="text"
-                placeholder="Question text"
-                value={questionText}
-                onChange={(e) => setQuestionText(e.target.value)}
-              />
+              <select
+                value={questionType}
+                onChange={(e) => setQuestionType(e.target.value as QuestionType)}
+              >
+                <option value="Standard">Standard Question</option>
+                <option value="Image">Image Question</option>
+                <option value="ImageMozaik">Image Mozaik</option>
+                <option value="Audio">Audio Question</option>
+              </select>
+              {questionType === "Standard" && (
+                <input
+                  type="text"
+                  placeholder="Question text"
+                  value={questionText}
+                  onChange={(e) => setQuestionText(e.target.value)}
+                />
+              )}
+              {questionType !== "Standard" && (
+                <div className="file-upload-row">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={questionType === "Audio" ? "audio/*" : "image/*"}
+                    onChange={(e) => setMediaFile(e.target.files?.[0] ?? null)}
+                  />
+                  {mediaFile && (
+                    <span className="file-name">{mediaFile.name}</span>
+                  )}
+                </div>
+              )}
               <input
                 type="text"
                 placeholder="Answer"
@@ -251,7 +316,9 @@ function RemoteControl() {
                   </option>
                 ))}
               </select>
-              <button onClick={handleAddQuestion}>Add Question</button>
+              <button onClick={handleAddQuestion} disabled={uploading}>
+                {uploading ? "Uploading..." : "Add Question"}
+              </button>
             </div>
             {selectedCategoryId && (
               <ul className="item-list">
@@ -260,7 +327,7 @@ function RemoteControl() {
                   ?.questions.map((q) => (
                     <li key={q.id}>
                       <span>
-                        {q.points}: {q.text}
+                        {q.points}: {q.questionType !== "Standard" ? `[${q.questionType}] ` : ""}{q.text || q.mediaFileName || "—"}
                       </span>
                       <button
                         className="btn-remove"
@@ -425,8 +492,18 @@ function RemoteControl() {
               <div className="current-question-info">
                 <p>
                   <strong>{gameState.currentQuestion.points}</strong>
+                  {gameState.currentQuestion.questionType !== "Standard" && (
+                    <span className="question-type-badge"> [{gameState.currentQuestion.questionType}]</span>
+                  )}
                 </p>
-                <p>{gameState.currentQuestion.text}</p>
+                {gameState.currentQuestion.questionType === "Standard" && (
+                  <p>{gameState.currentQuestion.text}</p>
+                )}
+                {gameState.currentQuestion.mediaFileName && (
+                  <p className="media-info">
+                    Media: {gameState.currentQuestion.mediaFileName}
+                  </p>
+                )}
                 <p className="answer-text">
                   Answer: {gameState.currentQuestion.answer}
                 </p>
@@ -438,6 +515,26 @@ function RemoteControl() {
                 >
                   Show Question
                 </button>
+              )}
+              {gameState.questionRevealed && (gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "ImageMozaik") && (
+                <div className="media-controls">
+                  {gameState.currentQuestion.questionType === "Audio" && (
+                    <button
+                      className={`btn-media ${gameState.mediaPlaying ? "active" : ""}`}
+                      onClick={() => invoke(gameState.mediaPlaying ? "StopMedia" : "StartMedia")}
+                    >
+                      {gameState.mediaPlaying ? "⏸ Stop Audio" : "▶ Play Audio"}
+                    </button>
+                  )}
+                  {gameState.currentQuestion.questionType === "ImageMozaik" && (
+                    <button
+                      className={`btn-media ${gameState.mozaikRevealing ? "active" : ""}`}
+                      onClick={() => invoke(gameState.mozaikRevealing ? "StopMozaikReveal" : "StartMozaikReveal")}
+                    >
+                      {gameState.mozaikRevealing ? "⏸ Stop Reveal" : "▶ Start Reveal"}
+                    </button>
+                  )}
+                </div>
               )}
               <button
                 className="btn-dismiss"
