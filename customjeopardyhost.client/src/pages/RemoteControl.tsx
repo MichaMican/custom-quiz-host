@@ -48,22 +48,29 @@ function RemoteControl() {
       saved &&
       (saved.players.length > 0 || saved.categories.length > 0)
     ) {
-      invoke("ImportGameSettings", saved);
+      invoke("ImportGameSettings", saved).catch(() => {
+        // Allow retry on next mount if restore fails
+        hasRestoredRef.current = false;
+      });
     }
   }, [connectionStatus, gameState, invoke]);
 
   const handleReset = async () => {
-    clearGameState();
-    const emptyState: GameState = {
-      players: [],
-      categories: [],
-      currentQuestion: null,
-      questionRevealed: false,
-      buzzerActive: false,
-      buzzOrder: [],
-    };
-    await invoke("ImportGameSettings", emptyState);
-    setShowResetModal(false);
+    try {
+      clearGameState();
+      const emptyState: GameState = {
+        players: [],
+        categories: [],
+        currentQuestion: null,
+        questionRevealed: false,
+        buzzerActive: false,
+        buzzOrder: [],
+      };
+      await invoke("ImportGameSettings", emptyState);
+      setShowResetModal(false);
+    } catch {
+      alert("Failed to reset the game. Please try again.");
+    }
   };
 
   const handleAddPlayer = async () => {
