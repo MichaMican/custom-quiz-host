@@ -61,6 +61,8 @@ public class GameHub : Hub
 
     public async Task ImportGameSettings(GameState state) => await _gameService.ImportGameSettings(state);
 
+    public async Task ImportQuestions(List<Category> categories) => await _gameService.ImportQuestions(categories);
+
     public async Task StartMedia() => await _gameService.StartMedia();
 
     public async Task StopMedia() => await _gameService.StopMedia();

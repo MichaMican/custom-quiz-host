@@ -217,6 +217,20 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task ImportQuestions(List<Category> categories)
+    {
+        categories ??= new();
+        _gameState.Categories = categories;
+        _gameState.CurrentQuestion = null;
+        _gameState.QuestionRevealed = false;
+        _gameState.BuzzerActive = false;
+        _gameState.BuzzOrder.Clear();
+        _gameState.MediaPlaying = false;
+        _gameState.MozaikRevealing = false;
+        _gameState.QuestionTextRevealed = false;
+        await BroadcastGameState();
+    }
+
     public async Task StartMedia()
     {
         _gameState.MediaPlaying = true;

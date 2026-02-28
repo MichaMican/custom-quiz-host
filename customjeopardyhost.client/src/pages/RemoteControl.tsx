@@ -166,6 +166,20 @@ function RemoteControl() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const handleExportQuestions = () => {
+    if (!gameState) return;
+    const questionsOnly = { categories: gameState.categories };
+    const blob = new Blob([JSON.stringify(questionsOnly, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "jeopardy-questions.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -176,6 +190,23 @@ function RemoteControl() {
         await invoke("ImportGameSettings", state);
       } catch {
         alert("The selected file does not contain valid game settings");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleImportQuestions = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        const categories = data.categories ?? data.Categories ?? [];
+        await invoke("ImportQuestions", categories);
+      } catch {
+        alert("The selected file does not contain valid questions");
       }
     };
     reader.readAsText(file);
@@ -366,13 +397,25 @@ function RemoteControl() {
           <section className="remote-section">
             <h2>Import / Export</h2>
             <div className="input-row">
-              <button onClick={handleExport}>Export JSON</button>
+              <button onClick={handleExport}>Export Game</button>
               <label className="btn-import">
-                Import JSON
+                Import Game
                 <input
                   type="file"
                   accept=".json"
                   onChange={handleImport}
+                  hidden
+                />
+              </label>
+            </div>
+            <div className="input-row">
+              <button onClick={handleExportQuestions}>Export Questions</button>
+              <label className="btn-import">
+                Import Questions
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportQuestions}
                   hidden
                 />
               </label>
