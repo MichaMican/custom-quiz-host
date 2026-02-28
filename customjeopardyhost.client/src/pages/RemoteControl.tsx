@@ -84,6 +84,7 @@ function RemoteControl() {
         buzzOrder: [],
         mediaPlaying: false,
         mozaikRevealing: false,
+        questionTextRevealed: false,
       };
       await invoke("ImportGameSettings", emptyState);
       setShowResetModal(false);
@@ -299,17 +300,25 @@ function RemoteControl() {
                 />
               )}
               {questionType !== "Standard" && (
-                <div className="file-upload-row">
+                <>
+                  <div className="file-upload-row">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={questionType === "Audio" ? "audio/*" : "image/*"}
+                      onChange={(e) => setMediaFile(e.target.files?.[0] ?? null)}
+                    />
+                    {mediaFile && (
+                      <span className="file-name">{mediaFile.name}</span>
+                    )}
+                  </div>
                   <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept={questionType === "Audio" ? "audio/*" : "image/*"}
-                    onChange={(e) => setMediaFile(e.target.files?.[0] ?? null)}
+                    type="text"
+                    placeholder="Question text (optional)"
+                    value={questionText}
+                    onChange={(e) => setQuestionText(e.target.value)}
                   />
-                  {mediaFile && (
-                    <span className="file-name">{mediaFile.name}</span>
-                  )}
-                </div>
+                </>
               )}
               <input
                 type="text"
@@ -516,6 +525,9 @@ function RemoteControl() {
                 {gameState.currentQuestion.questionType === "Standard" && (
                   <p>{gameState.currentQuestion.text}</p>
                 )}
+                {gameState.currentQuestion.questionType !== "Standard" && gameState.currentQuestion.text && (
+                  <p>{gameState.currentQuestion.text}</p>
+                )}
                 {gameState.currentQuestion.mediaFileName && (
                   <p className="media-info">
                     Media: {gameState.currentQuestion.mediaFileName}
@@ -552,6 +564,14 @@ function RemoteControl() {
                     </button>
                   )}
                 </div>
+              )}
+              {gameState.currentQuestion.questionType !== "Standard" && gameState.currentQuestion.text && (
+                <button
+                  className={`btn-media ${gameState.questionTextRevealed ? "active" : ""}`}
+                  onClick={() => invoke(gameState.questionTextRevealed ? "HideQuestionText" : "ShowQuestionText")}
+                >
+                  {gameState.questionTextRevealed ? "Hide Question Text" : "Show Question Text"}
+                </button>
               )}
               <button
                 className="btn-dismiss"

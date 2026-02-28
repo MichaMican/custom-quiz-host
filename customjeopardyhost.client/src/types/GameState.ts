@@ -38,4 +38,5 @@ export interface GameState {
   buzzOrder: BuzzIn[];
   mediaPlaying: boolean;
   mozaikRevealing: boolean;
+  questionTextRevealed: boolean;
 }

@@ -21,6 +21,7 @@ public class GameState
     public List<BuzzIn> BuzzOrder { get; set; } = new();
     public bool MediaPlaying { get; set; }
     public bool MozaikRevealing { get; set; }
+    public bool QuestionTextRevealed { get; set; }
 }
 
 public class Player

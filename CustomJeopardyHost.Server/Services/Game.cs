@@ -96,6 +96,7 @@ public class GameService
         {
             _gameState.CurrentQuestion = question;
             _gameState.QuestionRevealed = false;
+            _gameState.QuestionTextRevealed = false;
             await BroadcastGameState();
         }
     }
@@ -117,6 +118,7 @@ public class GameService
         _gameState.BuzzOrder.Clear();
         _gameState.MediaPlaying = false;
         _gameState.MozaikRevealing = false;
+        _gameState.QuestionTextRevealed = false;
         await BroadcastGameState();
     }
 
@@ -130,6 +132,7 @@ public class GameService
             _gameState.BuzzOrder.Clear();
             _gameState.MediaPlaying = false;
             _gameState.MozaikRevealing = false;
+            _gameState.QuestionTextRevealed = false;
             await BroadcastGameState();
         }
     }
@@ -235,6 +238,18 @@ public class GameService
     public async Task StopMozaikReveal()
     {
         _gameState.MozaikRevealing = false;
+        await BroadcastGameState();
+    }
+
+    public async Task ShowQuestionText()
+    {
+        _gameState.QuestionTextRevealed = true;
+        await BroadcastGameState();
+    }
+
+    public async Task HideQuestionText()
+    {
+        _gameState.QuestionTextRevealed = false;
         await BroadcastGameState();
     }
 
