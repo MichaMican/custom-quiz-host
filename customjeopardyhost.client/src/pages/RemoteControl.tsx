@@ -316,6 +316,7 @@ function RemoteControl() {
                     <input
                       className="score-edit-input"
                       type="number"
+                      aria-label={`Edit score for ${p.name}`}
                       value={editingScoreValue}
                       onChange={(e) => setEditingScoreValue(e.target.value)}
                       onBlur={() => {
@@ -327,11 +328,7 @@ function RemoteControl() {
                       }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          const parsed = parseInt(editingScoreValue, 10);
-                          if (!isNaN(parsed)) {
-                            invoke("SetPlayerScore", p.id, parsed);
-                          }
-                          setEditingScorePlayerId(null);
+                          (e.target as HTMLInputElement).blur();
                         } else if (e.key === "Escape") {
                           setEditingScorePlayerId(null);
                         }
