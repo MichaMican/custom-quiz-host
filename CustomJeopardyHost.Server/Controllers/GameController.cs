@@ -13,5 +13,11 @@ namespace CustomJeopardyHost.Server.Controllers
         {
             _gameService = gameService;
         }
+
+        [HttpGet("export")]
+        public IActionResult Export()
+        {
+            return Ok(_gameService.GameState);
+        }
     }
 }
