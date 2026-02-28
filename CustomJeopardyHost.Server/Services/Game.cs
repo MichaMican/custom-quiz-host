@@ -214,6 +214,7 @@ public class GameService
 
     public async Task SetHighlightedBuzzIndex(int index)
     {
+        if (index < 0 || index >= _gameState.BuzzOrder.Count) return;
         _gameState.HighlightedBuzzIndex = index;
         await BroadcastGameState();
     }
