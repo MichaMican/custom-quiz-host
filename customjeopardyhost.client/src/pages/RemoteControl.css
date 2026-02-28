@@ -271,7 +271,7 @@
   color: #e0e7ff;
 }
 
-.buzz-entry.first {
+.buzz-entry.highlighted {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   border-color: transparent;
   color: #1e1b4b;
