@@ -9,7 +9,7 @@ namespace CustomJeopardyHost.Server.Controllers
         private readonly IWebHostEnvironment _env;
         private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
+            ".jpg", ".jpeg", ".png", ".gif", ".webp",
             ".mp3", ".wav", ".ogg", ".m4a", ".aac"
         };
 

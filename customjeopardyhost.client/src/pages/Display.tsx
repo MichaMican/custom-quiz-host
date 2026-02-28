@@ -18,7 +18,9 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing }: 
   useEffect(() => {
     if (question.questionType !== "Audio" || !audioRef.current) return;
     if (mediaPlaying) {
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch((err) => {
+        console.error("Audio playback failed:", err);
+      });
     } else {
       audioRef.current.pause();
     }
