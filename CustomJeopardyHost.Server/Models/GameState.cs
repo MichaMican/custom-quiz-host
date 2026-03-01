@@ -24,6 +24,7 @@ public class GameState
     public bool MediaPlaying { get; set; }
     public bool MozaikRevealing { get; set; }
     public bool QuestionTextRevealed { get; set; }
+    public bool PlayerAnswersRevealed { get; set; }
 }
 
 public class Player

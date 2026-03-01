@@ -12,6 +12,8 @@ CustomJeopardyHost.Server/wwwroot/
 **/obj/
 **/obj*/
 **/bin/
+**/node_modules/
+**/dist/
 
 ## Uploaded media files
 CustomJeopardyHost.Server/uploads/
