@@ -38,6 +38,38 @@ A web-based Jeopardy-style game hosting application built with ASP.NET Core and 
 - **Styling**: CSS
 - **Real-time Communication**: @microsoft/signalr
 
+## Quickstart (Docker Compose)
+
+The easiest way to get started is with Docker Compose using the pre-built image from the GitHub Container Registry:
+
+1. **Download the `docker-compose.yml`** from this repository (or create it with the content below):
+
+   ```yaml
+   services:
+     custom-jeopardy-host:
+       image: ghcr.io/michamican/custom-jeopardy-host:latest
+       ports:
+         - "8080:8080"
+       volumes:
+         - uploads:/app/uploads
+       restart: unless-stopped
+
+   volumes:
+     uploads:
+   ```
+
+2. **Start the application**
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Access the application**
+   - Display View: `http://localhost:8080/`
+   - Remote Control: `http://localhost:8080/remote`
+   - Buzzer: `http://localhost:8080/buzzer`
+
+Uploaded media files (images, audio) are persisted in the `uploads` Docker volume and survive container restarts.
+
 ## Prerequisites
 
 - **.NET SDK 10.0** or later
