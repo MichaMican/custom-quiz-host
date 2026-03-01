@@ -1,0 +1,11 @@
+services:
+  custom-jeopardy-host:
+    image: ghcr.io/michamican/custom-jeopardy-host:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  uploads:
