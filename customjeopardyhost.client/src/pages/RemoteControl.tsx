@@ -633,25 +633,22 @@ function RemoteControl() {
                 {gameState.categories.map((category) => (
                   <div key={category.id} className="remote-board-category">
                     <div className="remote-board-header">{category.name}</div>
-                    {POINT_LEVELS.map((points) => {
-                      const question = category.questions.find(
-                        (q) => q.points === points,
-                      );
-                      if (!question || question.isAnswered)
+                    {category.questions.map((question) => {
+                      if (question.isAnswered)
                         return (
-                          <div key={points} className="remote-board-cell empty">
+                          <div key={question.id} className="remote-board-cell empty">
                             —
                           </div>
                         );
                       return (
                         <button
-                          key={points}
+                          key={question.id}
                           className="remote-board-cell"
                           onClick={() =>
                             invoke("ShowQuestion", category.id, question.id)
                           }
                         >
-                          {points}
+                          {question.points}
                         </button>
                       );
                     })}
