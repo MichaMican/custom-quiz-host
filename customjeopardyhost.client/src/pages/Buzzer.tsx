@@ -119,7 +119,7 @@ function Buzzer() {
               {gameState.buzzOrder.map((buzz, index) => (
                 <li
                   key={buzz.playerId}
-                  className={`${index === 0 ? "first" : ""} ${buzz.playerId === selectedPlayerId ? "me" : ""}`}
+                  className={`${index === gameState.highlightedBuzzIndex ? "first" : ""} ${buzz.playerId === selectedPlayerId ? "me" : ""}`}
                 >
                   {buzz.playerName}
                 </li>

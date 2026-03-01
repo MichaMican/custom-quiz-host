@@ -44,6 +44,7 @@ export interface GameState {
   buzzerActive: boolean;
   buzzOrder: BuzzIn[];
   playerAnswers: PlayerAnswer[];
+  highlightedBuzzIndex: number;
   mediaPlaying: boolean;
   mozaikRevealing: boolean;
   questionTextRevealed: boolean;

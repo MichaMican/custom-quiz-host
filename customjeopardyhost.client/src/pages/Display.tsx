@@ -1,9 +1,7 @@
 import { useSignalR } from "../hooks/useSignalR";
-import type { Category, Question } from "../types/GameState";
+import type { Question } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
-
-const POINT_LEVELS = [200, 400, 600, 800, 1000];
 
 function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, questionTextRevealed }: {
   question: Question;
@@ -161,7 +159,7 @@ function Display() {
             <h3>Buzz Order</h3>
             <ol>
               {gameState.buzzOrder.map((buzz, index) => (
-                <li key={buzz.playerId} className={index === 0 ? "first-buzz" : ""}>
+                <li key={buzz.playerId} className={index === gameState.highlightedBuzzIndex ? "first-buzz" : ""}>
                   {buzz.playerName}
                 </li>
               ))}
@@ -193,28 +191,20 @@ function Display() {
     );
   }
 
-  const getQuestion = (category: Category, points: number) => {
-    return category.questions.find((q) => q.points === points);
-  };
-
   return (
     <div className="display-container">
       <div className="display-board">
         {gameState.categories.map((category) => (
           <div key={category.id} className="display-category">
             <div className="display-category-header">{category.name}</div>
-            {POINT_LEVELS.map((points) => {
-              const question = getQuestion(category, points);
-              const isAnswered = question?.isAnswered ?? false;
-              return (
-                <div
-                  key={points}
-                  className={`display-cell ${isAnswered ? "answered" : ""}`}
-                >
-                  {!isAnswered && question ? points : ""}
-                </div>
-              );
-            })}
+            {category.questions.map((question) => (
+              <div
+                key={question.id}
+                className={`display-cell ${question.isAnswered ? "answered" : ""}`}
+              >
+                {!question.isAnswered ? question.points : ""}
+              </div>
+            ))}
           </div>
         ))}
       </div>

@@ -25,9 +25,7 @@ function RemoteControl() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
   const [editingScoreValue, setEditingScoreValue] = useState("");
-  const [highlightedBuzzIndex, setHighlightedBuzzIndex] = useState(0);
   const hasRestoredRef = useRef(false);
-  const prevBuzzOrderLengthRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-save game state to localStorage whenever it changes
@@ -63,15 +61,6 @@ function RemoteControl() {
     }
   }, [connectionStatus, gameState, invoke]);
 
-  // Reset highlighted buzz index when buzz order changes
-  const currentBuzzOrderLength = gameState?.buzzOrder.length ?? 0;
-  if (currentBuzzOrderLength !== prevBuzzOrderLengthRef.current) {
-    prevBuzzOrderLengthRef.current = currentBuzzOrderLength;
-    if (highlightedBuzzIndex !== 0) {
-      setHighlightedBuzzIndex(0);
-    }
-  }
-
   const handleReset = async () => {
     try {
       clearGameState();
@@ -83,6 +72,7 @@ function RemoteControl() {
         buzzerActive: false,
         buzzOrder: [],
         playerAnswers: [],
+        highlightedBuzzIndex: 0,
         mediaPlaying: false,
         mozaikRevealing: false,
         questionTextRevealed: false,
@@ -167,6 +157,20 @@ function RemoteControl() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  const handleExportQuestions = () => {
+    if (!gameState) return;
+    const questionsOnly = { categories: gameState.categories };
+    const blob = new Blob([JSON.stringify(questionsOnly, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "jeopardy-questions.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -177,6 +181,27 @@ function RemoteControl() {
         await invoke("ImportGameSettings", state);
       } catch {
         alert("The selected file does not contain valid game settings");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleImportQuestions = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        const categories = data.categories ?? data.Categories;
+        if (!Array.isArray(categories) || categories.length === 0) {
+          alert("The selected file does not contain any questions");
+          return;
+        }
+        await invoke("ImportQuestions", categories);
+      } catch {
+        alert("The selected file is not valid JSON");
       }
     };
     reader.readAsText(file);
@@ -367,13 +392,25 @@ function RemoteControl() {
           <section className="remote-section">
             <h2>Import / Export</h2>
             <div className="input-row">
-              <button onClick={handleExport}>Export JSON</button>
+              <button onClick={handleExport}>Export Game</button>
               <label className="btn-import">
-                Import JSON
+                Import Game
                 <input
                   type="file"
                   accept=".json"
                   onChange={handleImport}
+                  hidden
+                />
+              </label>
+            </div>
+            <div className="input-row">
+              <button onClick={handleExportQuestions}>Export Questions</button>
+              <label className="btn-import">
+                Import Questions
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportQuestions}
                   hidden
                 />
               </label>
@@ -493,7 +530,7 @@ function RemoteControl() {
                     {gameState.buzzOrder.map((b, i) => (
                       <div
                         key={b.playerId}
-                        className={`buzz-entry ${i === highlightedBuzzIndex ? "highlighted" : ""}`}
+                        className={`buzz-entry ${i === gameState.highlightedBuzzIndex ? "highlighted" : ""}`}
                       >
                         {i + 1}. {b.playerName}
                       </div>
@@ -503,8 +540,8 @@ function RemoteControl() {
                     Clear Buzz Order
                   </button>
                   <button
-                    onClick={() => setHighlightedBuzzIndex((prev) => prev + 1)}
-                    disabled={highlightedBuzzIndex >= gameState.buzzOrder.length - 1}
+                    onClick={() => invoke("SetHighlightedBuzzIndex", gameState.highlightedBuzzIndex + 1)}
+                    disabled={gameState.highlightedBuzzIndex >= gameState.buzzOrder.length - 1}
                   >
                     Next Buzz
                   </button>
@@ -597,25 +634,22 @@ function RemoteControl() {
                 {gameState.categories.map((category) => (
                   <div key={category.id} className="remote-board-category">
                     <div className="remote-board-header">{category.name}</div>
-                    {POINT_LEVELS.map((points) => {
-                      const question = category.questions.find(
-                        (q) => q.points === points,
-                      );
-                      if (!question || question.isAnswered)
+                    {category.questions.map((question) => {
+                      if (question.isAnswered)
                         return (
-                          <div key={points} className="remote-board-cell empty">
+                          <div key={question.id} className="remote-board-cell empty">
                             —
                           </div>
                         );
                       return (
                         <button
-                          key={points}
+                          key={question.id}
                           className="remote-board-cell"
                           onClick={() =>
                             invoke("ShowQuestion", category.id, question.id)
                           }
                         >
-                          {points}
+                          {question.points}
                         </button>
                       );
                     })}
