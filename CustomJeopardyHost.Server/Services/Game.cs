@@ -307,6 +307,30 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task MoveQuestion(string categoryId, string questionId, string direction)
+    {
+        var category = _gameState.Categories.FirstOrDefault(c => c.Id == categoryId);
+        if (category == null) return;
+
+        var index = category.Questions.FindIndex(q => q.Id == questionId);
+        if (index < 0) return;
+
+        var newIndex = direction == "up" ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= category.Questions.Count) return;
+
+        (category.Questions[index], category.Questions[newIndex]) = (category.Questions[newIndex], category.Questions[index]);
+        await BroadcastGameState();
+    }
+
+    public async Task SortQuestionsByPoints(string categoryId)
+    {
+        var category = _gameState.Categories.FirstOrDefault(c => c.Id == categoryId);
+        if (category == null) return;
+
+        category.Questions.Sort((a, b) => a.Points.CompareTo(b.Points));
+        await BroadcastGameState();
+    }
+
     public async Task DoubleRemainingPoints()
     {
         foreach (var category in _gameState.Categories)

@@ -81,5 +81,11 @@ public class GameHub : Hub
 
     public async Task HideQuestionText() => await _gameService.HideQuestionText();
 
+    public async Task MoveQuestion(string categoryId, string questionId, string direction) =>
+        await _gameService.MoveQuestion(categoryId, questionId, direction);
+
+    public async Task SortQuestionsByPoints(string categoryId) =>
+        await _gameService.SortQuestionsByPoints(categoryId);
+
     public async Task DoubleRemainingPoints() => await _gameService.DoubleRemainingPoints();
 }

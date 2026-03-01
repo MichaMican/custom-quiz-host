@@ -27,6 +27,9 @@ function RemoteControl() {
   const [editingScoreValue, setEditingScoreValue] = useState("");
   const hasRestoredRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedCategoryQuestions = gameState?.categories
+    .find((c) => c.id === selectedCategoryId)
+    ?.questions;
 
   // Auto-save game state to localStorage whenever it changes
   useEffect(() => {
@@ -366,26 +369,50 @@ function RemoteControl() {
                 {uploading ? "Uploading..." : "Add Question"}
               </button>
             </div>
-            {selectedCategoryId && (
-              <ul className="item-list">
-                {gameState?.categories
-                  .find((c) => c.id === selectedCategoryId)
-                  ?.questions.map((q) => (
+            {selectedCategoryId && selectedCategoryQuestions && selectedCategoryQuestions.length > 0 && (
+              <>
+                <button
+                  className="btn-sort"
+                  onClick={() => invoke("SortQuestionsByPoints", selectedCategoryId)}
+                >
+                  Sort by Points ↑
+                </button>
+                <ul className="item-list">
+                  {selectedCategoryQuestions.map((q, idx) => (
                     <li key={q.id}>
                       <span>
                         {q.points}: {q.questionType !== "Standard" ? `[${q.questionType}] ` : ""}{q.text || q.mediaFileName || "—"}
                       </span>
-                      <button
-                        className="btn-remove"
-                        onClick={() =>
-                          invoke("RemoveQuestion", selectedCategoryId, q.id)
-                        }
-                      >
-                        ✕
-                      </button>
+                      <div className="question-actions">
+                        <button
+                          className="btn-move"
+                          disabled={idx === 0}
+                          onClick={() => invoke("MoveQuestion", selectedCategoryId, q.id, "up")}
+                          title="Move up"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          className="btn-move"
+                          disabled={idx === selectedCategoryQuestions.length - 1}
+                          onClick={() => invoke("MoveQuestion", selectedCategoryId, q.id, "down")}
+                          title="Move down"
+                        >
+                          ▼
+                        </button>
+                        <button
+                          className="btn-remove"
+                          onClick={() =>
+                            invoke("RemoveQuestion", selectedCategoryId, q.id)
+                          }
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </li>
                   ))}
-              </ul>
+                </ul>
+              </>
             )}
           </section>
 
