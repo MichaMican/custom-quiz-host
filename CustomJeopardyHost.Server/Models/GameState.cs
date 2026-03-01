@@ -25,6 +25,7 @@ public class GameState
     public bool MozaikRevealing { get; set; }
     public bool QuestionTextRevealed { get; set; }
     public bool PlayerAnswersRevealed { get; set; }
+    public bool AnswerRevealed { get; set; }
 }
 
 public class Player

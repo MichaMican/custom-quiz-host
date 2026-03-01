@@ -122,6 +122,7 @@ public class GameService
         _gameState.MozaikRevealing = false;
         _gameState.QuestionTextRevealed = false;
         _gameState.PlayerAnswersRevealed = false;
+        _gameState.AnswerRevealed = false;
         await BroadcastGameState();
     }
 
@@ -139,6 +140,7 @@ public class GameService
             _gameState.MozaikRevealing = false;
             _gameState.QuestionTextRevealed = false;
             _gameState.PlayerAnswersRevealed = false;
+            _gameState.AnswerRevealed = false;
             await BroadcastGameState();
         }
     }
@@ -259,6 +261,18 @@ public class GameService
     public async Task HidePlayerAnswers()
     {
         _gameState.PlayerAnswersRevealed = false;
+        await BroadcastGameState();
+    }
+
+    public async Task ShowAnswer()
+    {
+        _gameState.AnswerRevealed = true;
+        await BroadcastGameState();
+    }
+
+    public async Task HideAnswer()
+    {
+        _gameState.AnswerRevealed = false;
         await BroadcastGameState();
     }
 

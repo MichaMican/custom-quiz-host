@@ -66,6 +66,10 @@ public class GameHub : Hub
     public async Task ShowPlayerAnswers() => await _gameService.ShowPlayerAnswers();
 
     public async Task HidePlayerAnswers() => await _gameService.HidePlayerAnswers();
+
+    public async Task ShowAnswer() => await _gameService.ShowAnswer();
+
+    public async Task HideAnswer() => await _gameService.HideAnswer();
     
     public async Task SetHighlightedBuzzIndex(int index) => await _gameService.SetHighlightedBuzzIndex(index);
 

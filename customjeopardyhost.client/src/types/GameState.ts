@@ -49,4 +49,5 @@ export interface GameState {
   mozaikRevealing: boolean;
   questionTextRevealed: boolean;
   playerAnswersRevealed: boolean;
+  answerRevealed: boolean;
 }

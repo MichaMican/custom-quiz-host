@@ -3,12 +3,13 @@ import type { Question } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
 
-function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, questionTextRevealed }: {
+function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, questionTextRevealed, answerRevealed }: {
   question: Question;
   revealed: boolean;
   mediaPlaying: boolean;
   mozaikRevealing: boolean;
   questionTextRevealed: boolean;
+  answerRevealed: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [mozaikBlur, setMozaikBlur] = useState(40);
@@ -73,6 +74,9 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, qu
           {questionTextRevealed && question.text && (
             <div className="display-question-text">{question.text}</div>
           )}
+          {answerRevealed && (
+            <div className="display-answer-text">{question.answer}</div>
+          )}
         </>
       );
 
@@ -91,6 +95,9 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, qu
           {questionTextRevealed && question.text && (
             <div className="display-question-text">{question.text}</div>
           )}
+          {answerRevealed && (
+            <div className="display-answer-text">{question.answer}</div>
+          )}
         </>
       );
 
@@ -107,6 +114,9 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, qu
           {questionTextRevealed && question.text && (
             <div className="display-question-text">{question.text}</div>
           )}
+          {answerRevealed && (
+            <div className="display-answer-text">{question.answer}</div>
+          )}
         </>
       );
 
@@ -115,6 +125,9 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, qu
         <>
           <div className="display-question-points">{question.points}</div>
           <div className="display-question-text">{question.text}</div>
+          {answerRevealed && (
+            <div className="display-answer-text">{question.answer}</div>
+          )}
         </>
       );
   }
@@ -152,6 +165,7 @@ function Display() {
             mediaPlaying={gameState.mediaPlaying}
             mozaikRevealing={gameState.mozaikRevealing}
             questionTextRevealed={gameState.questionTextRevealed}
+            answerRevealed={gameState.answerRevealed}
           />
         </div>
         {gameState.buzzerActive && gameState.buzzOrder.length > 0 && (
