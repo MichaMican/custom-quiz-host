@@ -82,6 +82,7 @@ function RemoteControl() {
         questionRevealed: false,
         buzzerActive: false,
         buzzOrder: [],
+        playerAnswers: [],
         mediaPlaying: false,
         mozaikRevealing: false,
         questionTextRevealed: false,
