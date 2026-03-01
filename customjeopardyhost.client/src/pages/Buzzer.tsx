@@ -15,6 +15,7 @@ function Buzzer() {
   const handleSubmitAnswer = async () => {
     if (!selectedPlayerId || !playerAnswer.trim()) return;
     await invoke("SubmitPlayerAnswer", selectedPlayerId, playerAnswer.trim());
+    setPlayerAnswer("");
   };
 
   if (connectionStatus !== "Connected") {
@@ -94,7 +95,7 @@ function Buzzer() {
               type="text"
               value={playerAnswer}
               onChange={(e) => setPlayerAnswer(e.target.value)}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleSubmitAnswer();
                 }
