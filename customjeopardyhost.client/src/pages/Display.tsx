@@ -166,7 +166,7 @@ function Display() {
             </ol>
           </div>
         )}
-        {gameState.playerAnswers && gameState.playerAnswers.length > 0 && (
+        {gameState.playerAnswersRevealed && gameState.playerAnswers && gameState.playerAnswers.length > 0 && (
           <div className="display-player-answers">
             <h3>Player Answers</h3>
             <div className="answers-list">

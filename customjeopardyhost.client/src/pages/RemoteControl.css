@@ -556,3 +556,45 @@
 .btn-double-points:hover {
   box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
 }
+
+.host-player-answers {
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+}
+
+.host-player-answers h3 {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  color: #a5b4fc;
+}
+
+.host-player-answers .answers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.host-player-answers .player-answer-item {
+  display: flex;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.host-player-answers .answer-player-name {
+  font-weight: 700;
+  color: #818cf8;
+  min-width: 80px;
+}
+
+.host-player-answers .answer-text {
+  color: #e2e8f0;
+  flex: 1;
+}

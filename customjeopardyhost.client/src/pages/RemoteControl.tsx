@@ -76,6 +76,7 @@ function RemoteControl() {
         mediaPlaying: false,
         mozaikRevealing: false,
         questionTextRevealed: false,
+        playerAnswersRevealed: false,
       };
       await invoke("ImportGameSettings", emptyState);
       setShowResetModal(false);
@@ -614,6 +615,25 @@ function RemoteControl() {
               >
                 Dismiss Question
               </button>
+              {gameState.playerAnswers && gameState.playerAnswers.length > 0 && (
+                <div className="host-player-answers">
+                  <h3>Player Answers</h3>
+                  <div className="answers-list">
+                    {gameState.playerAnswers.map((answer) => (
+                      <div key={answer.playerId} className="player-answer-item">
+                        <span className="answer-player-name">{answer.playerName}:</span>
+                        <span className="answer-text">{answer.answer}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    className={`btn-media ${gameState.playerAnswersRevealed ? "active" : ""}`}
+                    onClick={() => invoke(gameState.playerAnswersRevealed ? "HidePlayerAnswers" : "ShowPlayerAnswers")}
+                  >
+                    {gameState.playerAnswersRevealed ? "Hide Answers on Display" : "Show Answers on Display"}
+                  </button>
+                </div>
+              )}
               <button
                 className="btn-return"
                 onClick={() => invoke("ReturnToBoard")}
