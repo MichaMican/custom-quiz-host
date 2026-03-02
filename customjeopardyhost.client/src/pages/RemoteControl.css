@@ -155,6 +155,21 @@
   cursor: default;
 }
 
+.btn-edit {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(234, 179, 8, 0.25);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-edit:hover {
+  background: rgba(234, 179, 8, 0.3);
+}
+
 .btn-sort {
   width: 100%;
   padding: 8px 12px;

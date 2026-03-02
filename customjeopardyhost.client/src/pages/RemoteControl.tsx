@@ -148,6 +148,24 @@ function RemoteControl() {
     }
   };
 
+  const handleEditQuestion = async (questionId: string) => {
+    const question = selectedCategoryQuestions?.find((q) => q.id === questionId);
+    if (!question) return;
+    setQuestionText(question.text);
+    setQuestionAnswer(question.answer);
+    setQuestionPoints(question.points);
+    setQuestionType(question.questionType);
+    setMediaFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    try {
+      await invoke("RemoveQuestion", selectedCategoryId, questionId);
+    } catch {
+      alert("Failed to remove the original question. Please try again.");
+    }
+  };
+
   const handleExport = () => {
     if (!gameState) return;
     const blob = new Blob([JSON.stringify(gameState, null, 2)], {
@@ -385,6 +403,13 @@ function RemoteControl() {
                         {q.points}: {q.questionType !== "Standard" ? `[${q.questionType}] ` : ""}{q.text || q.mediaFileName || "—"}
                       </span>
                       <div className="question-actions">
+                        <button
+                          className="btn-edit"
+                          onClick={() => handleEditQuestion(q.id)}
+                          title="Edit question"
+                        >
+                          ✎
+                        </button>
                         <button
                           className="btn-move"
                           disabled={idx === 0}
