@@ -1,6 +1,6 @@
-# Custom Jeopardy Host
+# Custom Quiz Host
 
-A web-based Jeopardy-style game hosting application built with ASP.NET Core and React. This application allows you to create and host interactive Jeopardy games with multiple players, custom categories, questions, and multimedia support including images and audio.
+A web-based Uiz game hosting application built with ASP.NET Core and React. This application allows you to create and host interactive Jeopardy games with multiple players, custom categories, questions, and multimedia support including images and audio.
 
 ## Features
 
