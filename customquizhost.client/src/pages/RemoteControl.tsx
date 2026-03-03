@@ -194,7 +194,7 @@ function RemoteControl() {
           mediaFolder.file(fileName, blob);
         }
       } catch {
-        // skip files that can't be fetched
+        console.warn(`Failed to fetch media file: ${fileName}`);
       }
     }
     return await zip.generateAsync({ type: "blob" });
@@ -224,7 +224,7 @@ function RemoteControl() {
           fileNameMap.set(name, data.fileName);
         }
       } catch {
-        // skip files that fail to upload
+        console.warn(`Failed to upload media file: ${name}`);
       }
     }
     return fileNameMap;
@@ -313,7 +313,9 @@ function RemoteControl() {
         await invoke("ImportGameSettings", state);
       }
     } catch {
-      alert("The selected file does not contain valid game settings");
+      alert(file.name.endsWith(".zip")
+        ? "Failed to import game: the ZIP file may be corrupted or contain invalid data"
+        : "The selected file does not contain valid game settings");
     }
     e.target.value = "";
   };
@@ -350,7 +352,9 @@ function RemoteControl() {
         await invoke("ImportQuestions", categories);
       }
     } catch {
-      alert("The selected file is not valid");
+      alert(file.name.endsWith(".zip")
+        ? "Failed to import questions: the ZIP file may be corrupted or contain invalid data"
+        : "The selected file is not valid JSON");
     }
     e.target.value = "";
   };
