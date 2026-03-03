@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import JSZip from "jszip";
 import { useSignalR } from "../hooks/useSignalR";
-import type { GameState, QuestionType } from "../types/GameState";
+import type { GameState, QuestionType, Category } from "../types/GameState";
 import {
   saveGameState,
   loadGameState,
@@ -25,6 +26,7 @@ function RemoteControl() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
   const [editingScoreValue, setEditingScoreValue] = useState("");
+  const [includeFiles, setIncludeFiles] = useState(false);
   const hasRestoredRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedCategoryQuestions = gameState?.categories
@@ -167,67 +169,193 @@ function RemoteControl() {
     }
   };
 
-  const handleExport = () => {
-    if (!gameState) return;
-    const blob = new Blob([JSON.stringify(gameState, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "quiz-game.json";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const collectMediaFileNames = (categories: Category[]): string[] => {
+    const fileNames: string[] = [];
+    for (const cat of categories) {
+      for (const q of cat.questions) {
+        if (q.mediaFileName) {
+          fileNames.push(q.mediaFileName);
+        }
+      }
+    }
+    return [...new Set(fileNames)];
   };
 
-  const handleExportQuestions = () => {
+  const buildZip = async (jsonData: object, jsonFileName: string, categories: Category[]): Promise<Blob> => {
+    const zip = new JSZip();
+    zip.file(jsonFileName, JSON.stringify(jsonData, null, 2));
+    const mediaFileNames = collectMediaFileNames(categories);
+    const mediaFolder = zip.folder("media")!;
+    for (const fileName of mediaFileNames) {
+      try {
+        const response = await fetch(`/uploads/${fileName}`);
+        if (response.ok) {
+          const blob = await response.blob();
+          mediaFolder.file(fileName, blob);
+        }
+      } catch {
+        console.warn(`Failed to fetch media file: ${fileName}`);
+      }
+    }
+    return await zip.generateAsync({ type: "blob" });
+  };
+
+  const importMediaFromZip = async (zip: JSZip): Promise<Map<string, string>> => {
+    const fileNameMap = new Map<string, string>();
+    const mediaFolder = zip.folder("media");
+    if (!mediaFolder) return fileNameMap;
+    const mediaFiles: { name: string; file: JSZip.JSZipObject }[] = [];
+    mediaFolder.forEach((relativePath, file) => {
+      if (!file.dir) {
+        mediaFiles.push({ name: relativePath, file });
+      }
+    });
+    for (const { name, file } of mediaFiles) {
+      try {
+        const blob = await file.async("blob");
+        const formData = new FormData();
+        formData.append("file", blob, name);
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (response.ok) {
+          const data = await response.json();
+          fileNameMap.set(name, data.fileName);
+        }
+      } catch {
+        console.warn(`Failed to upload media file: ${name}`);
+      }
+    }
+    return fileNameMap;
+  };
+
+  const remapMediaFileNames = (categories: Category[], fileNameMap: Map<string, string>): Category[] => {
+    return categories.map((cat) => ({
+      ...cat,
+      questions: cat.questions.map((q) => ({
+        ...q,
+        mediaFileName: q.mediaFileName && fileNameMap.has(q.mediaFileName)
+          ? fileNameMap.get(q.mediaFileName)!
+          : q.mediaFileName,
+      })),
+    }));
+  };
+
+  const handleExport = async () => {
+    if (!gameState) return;
+    if (includeFiles) {
+      const zipBlob = await buildZip(gameState, "quiz-game.json", gameState.categories);
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-game.zip";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } else {
+      const blob = new Blob([JSON.stringify(gameState, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-game.json";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+  };
+
+  const handleExportQuestions = async () => {
     if (!gameState) return;
     const questionsOnly = { categories: gameState.categories };
-    const blob = new Blob([JSON.stringify(questionsOnly, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "quiz-questions.json";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    if (includeFiles) {
+      const zipBlob = await buildZip(questionsOnly, "quiz-questions.json", gameState.categories);
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-questions.zip";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } else {
+      const blob = new Blob([JSON.stringify(questionsOnly, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-questions.json";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const state = JSON.parse(event.target?.result as string) as GameState;
+    try {
+      if (file.name.endsWith(".zip")) {
+        const zip = await JSZip.loadAsync(file);
+        const jsonFile = zip.file("quiz-game.json");
+        if (!jsonFile) {
+          alert("The ZIP file does not contain a quiz-game.json file");
+          return;
+        }
+        const jsonText = await jsonFile.async("string");
+        const state = JSON.parse(jsonText) as GameState;
+        const fileNameMap = await importMediaFromZip(zip);
+        if (fileNameMap.size > 0) {
+          state.categories = remapMediaFileNames(state.categories, fileNameMap);
+        }
         await invoke("ImportGameSettings", state);
-      } catch {
-        alert("The selected file does not contain valid game settings");
+      } else {
+        const text = await file.text();
+        const state = JSON.parse(text) as GameState;
+        await invoke("ImportGameSettings", state);
       }
-    };
-    reader.readAsText(file);
+    } catch {
+      alert(file.name.endsWith(".zip")
+        ? "Failed to import game: the ZIP file may be corrupted or contain invalid data"
+        : "The selected file does not contain valid game settings");
+    }
     e.target.value = "";
   };
 
-  const handleImportQuestions = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportQuestions = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const data = JSON.parse(event.target?.result as string);
+    try {
+      if (file.name.endsWith(".zip")) {
+        const zip = await JSZip.loadAsync(file);
+        const jsonFile = zip.file("quiz-questions.json");
+        if (!jsonFile) {
+          alert("The ZIP file does not contain a quiz-questions.json file");
+          return;
+        }
+        const jsonText = await jsonFile.async("string");
+        const data = JSON.parse(jsonText);
+        const categories = data.categories ?? data.Categories;
+        if (!Array.isArray(categories) || categories.length === 0) {
+          alert("The selected file does not contain any questions");
+          return;
+        }
+        const fileNameMap = await importMediaFromZip(zip);
+        const remapped = fileNameMap.size > 0 ? remapMediaFileNames(categories, fileNameMap) : categories;
+        await invoke("ImportQuestions", remapped);
+      } else {
+        const text = await file.text();
+        const data = JSON.parse(text);
         const categories = data.categories ?? data.Categories;
         if (!Array.isArray(categories) || categories.length === 0) {
           alert("The selected file does not contain any questions");
           return;
         }
         await invoke("ImportQuestions", categories);
-      } catch {
-        alert("The selected file is not valid JSON");
       }
-    };
-    reader.readAsText(file);
+    } catch {
+      alert(file.name.endsWith(".zip")
+        ? "Failed to import questions: the ZIP file may be corrupted or contain invalid data"
+        : "The selected file is not valid JSON");
+    }
     e.target.value = "";
   };
 
@@ -446,12 +574,22 @@ function RemoteControl() {
           <section className="remote-section">
             <h2>Import / Export</h2>
             <div className="input-row">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={includeFiles}
+                  onChange={(e) => setIncludeFiles(e.target.checked)}
+                />
+                Include files
+              </label>
+            </div>
+            <div className="input-row">
               <button onClick={handleExport}>Export Game</button>
               <label className="btn-import">
                 Import Game
                 <input
                   type="file"
-                  accept=".json"
+                  accept=".json,.zip"
                   onChange={handleImport}
                   hidden
                 />
@@ -463,7 +601,7 @@ function RemoteControl() {
                 Import Questions
                 <input
                   type="file"
-                  accept=".json"
+                  accept=".json,.zip"
                   onChange={handleImportQuestions}
                   hidden
                 />
