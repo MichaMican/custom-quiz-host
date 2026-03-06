@@ -769,7 +769,11 @@ function RemoteControl() {
                   className="btn-reveal"
                   onClick={() => invoke("RevealQuestion")}
                 >
-                  Show Question
+                  {gameState.currentQuestion.questionType === "Image" || gameState.currentQuestion.questionType === "ImageMozaik"
+                    ? "Show Image"
+                    : gameState.currentQuestion.questionType === "Audio"
+                      ? "Display Audio"
+                      : "Show Question"}
                 </button>
               )}
               {gameState.questionRevealed && (gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "ImageMozaik") && (
