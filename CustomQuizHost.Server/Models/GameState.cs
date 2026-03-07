@@ -26,7 +26,7 @@ public class GameState
     public bool QuestionTextRevealed { get; set; }
     public bool PlayerAnswersRevealed { get; set; }
     public bool AnswerRevealed { get; set; }
-    public int MediaVolume { get; set; } = 100;
+    public int MediaVolume { get; set; } = 70;
 }
 
 public class Player

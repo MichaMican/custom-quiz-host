@@ -83,7 +83,7 @@ function RemoteControl() {
         questionTextRevealed: false,
         playerAnswersRevealed: false,
         answerRevealed: false,
-        mediaVolume: 100,
+        mediaVolume: 70,
       };
       await invoke("ImportGameSettings", emptyState);
       setShowResetModal(false);
