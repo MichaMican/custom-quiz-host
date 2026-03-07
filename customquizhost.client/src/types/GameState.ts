@@ -50,4 +50,5 @@ export interface GameState {
   questionTextRevealed: boolean;
   playerAnswersRevealed: boolean;
   answerRevealed: boolean;
+  mediaVolume: number;
 }

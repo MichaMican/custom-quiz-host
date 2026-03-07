@@ -617,6 +617,27 @@
   color: #fff;
 }
 
+.volume-control {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.volume-control label {
+  display: block;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+}
+
+.volume-control input[type="range"] {
+  width: 100%;
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
 .btn-double-points {
   width: 100%;
   padding: 14px;

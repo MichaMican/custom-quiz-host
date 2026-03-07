@@ -3,16 +3,23 @@ import type { Question } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
 
-function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, questionTextRevealed, answerRevealed }: {
+function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, questionTextRevealed, answerRevealed, mediaVolume }: {
   question: Question;
   revealed: boolean;
   mediaPlaying: boolean;
   mozaikRevealing: boolean;
   questionTextRevealed: boolean;
   answerRevealed: boolean;
+  mediaVolume: number;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [mozaikBlur, setMozaikBlur] = useState(40);
+
+  // Audio volume control
+  useEffect(() => {
+    if (question.questionType !== "Audio" || !audioRef.current) return;
+    audioRef.current.volume = Math.max(0, Math.min(1, mediaVolume / 100));
+  }, [mediaVolume, question.questionType]);
 
   // Audio playback control
   useEffect(() => {
@@ -185,6 +192,7 @@ function Display() {
               mozaikRevealing={gameState.mozaikRevealing}
               questionTextRevealed={gameState.questionTextRevealed}
               answerRevealed={gameState.answerRevealed}
+              mediaVolume={gameState.mediaVolume}
             />
           </div>
           {gameState.buzzerActive && gameState.buzzOrder.length > 0 && (

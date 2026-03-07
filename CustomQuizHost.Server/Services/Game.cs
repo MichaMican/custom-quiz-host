@@ -312,6 +312,12 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task SetMediaVolume(int volume)
+    {
+        _gameState.MediaVolume = Math.Clamp(volume, 0, 100);
+        await BroadcastGameState();
+    }
+
     public async Task StartMozaikReveal()
     {
         _gameState.MozaikRevealing = true;

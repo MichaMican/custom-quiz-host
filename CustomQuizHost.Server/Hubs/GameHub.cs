@@ -81,6 +81,8 @@ public class GameHub : Hub
 
     public async Task StopMedia() => await _gameService.StopMedia();
 
+    public async Task SetMediaVolume(int volume) => await _gameService.SetMediaVolume(volume);
+
     public async Task StartMozaikReveal() => await _gameService.StartMozaikReveal();
 
     public async Task StopMozaikReveal() => await _gameService.StopMozaikReveal();

@@ -83,6 +83,7 @@ function RemoteControl() {
         questionTextRevealed: false,
         playerAnswersRevealed: false,
         answerRevealed: false,
+        mediaVolume: 70,
       };
       await invoke("ImportGameSettings", emptyState);
       setShowResetModal(false);
@@ -779,12 +780,25 @@ function RemoteControl() {
               {gameState.questionRevealed && (gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "ImageMozaik") && (
                 <div className="media-controls">
                   {gameState.currentQuestion.questionType === "Audio" && (
-                    <button
-                      className={`btn-media ${gameState.mediaPlaying ? "active" : ""}`}
-                      onClick={() => invoke(gameState.mediaPlaying ? "StopMedia" : "StartMedia")}
-                    >
-                      {gameState.mediaPlaying ? "⏸ Stop Audio" : "▶ Play Audio"}
-                    </button>
+                    <>
+                      <button
+                        className={`btn-media ${gameState.mediaPlaying ? "active" : ""}`}
+                        onClick={() => invoke(gameState.mediaPlaying ? "StopMedia" : "StartMedia")}
+                      >
+                        {gameState.mediaPlaying ? "⏸ Stop Audio" : "▶ Play Audio"}
+                      </button>
+                      <div className="volume-control">
+                        <label htmlFor="volume-slider">🔊 Volume: {gameState.mediaVolume}%</label>
+                        <input
+                          id="volume-slider"
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={gameState.mediaVolume}
+                          onChange={(e) => invoke("SetMediaVolume", parseInt(e.target.value))}
+                        />
+                      </div>
+                    </>
                   )}
                   {gameState.currentQuestion.questionType === "ImageMozaik" && (
                     <button
