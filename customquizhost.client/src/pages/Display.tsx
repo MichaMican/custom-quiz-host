@@ -169,6 +169,8 @@ function Display() {
     );
   }
 
+  const maxQuestions = Math.max(...gameState.categories.map(c => c.questions.length));
+
   return (
     <div className="display-container">
       <audio ref={buzzerAudioRef} src="/buzzer.mp3" preload="auto" />
@@ -212,9 +214,21 @@ function Display() {
           )}
         </>
       ) : (
-        <div className="display-board">
+        <div
+          className="display-board"
+          style={{
+            gridTemplateColumns: `repeat(${gameState.categories.length}, 1fr)`,
+            gridTemplateRows: `auto repeat(${maxQuestions}, 1fr)`,
+          }}
+        >
           {gameState.categories.map((category) => (
-            <div key={category.id} className="display-category">
+            <div
+              key={category.id}
+              className="display-category"
+              style={{
+                gridRow: `span ${maxQuestions + 1}`,
+              }}
+            >
               <div className="display-category-header">{category.name}</div>
               {category.questions.map((question) => (
                 <div

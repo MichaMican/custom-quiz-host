@@ -20,16 +20,15 @@
 }
 
 .display-board {
-  display: flex;
+  display: grid;
   flex: 1;
   gap: 10px;
   padding: 16px 20px;
 }
 
 .display-category {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: subgrid;
   gap: 10px;
 }
 
