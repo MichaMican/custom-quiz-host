@@ -143,15 +143,24 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, qu
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
   const prevBuzzCountRef = useRef(0);
+  const preloadedBuzzerRef = useRef<HTMLAudioElement | null>(null);
+
+  // Preload buzzer sound on mount so playback is instant
+  useEffect(() => {
+    const audio = new Audio("/buzzer.mp3");
+    audio.preload = "auto";
+    audio.load();
+    preloadedBuzzerRef.current = audio;
+  }, []);
 
   const buzzCount = gameState?.buzzOrder.length ?? 0;
 
   // Play buzzer sound when a new player buzzes in
   useEffect(() => {
-    if (buzzCount > prevBuzzCountRef.current) {
+    if (buzzCount > prevBuzzCountRef.current && preloadedBuzzerRef.current) {
       const newBuzzes = buzzCount - prevBuzzCountRef.current;
       for (let i = 0; i < newBuzzes; i++) {
-        const audio = new Audio("/buzzer.mp3");
+        const audio = preloadedBuzzerRef.current.cloneNode(true) as HTMLAudioElement;
         audio.addEventListener("ended", () => {
           audio.removeAttribute("src");
           audio.load();
