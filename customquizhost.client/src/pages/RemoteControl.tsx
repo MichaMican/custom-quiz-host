@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import JSZip from "jszip";
 import { useSignalR } from "../hooks/useSignalR";
 import type { GameState, QuestionType, Category } from "../types/GameState";
@@ -7,6 +7,8 @@ import {
   loadGameState,
   clearGameState,
 } from "../utils/localStorage";
+import { uploadWithProgress } from "../utils/uploadWithProgress";
+import UploadProgressModal from "../components/UploadProgressModal";
 import "./RemoteControl.css";
 
 const POINT_LEVELS = [200, 400, 600, 800, 1000];
@@ -22,6 +24,8 @@ function RemoteControl() {
   const [questionType, setQuestionType] = useState<QuestionType>("Standard");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadLabel, setUploadLabel] = useState("Uploading…");
   const [tab, setTab] = useState<"setup" | "host">("setup");
   const [showResetModal, setShowResetModal] = useState(false);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
@@ -112,20 +116,17 @@ function RemoteControl() {
     let mediaFileName: string | null = null;
 
     if (mediaFile) {
+      setUploadLabel("Uploading file…");
+      setUploadProgress(0);
       setUploading(true);
       try {
         const formData = new FormData();
         formData.append("file", mediaFile);
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        if (!response.ok) {
-          alert("Failed to upload file.");
-          setUploading(false);
-          return;
-        }
-        const data = await response.json();
+        const data = await uploadWithProgress<{ fileName: string }>(
+          "/api/upload",
+          formData,
+          setUploadProgress,
+        );
         mediaFileName = data.fileName;
       } catch {
         alert("Failed to upload file.");
@@ -201,7 +202,10 @@ function RemoteControl() {
     return await zip.generateAsync({ type: "blob" });
   };
 
-  const importMediaFromZip = async (zip: JSZip): Promise<Map<string, string>> => {
+  const importMediaFromZip = useCallback(async (
+    zip: JSZip,
+    onProgress?: (percent: number) => void,
+  ): Promise<Map<string, string>> => {
     const fileNameMap = new Map<string, string>();
     const mediaFolder = zip.folder("media");
     if (!mediaFolder) return fileNameMap;
@@ -211,25 +215,31 @@ function RemoteControl() {
         mediaFiles.push({ name: relativePath, file });
       }
     });
-    for (const { name, file } of mediaFiles) {
+    for (let i = 0; i < mediaFiles.length; i++) {
+      const { name, file } = mediaFiles[i];
       try {
         const blob = await file.async("blob");
         const formData = new FormData();
         formData.append("file", blob, name);
-        const response = await fetch("/api/upload?preserveFileName=true", {
-          method: "POST",
-          body: formData,
-        });
-        if (response.ok) {
-          const data = await response.json();
-          fileNameMap.set(name, data.fileName);
-        }
+        const data = await uploadWithProgress<{ fileName: string }>(
+          "/api/upload?preserveFileName=true",
+          formData,
+          (filePct) => {
+            // Combine per-file progress with overall file count progress
+            const overallPct = Math.round(
+              ((i + filePct / 100) / mediaFiles.length) * 100,
+            );
+            onProgress?.(overallPct);
+          },
+        );
+        fileNameMap.set(name, data.fileName);
       } catch {
         console.warn(`Failed to upload media file: ${name}`);
       }
     }
+    onProgress?.(100);
     return fileNameMap;
-  };
+  }, []);
 
   const remapMediaFileNames = (categories: Category[], fileNameMap: Map<string, string>): Category[] => {
     return categories.map((cat) => ({
@@ -303,7 +313,11 @@ function RemoteControl() {
         }
         const jsonText = await jsonFile.async("string");
         const state = JSON.parse(jsonText) as GameState;
-        const fileNameMap = await importMediaFromZip(zip);
+        setUploadLabel("Importing game…");
+        setUploadProgress(0);
+        setUploading(true);
+        const fileNameMap = await importMediaFromZip(zip, setUploadProgress);
+        setUploading(false);
         if (fileNameMap.size > 0) {
           state.categories = remapMediaFileNames(state.categories, fileNameMap);
         }
@@ -314,6 +328,7 @@ function RemoteControl() {
         await invoke("ImportGameSettings", state);
       }
     } catch {
+      setUploading(false);
       alert(file.name.endsWith(".zip")
         ? "Failed to import game: the ZIP file may be corrupted or contain invalid data"
         : "The selected file does not contain valid game settings");
@@ -339,7 +354,11 @@ function RemoteControl() {
           alert("The selected file does not contain any questions");
           return;
         }
-        const fileNameMap = await importMediaFromZip(zip);
+        setUploadLabel("Importing questions…");
+        setUploadProgress(0);
+        setUploading(true);
+        const fileNameMap = await importMediaFromZip(zip, setUploadProgress);
+        setUploading(false);
         const remapped = fileNameMap.size > 0 ? remapMediaFileNames(categories, fileNameMap) : categories;
         await invoke("ImportQuestions", remapped);
       } else {
@@ -353,6 +372,7 @@ function RemoteControl() {
         await invoke("ImportQuestions", categories);
       }
     } catch {
+      setUploading(false);
       alert(file.name.endsWith(".zip")
         ? "Failed to import questions: the ZIP file may be corrupted or contain invalid data"
         : "The selected file is not valid JSON");
@@ -915,6 +935,12 @@ function RemoteControl() {
           </div>
         </div>
       )}
+
+      <UploadProgressModal
+        visible={uploading}
+        progress={uploadProgress}
+        label={uploadLabel}
+      />
       </div>
     </div>
   );

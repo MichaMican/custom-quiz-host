@@ -60,3 +60,13 @@ feat: add multiplayer support
 fix(ui): correct button alignment on mobile
 chore: update Docker base image
 ```
+
+## Upload Progress
+
+Always use the reusable `UploadProgressModal` component (located at `src/components/UploadProgressModal.tsx`) to show upload progress whenever files are uploaded by the user. This includes, but is not limited to:
+
+- Importing questions (ZIP with media)
+- Importing games (ZIP with media)
+- Uploading media files (audio, images, etc.)
+
+Use the `uploadWithProgress` utility (`src/utils/uploadWithProgress.ts`) to perform uploads via `XMLHttpRequest` so that real-time progress events are available. Pass the progress percentage to the `UploadProgressModal` to keep the user informed.
