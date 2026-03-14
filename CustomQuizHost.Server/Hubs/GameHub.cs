@@ -93,6 +93,10 @@ public class GameHub : Hub
 
     public async Task SetPauseOnBuzz(bool value) => await _gameService.SetPauseOnBuzz(value);
 
+    public async Task EnableImageFullscreen() => await _gameService.EnableImageFullscreen();
+
+    public async Task DisableImageFullscreen() => await _gameService.DisableImageFullscreen();
+
     public async Task MoveQuestion(string categoryId, string questionId, string direction) =>
         await _gameService.MoveQuestion(categoryId, questionId, direction);
 

@@ -28,6 +28,7 @@ public class GameState
     public bool AnswerRevealed { get; set; }
     public int MediaVolume { get; set; } = 70;
     public bool PauseOnBuzz { get; set; }
+    public bool ImageFullscreen { get; set; }
 }
 
 public class Player

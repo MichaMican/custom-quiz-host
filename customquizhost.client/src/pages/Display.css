@@ -275,6 +275,32 @@
   transition: filter 0.1s linear;
 }
 
+.display-question-image.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  border-radius: 0;
+  object-fit: contain;
+  background: #000;
+  z-index: 100;
+  animation: imageFullscreenEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes imageFullscreenEnter {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .display-audio-indicator {
   font-size: 2.5rem;
   color: #c7d2fe;

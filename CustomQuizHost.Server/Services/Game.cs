@@ -123,6 +123,7 @@ public class GameService
         _gameState.QuestionTextRevealed = false;
         _gameState.PlayerAnswersRevealed = false;
         _gameState.AnswerRevealed = false;
+        _gameState.ImageFullscreen = false;
         await BroadcastGameState();
     }
 
@@ -141,6 +142,7 @@ public class GameService
             _gameState.QuestionTextRevealed = false;
             _gameState.PlayerAnswersRevealed = false;
             _gameState.AnswerRevealed = false;
+            _gameState.ImageFullscreen = false;
             await BroadcastGameState();
         }
     }
@@ -304,6 +306,7 @@ public class GameService
         _gameState.MediaPlaying = false;
         _gameState.MozaikRevealing = false;
         _gameState.QuestionTextRevealed = false;
+        _gameState.ImageFullscreen = false;
         await BroadcastGameState();
     }
 
@@ -352,6 +355,18 @@ public class GameService
     public async Task SetPauseOnBuzz(bool value)
     {
         _gameState.PauseOnBuzz = value;
+        await BroadcastGameState();
+    }
+
+    public async Task EnableImageFullscreen()
+    {
+        _gameState.ImageFullscreen = true;
+        await BroadcastGameState();
+    }
+
+    public async Task DisableImageFullscreen()
+    {
+        _gameState.ImageFullscreen = false;
         await BroadcastGameState();
     }
 

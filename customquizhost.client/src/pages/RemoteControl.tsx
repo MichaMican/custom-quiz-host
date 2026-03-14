@@ -89,6 +89,7 @@ function RemoteControl() {
         answerRevealed: false,
         mediaVolume: 70,
         pauseOnBuzz: false,
+        imageFullscreen: false,
       };
       await invoke("ImportGameSettings", emptyState);
       setShowResetModal(false);
@@ -793,7 +794,7 @@ function RemoteControl() {
                       : "Show Question"}
                 </button>
               )}
-              {gameState.questionRevealed && (gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "ImageMozaik") && (
+              {gameState.questionRevealed && (gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "ImageMozaik" || gameState.currentQuestion.questionType === "Image") && (
                 <div className="media-controls">
                   {gameState.currentQuestion.questionType === "Audio" && (
                     <>
@@ -822,6 +823,14 @@ function RemoteControl() {
                       onClick={() => invoke(gameState.mozaikRevealing ? "StopMozaikReveal" : "StartMozaikReveal")}
                     >
                       {gameState.mozaikRevealing ? "⏸ Stop Reveal" : "▶ Start Reveal"}
+                    </button>
+                  )}
+                  {(gameState.currentQuestion.questionType === "Image" || gameState.currentQuestion.questionType === "ImageMozaik") && (
+                    <button
+                      className={`btn-media ${gameState.imageFullscreen ? "active" : ""}`}
+                      onClick={() => invoke(gameState.imageFullscreen ? "DisableImageFullscreen" : "EnableImageFullscreen")}
+                    >
+                      {gameState.imageFullscreen ? "🗗 Exit Fullscreen" : "🗖 Image Fullscreen"}
                     </button>
                   )}
                 </div>
