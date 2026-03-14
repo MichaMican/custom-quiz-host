@@ -23,6 +23,7 @@ function RemoteControl() {
   const [questionPoints, setQuestionPoints] = useState(200);
   const [questionType, setQuestionType] = useState<QuestionType>("Standard");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [existingMediaFileName, setExistingMediaFileName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessage, setUploadMessage] = useState("");
@@ -112,7 +113,7 @@ function RemoteControl() {
   const handleAddQuestion = async () => {
     if (!selectedCategoryId) return;
     if (questionType === "Standard" && !questionText.trim()) return;
-    if (questionType !== "Standard" && !mediaFile) return;
+    if (questionType !== "Standard" && !mediaFile && !existingMediaFileName) return;
 
     let mediaFileName: string | null = null;
 
@@ -132,6 +133,8 @@ function RemoteControl() {
         return;
       }
       setUploading(false);
+    } else if (existingMediaFileName) {
+      mediaFileName = existingMediaFileName;
     }
 
     await invoke(
@@ -146,6 +149,7 @@ function RemoteControl() {
     setQuestionText("");
     setQuestionAnswer("");
     setMediaFile(null);
+    setExistingMediaFileName(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -158,6 +162,7 @@ function RemoteControl() {
     setQuestionAnswer(question.answer);
     setQuestionPoints(question.points);
     setQuestionType(question.questionType);
+    setExistingMediaFileName(question.mediaFileName ?? null);
     setMediaFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -492,10 +497,18 @@ function RemoteControl() {
                       ref={fileInputRef}
                       type="file"
                       accept={questionType === "Audio" ? "audio/*" : "image/*"}
-                      onChange={(e) => setMediaFile(e.target.files?.[0] ?? null)}
+                      onChange={(e) => {
+                        setMediaFile(e.target.files?.[0] ?? null);
+                        if (e.target.files?.[0]) {
+                          setExistingMediaFileName(null);
+                        }
+                      }}
                     />
                     {mediaFile && (
                       <span className="file-name">{mediaFile.name}</span>
+                    )}
+                    {!mediaFile && existingMediaFileName && (
+                      <span className="file-name">Current file: {existingMediaFileName}</span>
                     )}
                   </div>
                   <input
