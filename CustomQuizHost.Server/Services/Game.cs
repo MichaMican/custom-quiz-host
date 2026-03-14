@@ -340,6 +340,12 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task SetMozaikRevealSpeed(int speed)
+    {
+        _gameState.MozaikRevealSpeed = Math.Clamp(speed, 1, 10);
+        await BroadcastGameState();
+    }
+
     public async Task ShowQuestionText()
     {
         _gameState.QuestionTextRevealed = true;
