@@ -150,7 +150,6 @@ function Display() {
   const [viewAnimClass, setViewAnimClass] = useState("");
   const [prevQuestionId, setPrevQuestionId] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
-  const animTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [lastQuestion, setLastQuestion] = useState<Question | null>(null);
   const [transitionType, setTransitionType] = useState<"board-to-question" | "question-to-board" | "question-change" | null>(null);
 
@@ -201,7 +200,7 @@ function Display() {
   useEffect(() => {
     if (!transitionType) return;
     const delay = transitionType === "question-change" ? 250 : 350;
-    const t1 = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (transitionType === "board-to-question") {
         setActiveView("question");
         setViewAnimClass("anim-question-enter");
@@ -213,15 +212,18 @@ function Display() {
         setViewAnimClass("anim-question-enter");
       }
       setTransitionType(null);
-      const t2 = setTimeout(() => setViewAnimClass(""), 500);
-      animTimersRef.current = [t2];
     }, delay);
-    animTimersRef.current = [t1];
-    return () => {
-      animTimersRef.current.forEach(clearTimeout);
-      animTimersRef.current = [];
-    };
+    return () => clearTimeout(timer);
   }, [transitionType]);
+
+  // Clear enter/exit animation classes after they complete
+  useEffect(() => {
+    if (!viewAnimClass) return;
+    const isEnter = viewAnimClass.includes("enter");
+    if (!isEnter) return;
+    const timer = setTimeout(() => setViewAnimClass(""), 500);
+    return () => clearTimeout(timer);
+  }, [viewAnimClass]);
 
   // Detect score changes (render-time state adjustment)
   const players = gameState?.players;
