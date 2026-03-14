@@ -26,6 +26,7 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  min-height: 0;
 }
 
 /* Board exit: shrink into center (tile "grows into" question) */
@@ -175,6 +176,7 @@
   justify-content: center;
   padding: 40px;
   text-align: center;
+  min-height: 0;
 }
 
 .display-question-points {
@@ -255,6 +257,7 @@
   object-fit: contain;
   transition: filter 0.1s linear;
   animation: mediaReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  min-height: 0;
 }
 
 @keyframes mediaReveal {
