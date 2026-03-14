@@ -15,6 +15,7 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
   imageFullscreen: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [mozaikBlur, setMozaikBlur] = useState(40);
 
   // Audio volume control
@@ -32,6 +33,24 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
       });
     } else {
       audioRef.current.pause();
+    }
+  }, [mediaPlaying, question.questionType]);
+
+  // Video volume control
+  useEffect(() => {
+    if (question.questionType !== "Video" || !videoRef.current) return;
+    videoRef.current.volume = Math.max(0, Math.min(1, mediaVolume / 100));
+  }, [mediaVolume, question.questionType]);
+
+  // Video playback control
+  useEffect(() => {
+    if (question.questionType !== "Video" || !videoRef.current) return;
+    if (mediaPlaying) {
+      videoRef.current.play().catch((err) => {
+        console.error("Video playback failed:", err);
+      });
+    } else {
+      videoRef.current.pause();
     }
   }, [mediaPlaying, question.questionType]);
 
@@ -125,6 +144,27 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
             <div className="display-question-text">{question.text}</div>
           )}
           {answerRevealed && (
+            <div className="display-answer-text">{question.answer}</div>
+          )}
+        </>
+      );
+
+    case "Video":
+      return (
+        <>
+          {!imageFullscreen && <div className="display-question-points">{question.points}</div>}
+          {mediaUrl && (
+            <video
+              ref={videoRef}
+              src={mediaUrl}
+              preload="auto"
+              className={`display-question-video${imageFullscreen ? " fullscreen" : ""}`}
+            />
+          )}
+          {!imageFullscreen && questionTextRevealed && question.text && (
+            <div className="display-question-text">{question.text}</div>
+          )}
+          {!imageFullscreen && answerRevealed && (
             <div className="display-answer-text">{question.answer}</div>
           )}
         </>

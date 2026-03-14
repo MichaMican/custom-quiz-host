@@ -1,4 +1,4 @@
-export type QuestionType = "Standard" | "Image" | "ImageMozaik" | "Audio";
+export type QuestionType = "Standard" | "Image" | "ImageMozaik" | "Audio" | "Video";
 
 export interface Player {
   id: string;
