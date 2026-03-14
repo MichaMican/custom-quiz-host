@@ -483,6 +483,7 @@ function RemoteControl() {
                 <option value="Image">Image Question</option>
                 <option value="ImageMozaik">Image Mozaik</option>
                 <option value="Audio">Audio Question</option>
+                <option value="Video">Video Question</option>
               </select>
               {questionType === "Standard" && (
                 <input
@@ -498,7 +499,7 @@ function RemoteControl() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept={questionType === "Audio" ? "audio/*" : "image/*"}
+                      accept={questionType === "Audio" ? "audio/*" : questionType === "Video" ? "video/*" : "image/*"}
                       onChange={(e) => {
                         setMediaFile(e.target.files?.[0] ?? null);
                         if (e.target.files?.[0]) {
@@ -805,18 +806,22 @@ function RemoteControl() {
                     ? "Show Image"
                     : gameState.currentQuestion.questionType === "Audio"
                       ? "Display Audio"
-                      : "Show Question"}
+                      : gameState.currentQuestion.questionType === "Video"
+                        ? "Show Video"
+                        : "Show Question"}
                 </button>
               )}
-              {gameState.questionRevealed && (gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "ImageMozaik" || gameState.currentQuestion.questionType === "Image") && (
+              {gameState.questionRevealed && (gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "Video" || gameState.currentQuestion.questionType === "ImageMozaik" || gameState.currentQuestion.questionType === "Image") && (
                 <div className="media-controls">
-                  {gameState.currentQuestion.questionType === "Audio" && (
+                  {(gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "Video") && (
                     <>
                       <button
                         className={`btn-media ${gameState.mediaPlaying ? "active" : ""}`}
                         onClick={() => invoke(gameState.mediaPlaying ? "StopMedia" : "StartMedia")}
                       >
-                        {gameState.mediaPlaying ? "⏸ Stop Audio" : "▶ Play Audio"}
+                        {gameState.mediaPlaying
+                          ? gameState.currentQuestion.questionType === "Video" ? "⏸ Pause Video" : "⏸ Stop Audio"
+                          : gameState.currentQuestion.questionType === "Video" ? "▶ Play Video" : "▶ Play Audio"}
                       </button>
                       <div className="volume-control">
                         <label htmlFor="volume-slider">🔊 Volume: {gameState.mediaVolume}%</label>
@@ -852,12 +857,12 @@ function RemoteControl() {
                       </div>
                     </>
                   )}
-                  {(gameState.currentQuestion.questionType === "Image" || gameState.currentQuestion.questionType === "ImageMozaik") && (
+                  {(gameState.currentQuestion.questionType === "Image" || gameState.currentQuestion.questionType === "ImageMozaik" || gameState.currentQuestion.questionType === "Video") && (
                     <button
                       className={`btn-media ${gameState.imageFullscreen ? "active" : ""}`}
                       onClick={() => invoke(gameState.imageFullscreen ? "DisableImageFullscreen" : "EnableImageFullscreen")}
                     >
-                      {gameState.imageFullscreen ? "🗗 Exit Fullscreen" : "🗖 Image Fullscreen"}
+                      {gameState.imageFullscreen ? "🗗 Exit Fullscreen" : "🗖 Fullscreen"}
                     </button>
                   )}
                 </div>

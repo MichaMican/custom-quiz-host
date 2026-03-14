@@ -10,7 +10,8 @@ namespace CustomQuizHost.Server.Controllers
         private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".jpg", ".jpeg", ".png", ".gif", ".webp",
-            ".mp3", ".wav", ".ogg", ".m4a", ".aac"
+            ".mp3", ".wav", ".ogg", ".m4a", ".aac",
+            ".mp4", ".webm", ".ogv", ".mov"
         };
 
         public UploadController(IWebHostEnvironment env)

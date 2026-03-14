@@ -8,7 +8,8 @@ public enum QuestionType
     Standard,
     Image,
     ImageMozaik,
-    Audio
+    Audio,
+    Video
 }
 
 public class GameState
