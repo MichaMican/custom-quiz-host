@@ -18,6 +18,8 @@ RUN apt-get -y install nodejs
 
 FROM with-node AS build
 ARG BUILD_CONFIGURATION=Release
+ARG VERSION=dev
+ENV VITE_APP_VERSION=$VERSION
 WORKDIR /src
 COPY ["CustomQuizHost.Server/CustomQuizHost.Server.csproj", "CustomQuizHost.Server/"]
 COPY ["customquizhost.client/customquizhost.client.esproj", "customquizhost.client/"]

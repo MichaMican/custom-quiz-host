@@ -41,6 +41,8 @@ jobs:
           context: .
           file: CustomQuizHost.Server/Dockerfile
           push: true
+          build-args: |
+            VERSION=${{ needs.version.outputs.version }}
           tags: |
             ${{ env.IMAGE_NAME }}:${{ needs.version.outputs.version }}
             ${{ env.IMAGE_NAME }}:latest

@@ -1,0 +1,17 @@
+.version-badge {
+  position: fixed;
+  bottom: 4px;
+  right: 8px;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  user-select: none;
+  z-index: 999;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  .version-badge {
+    color: rgba(0, 0, 0, 0.25);
+  }
+}
