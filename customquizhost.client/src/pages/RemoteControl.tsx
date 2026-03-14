@@ -615,10 +615,10 @@ function RemoteControl() {
             </div>
             <div className="input-row">
               <button onClick={importExportMode === "questions" ? handleExportQuestions : handleExport}>
-                Export
+                📤 Export
               </button>
               <label className="btn-import">
-                Import
+                📥 Import
                 <input
                   type="file"
                   accept=".zip"
