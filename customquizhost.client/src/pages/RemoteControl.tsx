@@ -35,6 +35,7 @@ function RemoteControl() {
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportMessage, setExportMessage] = useState("");
+  const [importExportMode, setImportExportMode] = useState<"questions" | "game">("questions");
   const hasRestoredRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedCategoryQuestions = gameState?.categories
@@ -604,25 +605,24 @@ function RemoteControl() {
           <section className="remote-section">
             <h2>Import / Export</h2>
             <div className="input-row">
-              <button onClick={handleExport}>Export Game</button>
-              <label className="btn-import">
-                Import Game
-                <input
-                  type="file"
-                  accept=".zip"
-                  onChange={handleImport}
-                  hidden
-                />
-              </label>
+              <select
+                value={importExportMode}
+                onChange={(e) => setImportExportMode(e.target.value as "questions" | "game")}
+              >
+                <option value="questions">Questions only</option>
+                <option value="game">Full Game State</option>
+              </select>
             </div>
             <div className="input-row">
-              <button onClick={handleExportQuestions}>Export Questions</button>
+              <button onClick={importExportMode === "questions" ? handleExportQuestions : handleExport}>
+                📤 Export
+              </button>
               <label className="btn-import">
-                Import Questions
+                📥 Import
                 <input
                   type="file"
                   accept=".zip"
-                  onChange={handleImportQuestions}
+                  onChange={importExportMode === "questions" ? handleImportQuestions : handleImport}
                   hidden
                 />
               </label>
