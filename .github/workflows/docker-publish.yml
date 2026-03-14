@@ -9,6 +9,10 @@ on:
       - ".vscode/**"
   workflow_dispatch:
 
+concurrency:
+  group: docker-publish
+  cancel-in-progress: false
+
 jobs:
   version:
     uses: MichaMican/reusable-actions/.github/workflows/semver-version.yml@main
