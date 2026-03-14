@@ -3,11 +3,12 @@ import type { Question } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
 
-function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, questionTextRevealed, answerRevealed, mediaVolume }: {
+function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, questionTextRevealed, answerRevealed, mediaVolume }: {
   question: Question;
   revealed: boolean;
   mediaPlaying: boolean;
   mozaikRevealing: boolean;
+  mozaikRevealSpeed: number;
   questionTextRevealed: boolean;
   answerRevealed: boolean;
   mediaVolume: number;
@@ -38,18 +39,19 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, qu
     if (question.questionType !== "ImageMozaik") return;
     if (!mozaikRevealing) return;
 
+    const decrement = mozaikRevealSpeed * 0.1;
     const interval = setInterval(() => {
       setMozaikBlur((prev) => {
         if (prev <= 0) {
           clearInterval(interval);
           return 0;
         }
-        return prev - 0.5;
+        return Math.max(0, prev - decrement);
       });
     }, 100);
 
     return () => clearInterval(interval);
-  }, [mozaikRevealing, question.questionType]);
+  }, [mozaikRevealing, mozaikRevealSpeed, question.questionType]);
 
   if (!revealed) {
     return (
@@ -313,6 +315,7 @@ function Display() {
                 revealed={gameState.questionRevealed}
                 mediaPlaying={gameState.mediaPlaying}
                 mozaikRevealing={gameState.mozaikRevealing}
+                mozaikRevealSpeed={gameState.mozaikRevealSpeed}
                 questionTextRevealed={gameState.questionTextRevealed}
                 answerRevealed={gameState.answerRevealed}
                 mediaVolume={gameState.mediaVolume}

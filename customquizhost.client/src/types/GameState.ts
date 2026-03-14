@@ -47,6 +47,7 @@ export interface GameState {
   highlightedBuzzIndex: number;
   mediaPlaying: boolean;
   mozaikRevealing: boolean;
+  mozaikRevealSpeed: number;
   questionTextRevealed: boolean;
   playerAnswersRevealed: boolean;
   answerRevealed: boolean;
