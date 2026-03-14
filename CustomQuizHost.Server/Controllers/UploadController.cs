@@ -11,7 +11,7 @@ namespace CustomQuizHost.Server.Controllers
         {
             ".jpg", ".jpeg", ".png", ".gif", ".webp",
             ".mp3", ".wav", ".ogg", ".m4a", ".aac",
-            ".mp4", ".webm", ".ogv", ".mov"
+            ".mp4", ".webm", ".ogv", ".mov", ".wmv"
         };
 
         public UploadController(IWebHostEnvironment env)
