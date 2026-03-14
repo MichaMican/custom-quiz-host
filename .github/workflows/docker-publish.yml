@@ -13,7 +13,7 @@ jobs:
   version:
     uses: MichaMican/reusable-actions/.github/workflows/semver-version.yml@main
     with:
-      is_prerelease: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+      is_prerelease: ${{ github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/main' }}
       suppress_release: ${{ github.ref != 'refs/heads/main' }}
       prerelease_name: ${{ github.ref != 'refs/heads/main' && 'internal' || (github.event_name == 'push' && 'prerelease') || '' }}
     permissions:
