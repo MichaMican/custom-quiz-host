@@ -32,7 +32,6 @@ function RemoteControl() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
   const [editingScoreValue, setEditingScoreValue] = useState("");
-  const [includeFiles, setIncludeFiles] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportMessage, setExportMessage] = useState("");
@@ -281,39 +280,23 @@ function RemoteControl() {
     setExportProgress(0);
     setExportMessage("Preparing export…");
     try {
-      if (includeFiles) {
-        const zipBlob = await buildZip(
-          gameState,
-          "quiz-game.json",
-          gameState.categories,
-          (percent, message) => {
-            setExportProgress(percent);
-            setExportMessage(message);
-          },
-        );
-        setExportProgress(100);
-        setExportMessage("Download ready");
-        const url = URL.createObjectURL(zipBlob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "quiz-game.zip";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } else {
-        setExportProgress(50);
-        setExportMessage("Generating JSON…");
-        const blob = new Blob([JSON.stringify(gameState, null, 2)], {
-          type: "application/json",
-        });
-        setExportProgress(100);
-        setExportMessage("Download ready");
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "quiz-game.json";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }
+      const zipBlob = await buildZip(
+        gameState,
+        "quiz-game.json",
+        gameState.categories,
+        (percent, message) => {
+          setExportProgress(percent);
+          setExportMessage(message);
+        },
+      );
+      setExportProgress(100);
+      setExportMessage("Download ready");
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-game.zip";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } finally {
       setExporting(false);
     }
@@ -326,39 +309,23 @@ function RemoteControl() {
     setExportProgress(0);
     setExportMessage("Preparing export…");
     try {
-      if (includeFiles) {
-        const zipBlob = await buildZip(
-          questionsOnly,
-          "quiz-questions.json",
-          gameState.categories,
-          (percent, message) => {
-            setExportProgress(percent);
-            setExportMessage(message);
-          },
-        );
-        setExportProgress(100);
-        setExportMessage("Download ready");
-        const url = URL.createObjectURL(zipBlob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "quiz-questions.zip";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } else {
-        setExportProgress(50);
-        setExportMessage("Generating JSON…");
-        const blob = new Blob([JSON.stringify(questionsOnly, null, 2)], {
-          type: "application/json",
-        });
-        setExportProgress(100);
-        setExportMessage("Download ready");
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "quiz-questions.json";
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }
+      const zipBlob = await buildZip(
+        questionsOnly,
+        "quiz-questions.json",
+        gameState.categories,
+        (percent, message) => {
+          setExportProgress(percent);
+          setExportMessage(message);
+        },
+      );
+      setExportProgress(100);
+      setExportMessage("Download ready");
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz-questions.zip";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } finally {
       setExporting(false);
     }
@@ -368,29 +335,21 @@ function RemoteControl() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      if (file.name.endsWith(".zip")) {
-        const zip = await JSZip.loadAsync(file);
-        const jsonFile = zip.file("quiz-game.json");
-        if (!jsonFile) {
-          alert("The ZIP file does not contain a quiz-game.json file");
-          return;
-        }
-        const jsonText = await jsonFile.async("string");
-        const state = JSON.parse(jsonText) as GameState;
-        const fileNameMap = await importMediaFromZip(zip);
-        if (fileNameMap.size > 0) {
-          state.categories = remapMediaFileNames(state.categories, fileNameMap);
-        }
-        await invoke("ImportGameSettings", state);
-      } else {
-        const text = await file.text();
-        const state = JSON.parse(text) as GameState;
-        await invoke("ImportGameSettings", state);
+      const zip = await JSZip.loadAsync(file);
+      const jsonFile = zip.file("quiz-game.json");
+      if (!jsonFile) {
+        alert("The ZIP file does not contain a quiz-game.json file");
+        return;
       }
+      const jsonText = await jsonFile.async("string");
+      const state = JSON.parse(jsonText) as GameState;
+      const fileNameMap = await importMediaFromZip(zip);
+      if (fileNameMap.size > 0) {
+        state.categories = remapMediaFileNames(state.categories, fileNameMap);
+      }
+      await invoke("ImportGameSettings", state);
     } catch {
-      alert(file.name.endsWith(".zip")
-        ? "Failed to import game: the ZIP file may be corrupted or contain invalid data"
-        : "The selected file does not contain valid game settings");
+      alert("Failed to import game: the ZIP file may be corrupted or contain invalid data");
     }
     e.target.value = "";
   };
@@ -399,37 +358,24 @@ function RemoteControl() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      if (file.name.endsWith(".zip")) {
-        const zip = await JSZip.loadAsync(file);
-        const jsonFile = zip.file("quiz-questions.json");
-        if (!jsonFile) {
-          alert("The ZIP file does not contain a quiz-questions.json file");
-          return;
-        }
-        const jsonText = await jsonFile.async("string");
-        const data = JSON.parse(jsonText);
-        const categories = data.categories ?? data.Categories;
-        if (!Array.isArray(categories) || categories.length === 0) {
-          alert("The selected file does not contain any questions");
-          return;
-        }
-        const fileNameMap = await importMediaFromZip(zip);
-        const remapped = fileNameMap.size > 0 ? remapMediaFileNames(categories, fileNameMap) : categories;
-        await invoke("ImportQuestions", remapped);
-      } else {
-        const text = await file.text();
-        const data = JSON.parse(text);
-        const categories = data.categories ?? data.Categories;
-        if (!Array.isArray(categories) || categories.length === 0) {
-          alert("The selected file does not contain any questions");
-          return;
-        }
-        await invoke("ImportQuestions", categories);
+      const zip = await JSZip.loadAsync(file);
+      const jsonFile = zip.file("quiz-questions.json");
+      if (!jsonFile) {
+        alert("The ZIP file does not contain a quiz-questions.json file");
+        return;
       }
+      const jsonText = await jsonFile.async("string");
+      const data = JSON.parse(jsonText);
+      const categories = data.categories ?? data.Categories;
+      if (!Array.isArray(categories) || categories.length === 0) {
+        alert("The selected file does not contain any questions");
+        return;
+      }
+      const fileNameMap = await importMediaFromZip(zip);
+      const remapped = fileNameMap.size > 0 ? remapMediaFileNames(categories, fileNameMap) : categories;
+      await invoke("ImportQuestions", remapped);
     } catch {
-      alert(file.name.endsWith(".zip")
-        ? "Failed to import questions: the ZIP file may be corrupted or contain invalid data"
-        : "The selected file is not valid JSON");
+      alert("Failed to import questions: the ZIP file may be corrupted or contain invalid data");
     }
     e.target.value = "";
   };
@@ -658,22 +604,12 @@ function RemoteControl() {
           <section className="remote-section">
             <h2>Import / Export</h2>
             <div className="input-row">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={includeFiles}
-                  onChange={(e) => setIncludeFiles(e.target.checked)}
-                />
-                Include files
-              </label>
-            </div>
-            <div className="input-row">
               <button onClick={handleExport}>Export Game</button>
               <label className="btn-import">
                 Import Game
                 <input
                   type="file"
-                  accept=".json,.zip"
+                  accept=".zip"
                   onChange={handleImport}
                   hidden
                 />
@@ -685,7 +621,7 @@ function RemoteControl() {
                 Import Questions
                 <input
                   type="file"
-                  accept=".json,.zip"
+                  accept=".zip"
                   onChange={handleImportQuestions}
                   hidden
                 />
