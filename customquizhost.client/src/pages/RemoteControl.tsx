@@ -9,6 +9,7 @@ import {
 } from "../utils/localStorage";
 import { uploadFileWithProgress } from "../utils/uploadWithProgress";
 import UploadProgressModal from "../components/UploadProgressModal";
+import ExportProgressModal from "../components/ExportProgressModal";
 import "./RemoteControl.css";
 
 const POINT_LEVELS = [200, 400, 600, 800, 1000];
@@ -32,6 +33,9 @@ function RemoteControl() {
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
   const [editingScoreValue, setEditingScoreValue] = useState("");
   const [includeFiles, setIncludeFiles] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportMessage, setExportMessage] = useState("");
   const hasRestoredRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedCategoryQuestions = gameState?.categories
@@ -188,12 +192,22 @@ function RemoteControl() {
     return [...new Set(fileNames)];
   };
 
-  const buildZip = async (jsonData: object, jsonFileName: string, categories: Category[]): Promise<Blob> => {
+  const buildZip = async (
+    jsonData: object,
+    jsonFileName: string,
+    categories: Category[],
+    onProgress?: (percent: number, message: string) => void,
+  ): Promise<Blob> => {
     const zip = new JSZip();
     zip.file(jsonFileName, JSON.stringify(jsonData, null, 2));
     const mediaFileNames = collectMediaFileNames(categories);
     const mediaFolder = zip.folder("media")!;
-    for (const fileName of mediaFileNames) {
+    for (let i = 0; i < mediaFileNames.length; i++) {
+      const fileName = mediaFileNames[i];
+      onProgress?.(
+        (i / mediaFileNames.length) * 90,
+        `Fetching file ${i + 1} of ${mediaFileNames.length}: ${fileName}`,
+      );
       try {
         const response = await fetch(`/uploads/${fileName}`);
         if (response.ok) {
@@ -204,7 +218,10 @@ function RemoteControl() {
         console.warn(`Failed to fetch media file: ${fileName}`);
       }
     }
-    return await zip.generateAsync({ type: "blob" });
+    onProgress?.(90, "Generating ZIP file…");
+    const blob = await zip.generateAsync({ type: "blob" });
+    onProgress?.(100, "Download ready");
+    return blob;
   };
 
   const importMediaFromZip = async (zip: JSZip): Promise<Map<string, string>> => {
@@ -260,48 +277,90 @@ function RemoteControl() {
 
   const handleExport = async () => {
     if (!gameState) return;
-    if (includeFiles) {
-      const zipBlob = await buildZip(gameState, "quiz-game.json", gameState.categories);
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "quiz-game.zip";
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } else {
-      const blob = new Blob([JSON.stringify(gameState, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "quiz-game.json";
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setExporting(true);
+    setExportProgress(0);
+    setExportMessage("Preparing export…");
+    try {
+      if (includeFiles) {
+        const zipBlob = await buildZip(
+          gameState,
+          "quiz-game.json",
+          gameState.categories,
+          (percent, message) => {
+            setExportProgress(percent);
+            setExportMessage(message);
+          },
+        );
+        setExportProgress(100);
+        setExportMessage("Download ready");
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "quiz-game.zip";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        setExportProgress(50);
+        setExportMessage("Generating JSON…");
+        const blob = new Blob([JSON.stringify(gameState, null, 2)], {
+          type: "application/json",
+        });
+        setExportProgress(100);
+        setExportMessage("Download ready");
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "quiz-game.json";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } finally {
+      setExporting(false);
     }
   };
 
   const handleExportQuestions = async () => {
     if (!gameState) return;
     const questionsOnly = { categories: gameState.categories };
-    if (includeFiles) {
-      const zipBlob = await buildZip(questionsOnly, "quiz-questions.json", gameState.categories);
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "quiz-questions.zip";
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } else {
-      const blob = new Blob([JSON.stringify(questionsOnly, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "quiz-questions.json";
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setExporting(true);
+    setExportProgress(0);
+    setExportMessage("Preparing export…");
+    try {
+      if (includeFiles) {
+        const zipBlob = await buildZip(
+          questionsOnly,
+          "quiz-questions.json",
+          gameState.categories,
+          (percent, message) => {
+            setExportProgress(percent);
+            setExportMessage(message);
+          },
+        );
+        setExportProgress(100);
+        setExportMessage("Download ready");
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "quiz-questions.zip";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        setExportProgress(50);
+        setExportMessage("Generating JSON…");
+        const blob = new Blob([JSON.stringify(questionsOnly, null, 2)], {
+          type: "application/json",
+        });
+        setExportProgress(100);
+        setExportMessage("Download ready");
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "quiz-questions.json";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -977,6 +1036,11 @@ function RemoteControl() {
         visible={uploading}
         progress={uploadProgress}
         message={uploadMessage}
+      />
+      <ExportProgressModal
+        visible={exporting}
+        progress={exportProgress}
+        message={exportMessage}
       />
       </div>
     </div>
