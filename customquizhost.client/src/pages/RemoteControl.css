@@ -76,6 +76,7 @@
 }
 
 .input-row input,
+.input-row select,
 .input-column input,
 .input-column select {
   flex: 1;
