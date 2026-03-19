@@ -3,8 +3,9 @@ import type { Question } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
 
-function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, questionTextRevealed, answerRevealed, mediaVolume, imageFullscreen }: {
+function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, questionTextRevealed, answerRevealed, mediaVolume, imageFullscreen }: {
   question: Question;
+  categoryName: string;
   revealed: boolean;
   mediaPlaying: boolean;
   mozaikRevealing: boolean;
@@ -76,6 +77,7 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
   if (!revealed) {
     return (
       <>
+        <div className="display-question-category">{categoryName}</div>
         <div className="display-question-points">
           {question.points}
         </div>
@@ -92,6 +94,7 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
     case "Image":
       return (
         <>
+          {!imageFullscreen && <div className="display-question-category">{categoryName}</div>}
           {!imageFullscreen && <div className="display-question-points">{question.points}</div>}
           {mediaUrl && (
             <img
@@ -112,6 +115,7 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
     case "ImageMozaik":
       return (
         <>
+          {!imageFullscreen && <div className="display-question-category">{categoryName}</div>}
           {!imageFullscreen && <div className="display-question-points">{question.points}</div>}
           {mediaUrl && (
             <img
@@ -133,6 +137,7 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
     case "Audio":
       return (
         <>
+          <div className="display-question-category">{categoryName}</div>
           <div className="display-question-points">{question.points}</div>
           <div className="display-audio-indicator">
             {mediaPlaying ? "🔊 Playing..." : "🔇 Waiting for host..."}
@@ -152,6 +157,7 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
     case "Video":
       return (
         <>
+          {!imageFullscreen && <div className="display-question-category">{categoryName}</div>}
           {!imageFullscreen && <div className="display-question-points">{question.points}</div>}
           {mediaUrl && (
             <video
@@ -173,6 +179,7 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
     default:
       return (
         <>
+          <div className="display-question-category">{categoryName}</div>
           <div className="display-question-points">{question.points}</div>
           <div className="display-question-text">{question.text}</div>
           {answerRevealed && (
@@ -343,6 +350,9 @@ function Display() {
 
   // Use the latest question data, or the last known question during exit animation
   const displayQuestion = gameState.currentQuestion || lastQuestion;
+  const displayCategoryName = displayQuestion
+    ? gameState.categories.find(c => c.id === displayQuestion.categoryId)?.name ?? ""
+    : "";
 
   return (
     <div className="display-container">
@@ -353,6 +363,7 @@ function Display() {
               <QuestionDisplay
                 key={displayQuestion.id}
                 question={gameState.currentQuestion || displayQuestion}
+                categoryName={displayCategoryName}
                 revealed={gameState.questionRevealed}
                 mediaPlaying={gameState.mediaPlaying}
                 mozaikRevealing={gameState.mozaikRevealing}
