@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
 import { useSignalR } from "../hooks/useSignalR";
+import { useWakeLock } from "../hooks/useWakeLock";
 import type { GameState, QuestionType, Category } from "../types/GameState";
 import {
   saveGameState,
@@ -16,6 +17,7 @@ const POINT_LEVELS = [200, 400, 600, 800, 1000];
 
 function RemoteControl() {
   const { gameState, connectionStatus, invoke } = useSignalR();
+  useWakeLock();
   const [playerName, setPlayerName] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");

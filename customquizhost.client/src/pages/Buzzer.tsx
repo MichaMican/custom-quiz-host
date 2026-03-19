@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useSignalR } from "../hooks/useSignalR";
+import { useWakeLock } from "../hooks/useWakeLock";
 import "./Buzzer.css";
 
 function Buzzer() {
   const { gameState, connectionStatus, invoke } = useSignalR();
+  useWakeLock();
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [playerAnswer, setPlayerAnswer] = useState("");
 
