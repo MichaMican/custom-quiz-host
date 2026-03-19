@@ -1,4 +1,5 @@
 import { useSignalR } from "../hooks/useSignalR";
+import { useWakeLock } from "../hooks/useWakeLock";
 import type { Question } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
@@ -185,6 +186,7 @@ function QuestionDisplay({ question, revealed, mediaPlaying, mozaikRevealing, mo
 
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
+  useWakeLock();
   const prevBuzzCountRef = useRef(0);
   const preloadedBuzzerRef = useRef<HTMLAudioElement | null>(null);
 
