@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
+import EventHistory from "../components/EventHistory";
 import "./Buzzer.css";
 
 function Buzzer() {
@@ -8,6 +9,7 @@ function Buzzer() {
   useWakeLock();
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [playerAnswer, setPlayerAnswer] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleBuzzIn = async () => {
     if (!selectedPlayerId || !gameState?.buzzerActive) return;
@@ -41,6 +43,8 @@ function Buzzer() {
       </div>
     );
   }
+
+  const selectedPlayer = gameState.players.find((p) => p.id === selectedPlayerId);
 
   const playerAlreadyBuzzed =
     selectedPlayerId &&
@@ -129,7 +133,31 @@ function Buzzer() {
             </ol>
           </div>
         )}
+
+        <button
+          className="btn-history"
+          onClick={() => setShowHistory(true)}
+        >
+          History
+        </button>
       </div>
+
+      {showHistory && (
+        <div className="history-fullscreen" onClick={() => setShowHistory(false)}>
+          <div className="history-fullscreen-content" onClick={(e) => e.stopPropagation()}>
+            <div className="history-fullscreen-header">
+              <h2>Event History</h2>
+              <button className="btn-history-close" onClick={() => setShowHistory(false)}>✕</button>
+            </div>
+            <div className="history-fullscreen-body">
+              <EventHistory
+                events={gameState.eventHistory}
+                highlightPlayerName={selectedPlayer?.name}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

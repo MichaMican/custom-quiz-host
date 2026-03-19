@@ -11,6 +11,7 @@ import {
 import { uploadFileWithProgress } from "../utils/uploadWithProgress";
 import UploadProgressModal from "../components/UploadProgressModal";
 import ExportProgressModal from "../components/ExportProgressModal";
+import EventHistory from "../components/EventHistory";
 import "./RemoteControl.css";
 
 const POINT_LEVELS = [200, 400, 600, 800, 1000];
@@ -30,7 +31,7 @@ function RemoteControl() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessage, setUploadMessage] = useState("");
-  const [tab, setTab] = useState<"setup" | "host">("setup");
+  const [tab, setTab] = useState<"setup" | "host" | "history">("setup");
   const [showResetModal, setShowResetModal] = useState(false);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
   const [editingScoreValue, setEditingScoreValue] = useState("");
@@ -98,6 +99,7 @@ function RemoteControl() {
         mediaVolume: 70,
         pauseOnBuzz: false,
         imageFullscreen: false,
+        eventHistory: [],
       };
       await invoke("ImportGameSettings", emptyState);
       setShowResetModal(false);
@@ -408,6 +410,12 @@ function RemoteControl() {
           onClick={() => setTab("host")}
         >
           Host
+        </button>
+        <button
+          className={`tab-btn ${tab === "history" ? "active" : ""}`}
+          onClick={() => setTab("history")}
+        >
+          History
         </button>
       </div>
 
@@ -947,6 +955,15 @@ function RemoteControl() {
               </div>
             </section>
           )}
+        </div>
+      )}
+
+      {tab === "history" && gameState && (
+        <div className="remote-panel">
+          <section className="remote-section">
+            <h2>Event History</h2>
+            <EventHistory events={gameState.eventHistory} />
+          </section>
         </div>
       )}
 

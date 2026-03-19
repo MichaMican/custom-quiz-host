@@ -106,6 +106,15 @@ public class GameService
         if (_gameState.CurrentQuestion != null)
         {
             _gameState.QuestionRevealed = true;
+            var category = _gameState.Categories.FirstOrDefault(c => c.Id == _gameState.CurrentQuestion.CategoryId);
+            _gameState.EventHistory.Add(new EventHistoryEntry
+            {
+                EventType = EventType.QuestionAsked,
+                Timestamp = DateTime.UtcNow,
+                QuestionText = _gameState.CurrentQuestion.Text,
+                CategoryName = category?.Name,
+                Points = _gameState.CurrentQuestion.Points
+            });
             await BroadcastGameState();
         }
     }
@@ -153,6 +162,13 @@ public class GameService
         if (player != null)
         {
             player.Score += points;
+            _gameState.EventHistory.Add(new EventHistoryEntry
+            {
+                EventType = EventType.PointsAwarded,
+                Timestamp = DateTime.UtcNow,
+                PlayerName = player.Name,
+                Points = points
+            });
             if (_gameState.CurrentQuestion != null)
             {
                 _gameState.CurrentQuestion.IsAnswered = true;
@@ -167,6 +183,13 @@ public class GameService
         if (player != null)
         {
             player.Score -= points;
+            _gameState.EventHistory.Add(new EventHistoryEntry
+            {
+                EventType = EventType.PointsDeducted,
+                Timestamp = DateTime.UtcNow,
+                PlayerName = player.Name,
+                Points = points
+            });
             await BroadcastGameState();
         }
     }
@@ -176,7 +199,15 @@ public class GameService
         var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
         if (player != null)
         {
+            var oldScore = player.Score;
             player.Score = score;
+            _gameState.EventHistory.Add(new EventHistoryEntry
+            {
+                EventType = EventType.ScoreSet,
+                Timestamp = DateTime.UtcNow,
+                PlayerName = player.Name,
+                Points = score - oldScore
+            });
             await BroadcastGameState();
         }
     }
@@ -291,6 +322,7 @@ public class GameService
         state.Categories ??= new();
         state.BuzzOrder ??= new();
         state.PlayerAnswers ??= new();
+        state.EventHistory ??= new();
         _gameState = state;
         await BroadcastGameState();
     }
