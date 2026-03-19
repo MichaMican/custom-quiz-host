@@ -449,27 +449,17 @@ public class GameService
 
     public async Task HalveRemainingPoints()
     {
-        // Only halve if all remaining points are even (no fractional results)
-        foreach (var category in _gameState.Categories)
-        {
-            foreach (var question in category.Questions)
-            {
-                if (!question.IsAnswered && question.Points % 2 != 0)
-                {
-                    return;
-                }
-            }
-        }
+        var unansweredQuestions = _gameState.Categories
+            .SelectMany(c => c.Questions)
+            .Where(q => !q.IsAnswered)
+            .ToList();
 
-        foreach (var category in _gameState.Categories)
+        if (unansweredQuestions.Any(q => q.Points % 2 != 0))
+            return;
+
+        foreach (var question in unansweredQuestions)
         {
-            foreach (var question in category.Questions)
-            {
-                if (!question.IsAnswered)
-                {
-                    question.Points /= 2;
-                }
-            }
+            question.Points /= 2;
         }
         await BroadcastGameState();
     }
