@@ -179,6 +179,16 @@
   min-height: 0;
 }
 
+.display-question-category {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #c7d2fe;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  animation: pointsReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 .display-question-points {
   font-size: 3rem;
   font-weight: 800;
