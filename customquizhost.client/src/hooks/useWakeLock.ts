@@ -12,8 +12,8 @@ export function useWakeLock() {
         wakeLockRef.current.addEventListener("release", () => {
           wakeLockRef.current = null;
         });
-      } catch {
-        // Wake lock request can fail (e.g. low battery, permissions)
+      } catch (err) {
+        console.error("Wake lock request failed:", err);
       }
     };
 
