@@ -12,6 +12,15 @@ public enum QuestionType
     Video
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum EventType
+{
+    PointsAwarded,
+    PointsDeducted,
+    ScoreSet,
+    QuestionAsked
+}
+
 public class GameState
 {
     public List<Player> Players { get; set; } = new();
@@ -31,6 +40,7 @@ public class GameState
     public int MediaVolume { get; set; } = 70;
     public bool PauseOnBuzz { get; set; }
     public bool ImageFullscreen { get; set; }
+    public List<EventHistoryEntry> EventHistory { get; set; } = new();
 }
 
 public class Player
@@ -72,4 +82,14 @@ public class PlayerAnswer
     public string PlayerName { get; set; } = "";
     public string Answer { get; set; } = "";
     public DateTime Timestamp { get; set; }
+}
+
+public class EventHistoryEntry
+{
+    public EventType EventType { get; set; }
+    public DateTime Timestamp { get; set; }
+    public string? PlayerName { get; set; }
+    public int? Points { get; set; }
+    public string? QuestionText { get; set; }
+    public string? CategoryName { get; set; }
 }

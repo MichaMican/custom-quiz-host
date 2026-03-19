@@ -1,5 +1,7 @@
 export type QuestionType = "Standard" | "Image" | "ImageMozaik" | "Audio" | "Video";
 
+export type EventType = "PointsAwarded" | "PointsDeducted" | "ScoreSet" | "QuestionAsked";
+
 export interface Player {
   id: string;
   name: string;
@@ -36,6 +38,15 @@ export interface PlayerAnswer {
   timestamp: string;
 }
 
+export interface EventHistoryEntry {
+  eventType: EventType;
+  timestamp: string;
+  playerName: string | null;
+  points: number | null;
+  questionText: string | null;
+  categoryName: string | null;
+}
+
 export interface GameState {
   players: Player[];
   categories: Category[];
@@ -54,4 +65,5 @@ export interface GameState {
   mediaVolume: number;
   pauseOnBuzz: boolean;
   imageFullscreen: boolean;
+  eventHistory: EventHistoryEntry[];
 }
