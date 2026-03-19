@@ -921,12 +921,23 @@ function RemoteControl() {
           ) : (
             <section className="remote-section">
               <h2>Board</h2>
-              <button
-                className="btn-double-points"
-                onClick={() => invoke("DoubleRemainingPoints")}
-              >
-                Double Remaining Points
-              </button>
+              <div className="btn-points-row">
+                <button
+                  className="btn-double-points"
+                  onClick={() => invoke("DoubleRemainingPoints")}
+                >
+                  Double Remaining Points
+                </button>
+                <button
+                  className="btn-half-points"
+                  disabled={gameState.categories.some((c) =>
+                    c.questions.some((q) => !q.isAnswered && q.points % 2 !== 0)
+                  )}
+                  onClick={() => invoke("HalveRemainingPoints")}
+                >
+                  Half Remaining Points
+                </button>
+              </div>
               <div className="remote-board">
                 {gameState.categories.map((category) => (
                   <div key={category.id} className="remote-board-category">

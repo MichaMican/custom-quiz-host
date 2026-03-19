@@ -446,4 +446,31 @@ public class GameService
         }
         await BroadcastGameState();
     }
+
+    public async Task HalveRemainingPoints()
+    {
+        // Only halve if all remaining points are even (no fractional results)
+        foreach (var category in _gameState.Categories)
+        {
+            foreach (var question in category.Questions)
+            {
+                if (!question.IsAnswered && question.Points % 2 != 0)
+                {
+                    return;
+                }
+            }
+        }
+
+        foreach (var category in _gameState.Categories)
+        {
+            foreach (var question in category.Questions)
+            {
+                if (!question.IsAnswered)
+                {
+                    question.Points /= 2;
+                }
+            }
+        }
+        await BroadcastGameState();
+    }
 }

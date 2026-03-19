@@ -657,8 +657,14 @@
   accent-color: #6366f1;
 }
 
+.btn-points-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
 .btn-double-points {
-  width: 100%;
+  flex: 1;
   padding: 14px;
   font-size: 1.1rem;
   font-weight: 700;
@@ -668,11 +674,37 @@
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: 10px;
 }
 
 .btn-double-points:hover {
   box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+}
+
+.btn-half-points {
+  flex: 1;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-half-points:hover {
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-half-points:disabled {
+  background: linear-gradient(135deg, #64748b, #475569);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.btn-half-points:disabled:hover {
+  box-shadow: none;
 }
 
 .host-player-answers {
