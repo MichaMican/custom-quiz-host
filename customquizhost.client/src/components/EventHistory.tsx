@@ -35,7 +35,7 @@ function EventHistory({ events, highlightPlayerName }: EventHistoryProps) {
             iconClass = "event-icon-award";
             break;
           case "PointsDeducted":
-            description = `${entry.playerName} lost -${entry.points} points`;
+            description = `${entry.playerName} lost ${entry.points} points`;
             iconClass = "event-icon-deduct";
             break;
           case "ScoreSet":
