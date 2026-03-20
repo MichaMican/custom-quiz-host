@@ -231,7 +231,7 @@
 .history-fullscreen {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
   z-index: 1000;
   display: flex;
   align-items: stretch;
@@ -243,7 +243,6 @@
   max-width: 600px;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
   overflow: hidden;
 }
 
