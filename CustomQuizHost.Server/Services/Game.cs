@@ -446,4 +446,21 @@ public class GameService
         }
         await BroadcastGameState();
     }
+
+    public async Task HalveRemainingPoints()
+    {
+        var unansweredQuestions = _gameState.Categories
+            .SelectMany(c => c.Questions)
+            .Where(q => !q.IsAnswered)
+            .ToList();
+
+        if (unansweredQuestions.Any(q => q.Points % 2 != 0))
+            return;
+
+        foreach (var question in unansweredQuestions)
+        {
+            question.Points /= 2;
+        }
+        await BroadcastGameState();
+    }
 }

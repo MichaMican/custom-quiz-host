@@ -106,4 +106,6 @@ public class GameHub : Hub
         await _gameService.SortQuestionsByPoints(categoryId);
 
     public async Task DoubleRemainingPoints() => await _gameService.DoubleRemainingPoints();
+
+    public async Task HalveRemainingPoints() => await _gameService.HalveRemainingPoints();
 }
