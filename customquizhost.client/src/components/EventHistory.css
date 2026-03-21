@@ -29,8 +29,9 @@
 
 .event-history-entry.highlighted {
   background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.3);
-  border-left-color: #818cf8;
+  border-top-color: rgba(99, 102, 241, 0.3);
+  border-right-color: rgba(99, 102, 241, 0.3);
+  border-bottom-color: rgba(99, 102, 241, 0.3);
 }
 
 .event-history-entry.event-icon-award {
@@ -53,7 +54,9 @@
 .event-history-entry.highlighted.event-icon-deduct,
 .event-history-entry.highlighted.event-icon-set {
   background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.3);
+  border-top-color: rgba(99, 102, 241, 0.3);
+  border-right-color: rgba(99, 102, 241, 0.3);
+  border-bottom-color: rgba(99, 102, 241, 0.3);
 }
 
 .event-time {
