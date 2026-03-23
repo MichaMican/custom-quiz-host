@@ -1,10 +1,10 @@
 # Custom Quiz Host
 
-A web-based Uiz game hosting application built with ASP.NET Core and React. This application allows you to create and host interactive Quiz games with multiple players, custom categories, questions, and multimedia support including images and audio.
+A web-based Quiz game hosting application built with ASP.NET Core and React. This application allows you to create and host interactive quiz games with multiple players, custom categories, questions, and multimedia support including images, audio, and video.
 
 ## Features
 
-- **Real-time Game Play**: Powered by SignalR for instant synchronization across all connected devices
+- **Real-time Gameplay**: Powered by SignalR for instant synchronization across all connected devices
 - **Multiple Views**:
   - **Display View**: Main game board for audience/players to see
   - **Remote Control View**: Host interface for managing the game
@@ -16,11 +16,12 @@ A web-based Uiz game hosting application built with ASP.NET Core and React. This
   - Image questions
   - Image mozaik (reveal image progressively)
   - Audio questions
+  - Video questions
 - **Buzzer System**: Track player buzz-in order with timestamps
-- **Media Support**: Upload and play images and audio files
+- **Media Support**: Upload and play image, audio, and video files
 - **Score Tracking**: Automatic score updates based on correct/incorrect answers
 - **Persistent State**: Auto-save and restore game state using localStorage
-- **Import/Export**: Export game state for backup or reuse
+- **Import/Export**: Import and export game state for backup or reuse
 
 ## Technology Stack
 
@@ -94,15 +95,16 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
    ```
 
 3. **Run the application**
-   
-   Option A: Using .NET CLI (runs both frontend and backend)
-   ```bash
-   cd CustomQuizHost.Server
-   dotnet run
-   ```
-   
-   Option B: Run frontend and backend separately
-   ```bash
+    
+    Option A: Using .NET CLI (runs both frontend and backend through the ASP.NET Core SPA proxy)
+    ```bash
+    cd CustomQuizHost.Server
+    dotnet run
+    ```
+    This starts the ASP.NET Core backend and launches the Vite development server automatically.
+    
+    Option B: Run frontend and backend separately
+    ```bash
    # Terminal 1 - Backend
    cd CustomQuizHost.Server
    dotnet run
@@ -113,9 +115,10 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
    ```
 
 4. **Access the application**
-   - Display View: `https://localhost:5173/` or `https://localhost:5173/display`
-   - Remote Control: `https://localhost:5173/remote`
-   - Buzzer: `https://localhost:5173/buzzer`
+    - Display View: `https://localhost:5173/` or `https://localhost:5173/display`
+    - Remote Control: `https://localhost:5173/remote`
+    - Buzzer: `https://localhost:5173/buzzer`
+    - Backend API and SignalR hub (proxied by Vite): `https://localhost:7135/` or `http://localhost:5200/`
 
 ### Docker Deployment
 
@@ -125,9 +128,9 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
    ```
 
 2. **Run the container**
-   ```bash
-   docker run -p 8080:8080 -p 8081:8081 custom-quiz-host
-   ```
+    ```bash
+    docker run -p 8080:8080 -v custom-quiz-host-uploads:/app/uploads custom-quiz-host
+    ```
 
 3. **Access the application**
    - Navigate to `http://localhost:8080`
@@ -142,10 +145,10 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
    - Create categories
    - Add questions to each category with:
      - Question text
-     - Answer
-     - Point value (200-1000)
-     - Question type (Standard, Image, Image Mozaik, Audio)
-     - Optional media file upload
+      - Answer
+      - Point value (200-1000)
+      - Question type (Standard, Image, Image Mozaik, Audio, Video)
+      - Optional media file upload
 
 ### Hosting a Game
 
@@ -164,9 +167,8 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
 
 ### Keyboard Shortcuts (Remote Control)
 
-- Use number keys to quickly award/deduct points
-- Navigate through buzzer queue
-- Manage game flow efficiently
+- Enter: Add players/categories or confirm score edits
+- Escape: Cancel score edits
 
 ## Project Structure
 
