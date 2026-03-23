@@ -73,6 +73,8 @@ public class GameHub : Hub
     
     public async Task SetHighlightedBuzzIndex(int index) => await _gameService.SetHighlightedBuzzIndex(index);
 
+    public async Task NextBuzzer() => await _gameService.NextBuzzer();
+
     public async Task ImportGameSettings(GameState state) => await _gameService.ImportGameSettings(state);
 
     public async Task ImportQuestions(List<Category> categories) => await _gameService.ImportQuestions(categories);

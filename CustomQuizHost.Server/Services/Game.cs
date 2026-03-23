@@ -266,6 +266,22 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task NextBuzzer()
+    {
+        if (_gameState.BuzzOrder.Count == 0) return;
+        var currentIndex = _gameState.HighlightedBuzzIndex;
+        if (currentIndex < 0 || currentIndex >= _gameState.BuzzOrder.Count) return;
+
+        _gameState.BuzzOrder.RemoveAt(currentIndex);
+
+        if (_gameState.HighlightedBuzzIndex >= _gameState.BuzzOrder.Count)
+        {
+            _gameState.HighlightedBuzzIndex = Math.Max(0, _gameState.BuzzOrder.Count - 1);
+        }
+
+        await BroadcastGameState();
+    }
+
     public async Task SubmitPlayerAnswer(string playerId, string answer)
     {
         var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
