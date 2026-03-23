@@ -102,17 +102,6 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
     dotnet run
     ```
     This starts the ASP.NET Core backend and launches the Vite development server automatically.
-    
-    Option B: Run frontend and backend separately
-    ```bash
-   # Terminal 1 - Backend
-   cd CustomQuizHost.Server
-   dotnet run
-   
-   # Terminal 2 - Frontend
-   cd customquizhost.client
-   npm run dev
-   ```
 
 4. **Access the application**
     - Display View: `https://localhost:5173/` or `https://localhost:5173/display`
@@ -128,9 +117,16 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
    ```
 
 2. **Run the container**
-    ```bash
-    docker run -p 8080:8080 -v custom-quiz-host-uploads:/app/uploads custom-quiz-host
-    ```
+   
+   Option A: Without a volume mount (uploads are not persisted)
+   ```bash
+   docker run -p 8080:8080 custom-quiz-host
+   ```
+
+   Option B: With a volume mount (uploads are persisted)
+   ```bash
+   docker run -p 8080:8080 -v custom-quiz-host-uploads:/app/uploads custom-quiz-host
+   ```
 
 3. **Access the application**
    - Navigate to `http://localhost:8080`
@@ -144,7 +140,7 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
    - Add players with their names
    - Create categories
    - Add questions to each category with:
-     - Question text
+      - Question text
       - Answer
       - Point value (200-1000)
       - Question type (Standard, Image, Image Mozaik, Audio, Video)
