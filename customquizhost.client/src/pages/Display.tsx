@@ -200,8 +200,8 @@ function getWinners(players: Player[]): Player[] {
 const CONFETTI_COUNT = 80;
 const CONFETTI_COLORS = ["#fbbf24", "#f59e0b", "#818cf8", "#c7d2fe", "#4ade80", "#f87171", "#38bdf8", "#fb923c"];
 
-function ConfettiPiece({ index }: { index: number }) {
-  const color = CONFETTI_COLORS[index % CONFETTI_COLORS.length];
+function ConfettiPiece({ pieceIndex }: { pieceIndex: number }) {
+  const color = CONFETTI_COLORS[pieceIndex % CONFETTI_COLORS.length];
   const left = Math.random() * 100;
   const delay = Math.random() * 3;
   const duration = 2.5 + Math.random() * 2;
@@ -226,7 +226,7 @@ function ConfettiPiece({ index }: { index: number }) {
 
 function WinnerOverlay({ winners }: { winners: Player[] }) {
   const confettiPieces = Array.from({ length: CONFETTI_COUNT }, (_, i) => (
-    <ConfettiPiece key={i} index={i} />
+    <ConfettiPiece key={i} pieceIndex={i} />
   ));
 
   return (
