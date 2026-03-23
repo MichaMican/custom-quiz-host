@@ -27,8 +27,8 @@ public class GameHub : Hub
 
     public async Task RemoveCategory(string categoryId) => await _gameService.RemoveCategory(categoryId);
 
-    public async Task AddQuestion(string categoryId, string text, string answer, int points, string questionType = "Standard", string? mediaFileName = null) =>
-        await _gameService.AddQuestion(categoryId, text, answer, points, questionType, mediaFileName);
+    public async Task AddQuestion(string categoryId, string text, string answer, int points, string questionType = "Standard", string? mediaFileName = null, string? answerImageFileName = null) =>
+        await _gameService.AddQuestion(categoryId, text, answer, points, questionType, mediaFileName, answerImageFileName);
 
     public async Task RemoveQuestion(string categoryId, string questionId) =>
         await _gameService.RemoveQuestion(categoryId, questionId);
