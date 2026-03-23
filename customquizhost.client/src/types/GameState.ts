@@ -65,6 +65,7 @@ export interface GameState {
   answerRevealed: boolean;
   mediaVolume: number;
   pauseOnBuzz: boolean;
+  answerInputEnabled: boolean;
   imageFullscreen: boolean;
   winnerDeclared: boolean;
   eventHistory: EventHistoryEntry[];

@@ -93,7 +93,7 @@ function Buzzer() {
           </button>
         )}
 
-        {selectedPlayerId && (
+        {selectedPlayerId && gameState.answerInputEnabled && (
           <div className="answer-input-container">
             <label htmlFor="player-answer">Your Answer:</label>
             <input

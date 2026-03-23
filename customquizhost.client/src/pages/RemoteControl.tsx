@@ -101,6 +101,7 @@ function RemoteControl() {
         answerRevealed: false,
         mediaVolume: 70,
         pauseOnBuzz: false,
+        answerInputEnabled: false,
         imageFullscreen: false,
         winnerDeclared: false,
         eventHistory: [],
@@ -831,6 +832,14 @@ function RemoteControl() {
                   onChange={(e) => invoke("SetPauseOnBuzz", e.target.checked)}
                 />
                 Pause actions on buzz
+              </label>
+              <label className="pause-on-buzz-label">
+                <input
+                  type="checkbox"
+                  checked={gameState.answerInputEnabled}
+                  onChange={(e) => invoke("SetAnswerInputEnabled", e.target.checked)}
+                />
+                Enable answer input for players
               </label>
               {gameState.buzzOrder.length > 0 && (
                 <>

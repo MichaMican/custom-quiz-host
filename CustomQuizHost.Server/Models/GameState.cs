@@ -39,6 +39,7 @@ public class GameState
     public bool AnswerRevealed { get; set; }
     public int MediaVolume { get; set; } = 70;
     public bool PauseOnBuzz { get; set; }
+    public bool AnswerInputEnabled { get; set; }
     public bool ImageFullscreen { get; set; }
     public bool WinnerDeclared { get; set; }
     public List<EventHistoryEntry> EventHistory { get; set; } = new();
