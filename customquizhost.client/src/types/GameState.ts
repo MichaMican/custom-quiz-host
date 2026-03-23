@@ -17,6 +17,7 @@ export interface Question {
   categoryId: string;
   questionType: QuestionType;
   mediaFileName: string | null;
+  answerImageFileName: string | null;
 }
 
 export interface Category {
