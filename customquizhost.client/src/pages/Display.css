@@ -249,6 +249,7 @@
   align-items: center;
   gap: 1rem;
   margin-top: 1rem;
+  animation: answerReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .display-answer-image {
