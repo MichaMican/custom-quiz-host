@@ -97,6 +97,8 @@ public class GameHub : Hub
 
     public async Task SetPauseOnBuzz(bool value) => await _gameService.SetPauseOnBuzz(value);
 
+    public async Task SetAnswerInputEnabled(bool value) => await _gameService.SetAnswerInputEnabled(value);
+
     public async Task EnableImageFullscreen() => await _gameService.EnableImageFullscreen();
 
     public async Task DisableImageFullscreen() => await _gameService.DisableImageFullscreen();

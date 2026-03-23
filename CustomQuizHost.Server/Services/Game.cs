@@ -413,6 +413,12 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task SetAnswerInputEnabled(bool value)
+    {
+        _gameState.AnswerInputEnabled = value;
+        await BroadcastGameState();
+    }
+
     public async Task EnableImageFullscreen()
     {
         _gameState.ImageFullscreen = true;
