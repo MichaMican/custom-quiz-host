@@ -1,6 +1,6 @@
 import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
-import type { Question } from "../types/GameState";
+import type { Player, Question } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
 
@@ -236,6 +236,65 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
   }
 }
 
+function getWinners(players: Player[]): Player[] {
+  if (players.length === 0) return [];
+  const maxScore = Math.max(...players.map((p) => p.score));
+  return players.filter((p) => p.score === maxScore);
+}
+
+const CONFETTI_COUNT = 80;
+const CONFETTI_COLORS = ["#fbbf24", "#f59e0b", "#818cf8", "#c7d2fe", "#4ade80", "#f87171", "#38bdf8", "#fb923c"];
+
+function ConfettiPiece({ pieceIndex }: { pieceIndex: number }) {
+  const color = CONFETTI_COLORS[pieceIndex % CONFETTI_COLORS.length];
+  const left = Math.random() * 100;
+  const delay = Math.random() * 3;
+  const duration = 2.5 + Math.random() * 2;
+  const size = 6 + Math.random() * 8;
+  const rotation = Math.random() * 360;
+
+  return (
+    <div
+      className="confetti-piece"
+      style={{
+        left: `${left}%`,
+        width: `${size}px`,
+        height: `${size * 0.6}px`,
+        backgroundColor: color,
+        animationDelay: `${delay}s`,
+        animationDuration: `${duration}s`,
+        transform: `rotate(${rotation}deg)`,
+      }}
+    />
+  );
+}
+
+function WinnerOverlay({ winners }: { winners: Player[] }) {
+  const confettiPieces = Array.from({ length: CONFETTI_COUNT }, (_, i) => (
+    <ConfettiPiece key={i} pieceIndex={i} />
+  ));
+
+  return (
+    <div className="winner-overlay">
+      <div className="confetti-container">{confettiPieces}</div>
+      <div className="winner-content">
+        <div className="winner-trophy">🏆</div>
+        <div className="winner-title">
+          {winners.length > 1 ? "Winners!" : "Winner!"}
+        </div>
+        <div className="winner-names">
+          {winners.map((w) => (
+            <div key={w.id} className="winner-name">
+              {w.name}
+              <div className="winner-score">{w.score} pts</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
   useWakeLock();
@@ -403,96 +462,102 @@ function Display() {
 
   return (
     <div className="display-container">
-      <div className={`display-view-wrapper ${viewAnimClass}`}>
-        {activeView === "question" && displayQuestion ? (
-          <>
-            <div className="display-question">
-              <QuestionDisplay
-                key={displayQuestion.id}
-                question={gameState.currentQuestion || displayQuestion}
-                categoryName={displayCategoryName}
-                revealed={gameState.questionRevealed}
-                mediaPlaying={gameState.mediaPlaying}
-                mozaikRevealing={gameState.mozaikRevealing}
-                mozaikRevealSpeed={gameState.mozaikRevealSpeed}
-                questionTextRevealed={gameState.questionTextRevealed}
-                answerRevealed={gameState.answerRevealed}
-                mediaVolume={gameState.mediaVolume}
-                imageFullscreen={gameState.imageFullscreen}
-              />
-            </div>
-            {gameState.buzzerActive && gameState.buzzOrder.length > 0 && (
-              <div className="display-buzz-order">
-                <h3>Buzz Order</h3>
-                <ol>
-                  {gameState.buzzOrder.map((buzz, index) => (
-                    <li key={buzz.playerId} className={index === gameState.highlightedBuzzIndex ? "first-buzz" : ""}>
-                      {buzz.playerName}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-            {gameState.playerAnswersRevealed && gameState.playerAnswers && gameState.playerAnswers.length > 0 && (
-              <div className="display-player-answers">
-                <h3>Player Answers</h3>
-                <div className="answers-list">
-                  {gameState.playerAnswers.map((answer) => (
-                    <div key={answer.playerId} className="player-answer-item">
-                      <span className="answer-player-name">{answer.playerName}:</span>
-                      <span className="answer-text">{answer.answer}</span>
-                    </div>
-                  ))}
+      {gameState.winnerDeclared ? (
+        <WinnerOverlay winners={getWinners(gameState.players)} />
+      ) : (
+        <>
+          <div className={`display-view-wrapper ${viewAnimClass}`}>
+            {activeView === "question" && displayQuestion ? (
+              <>
+                <div className="display-question">
+                  <QuestionDisplay
+                    key={displayQuestion.id}
+                    question={gameState.currentQuestion || displayQuestion}
+                    categoryName={displayCategoryName}
+                    revealed={gameState.questionRevealed}
+                    mediaPlaying={gameState.mediaPlaying}
+                    mozaikRevealing={gameState.mozaikRevealing}
+                    mozaikRevealSpeed={gameState.mozaikRevealSpeed}
+                    questionTextRevealed={gameState.questionTextRevealed}
+                    answerRevealed={gameState.answerRevealed}
+                    mediaVolume={gameState.mediaVolume}
+                    imageFullscreen={gameState.imageFullscreen}
+                  />
                 </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div
-            className="display-board"
-            style={{
-              gridTemplateColumns: `repeat(${gameState.categories.length}, 1fr)`,
-              gridTemplateRows: `auto repeat(${maxQuestions}, 1fr)`,
-            }}
-          >
-            {gameState.categories.map((category) => (
+                {gameState.buzzerActive && gameState.buzzOrder.length > 0 && (
+                  <div className="display-buzz-order">
+                    <h3>Buzz Order</h3>
+                    <ol>
+                      {gameState.buzzOrder.map((buzz, index) => (
+                        <li key={buzz.playerId} className={index === gameState.highlightedBuzzIndex ? "first-buzz" : ""}>
+                          {buzz.playerName}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+                {gameState.playerAnswersRevealed && gameState.playerAnswers && gameState.playerAnswers.length > 0 && (
+                  <div className="display-player-answers">
+                    <h3>Player Answers</h3>
+                    <div className="answers-list">
+                      {gameState.playerAnswers.map((answer) => (
+                        <div key={answer.playerId} className="player-answer-item">
+                          <span className="answer-player-name">{answer.playerName}:</span>
+                          <span className="answer-text">{answer.answer}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
               <div
-                key={category.id}
-                className="display-category"
+                className="display-board"
                 style={{
-                  gridRow: `span ${maxQuestions + 1}`,
+                  gridTemplateColumns: `repeat(${gameState.categories.length}, 1fr)`,
+                  gridTemplateRows: `auto repeat(${maxQuestions}, 1fr)`,
                 }}
               >
-                <div className="display-category-header">{category.name}</div>
-                {category.questions.map((question) => (
+                {gameState.categories.map((category) => (
                   <div
-                    key={question.id}
-                    className={`display-cell ${question.isAnswered ? "answered" : ""}`}
+                    key={category.id}
+                    className="display-category"
+                    style={{
+                      gridRow: `span ${maxQuestions + 1}`,
+                    }}
                   >
-                    {!question.isAnswered ? question.points : ""}
+                    <div className="display-category-header">{category.name}</div>
+                    {category.questions.map((question) => (
+                      <div
+                        key={question.id}
+                        className={`display-cell ${question.isAnswered ? "answered" : ""}`}
+                      >
+                        {!question.isAnswered ? question.points : ""}
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
-      <div className="display-scoreboard">
-        {gameState.players.map((player) => {
-          const anim = scoreAnimations.get(player.id);
-          return (
-            <div key={player.id} className={`display-player-score ${anim ? `score-${anim.type}` : ""}`}>
-              <span className="player-name">{player.name}</span>
-              <span className="player-score">{player.score}</span>
-              {anim && (
-                <span className={`score-delta ${anim.type}`}>
-                  {anim.delta > 0 ? "+" : ""}{anim.delta}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+          <div className="display-scoreboard">
+            {gameState.players.map((player) => {
+              const anim = scoreAnimations.get(player.id);
+              return (
+                <div key={player.id} className={`display-player-score ${anim ? `score-${anim.type}` : ""}`}>
+                  <span className="player-name">{player.name}</span>
+                  <span className="player-score">{player.score}</span>
+                  {anim && (
+                    <span className={`score-delta ${anim.type}`}>
+                      {anim.delta > 0 ? "+" : ""}{anim.delta}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

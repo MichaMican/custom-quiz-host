@@ -760,3 +760,47 @@
   color: #e2e8f0;
   flex: 1;
 }
+
+/* === Declare Winner === */
+.btn-declare-winner {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #1e1b4b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+  transition: box-shadow 0.2s ease;
+}
+
+.btn-declare-winner:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+}
+
+.btn-declare-winner:disabled {
+  background: linear-gradient(135deg, #64748b, #475569);
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.btn-revert-winner {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #64748b, #475569);
+  color: #e2e8f0;
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.25);
+  transition: box-shadow 0.2s ease;
+}
+
+.btn-revert-winner:hover {
+  box-shadow: 0 4px 16px rgba(100, 116, 139, 0.4);
+}

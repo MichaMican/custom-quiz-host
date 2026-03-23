@@ -433,6 +433,18 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task DeclareWinner()
+    {
+        _gameState.WinnerDeclared = true;
+        await BroadcastGameState();
+    }
+
+    public async Task UndeclareWinner()
+    {
+        _gameState.WinnerDeclared = false;
+        await BroadcastGameState();
+    }
+
     public async Task DoubleRemainingPoints()
     {
         foreach (var category in _gameState.Categories)
