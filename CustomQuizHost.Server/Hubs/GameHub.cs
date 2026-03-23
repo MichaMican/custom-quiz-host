@@ -105,6 +105,10 @@ public class GameHub : Hub
     public async Task SortQuestionsByPoints(string categoryId) =>
         await _gameService.SortQuestionsByPoints(categoryId);
 
+    public async Task DeclareWinner() => await _gameService.DeclareWinner();
+
+    public async Task UndeclareWinner() => await _gameService.UndeclareWinner();
+
     public async Task DoubleRemainingPoints() => await _gameService.DoubleRemainingPoints();
 
     public async Task HalveRemainingPoints() => await _gameService.HalveRemainingPoints();

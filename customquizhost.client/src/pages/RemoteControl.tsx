@@ -99,6 +99,7 @@ function RemoteControl() {
         mediaVolume: 70,
         pauseOnBuzz: false,
         imageFullscreen: false,
+        winnerDeclared: false,
         eventHistory: [],
       };
       await invoke("ImportGameSettings", emptyState);
@@ -966,6 +967,25 @@ function RemoteControl() {
               </div>
             </section>
           )}
+
+          <section className="remote-section">
+            {gameState.winnerDeclared ? (
+              <button
+                className="btn-revert-winner"
+                onClick={() => invoke("UndeclareWinner")}
+              >
+                ↩ Revert Winner
+              </button>
+            ) : (
+              <button
+                className="btn-declare-winner"
+                onClick={() => invoke("DeclareWinner")}
+                disabled={gameState.players.length === 0}
+              >
+                🏆 Declare Winner
+              </button>
+            )}
+          </section>
         </div>
       )}
 
