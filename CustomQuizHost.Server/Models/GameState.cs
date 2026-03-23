@@ -68,6 +68,7 @@ public class Question
     public string CategoryId { get; set; } = "";
     public QuestionType QuestionType { get; set; } = QuestionType.Standard;
     public string? MediaFileName { get; set; }
+    public string? AnswerImageFileName { get; set; }
 }
 
 public class BuzzIn

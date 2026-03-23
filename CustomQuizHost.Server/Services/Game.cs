@@ -54,7 +54,7 @@ public class GameService
         await BroadcastGameState();
     }
 
-    public async Task AddQuestion(string categoryId, string text, string answer, int points, string questionType = "Standard", string? mediaFileName = null)
+    public async Task AddQuestion(string categoryId, string text, string answer, int points, string questionType = "Standard", string? mediaFileName = null, string? answerImageFileName = null)
     {
         var category = _gameState.Categories.FirstOrDefault(c => c.Id == categoryId);
         if (category != null)
@@ -71,7 +71,8 @@ public class GameService
                 Points = points,
                 CategoryId = categoryId,
                 QuestionType = parsedType,
-                MediaFileName = mediaFileName
+                MediaFileName = mediaFileName,
+                AnswerImageFileName = answerImageFileName
             };
             category.Questions.Add(question);
             await BroadcastGameState();

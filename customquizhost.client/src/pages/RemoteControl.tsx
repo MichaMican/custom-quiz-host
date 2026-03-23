@@ -28,6 +28,8 @@ function RemoteControl() {
   const [questionType, setQuestionType] = useState<QuestionType>("Standard");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [existingMediaFileName, setExistingMediaFileName] = useState<string | null>(null);
+  const [answerImageFile, setAnswerImageFile] = useState<File | null>(null);
+  const [existingAnswerImageFileName, setExistingAnswerImageFileName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessage, setUploadMessage] = useState("");
@@ -41,6 +43,7 @@ function RemoteControl() {
   const [importExportMode, setImportExportMode] = useState<"questions" | "game">("questions");
   const hasRestoredRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const answerImageInputRef = useRef<HTMLInputElement>(null);
   const selectedCategoryQuestions = gameState?.categories
     .find((c) => c.id === selectedCategoryId)
     ?.questions;
@@ -148,6 +151,28 @@ function RemoteControl() {
       mediaFileName = existingMediaFileName;
     }
 
+    let answerImageFileName: string | null = null;
+
+    if (answerImageFile) {
+      setUploading(true);
+      setUploadProgress(0);
+      setUploadMessage("Uploading answer image…");
+      try {
+        const data = await uploadFileWithProgress(
+          answerImageFile,
+          (percent) => setUploadProgress(percent),
+        );
+        answerImageFileName = data.fileName;
+      } catch {
+        alert("Failed to upload answer image.");
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    } else if (existingAnswerImageFileName) {
+      answerImageFileName = existingAnswerImageFileName;
+    }
+
     await invoke(
       "AddQuestion",
       selectedCategoryId,
@@ -156,13 +181,19 @@ function RemoteControl() {
       questionPoints,
       questionType,
       mediaFileName,
+      answerImageFileName,
     );
     setQuestionText("");
     setQuestionAnswer("");
     setMediaFile(null);
     setExistingMediaFileName(null);
+    setAnswerImageFile(null);
+    setExistingAnswerImageFileName(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+    if (answerImageInputRef.current) {
+      answerImageInputRef.current.value = "";
     }
   };
 
@@ -175,8 +206,13 @@ function RemoteControl() {
     setQuestionType(question.questionType);
     setExistingMediaFileName(question.mediaFileName ?? null);
     setMediaFile(null);
+    setExistingAnswerImageFileName(question.answerImageFileName ?? null);
+    setAnswerImageFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+    if (answerImageInputRef.current) {
+      answerImageInputRef.current.value = "";
     }
     try {
       await invoke("RemoveQuestion", selectedCategoryId, questionId);
@@ -191,6 +227,9 @@ function RemoteControl() {
       for (const q of cat.questions) {
         if (q.mediaFileName) {
           fileNames.push(q.mediaFileName);
+        }
+        if (q.answerImageFileName) {
+          fileNames.push(q.answerImageFileName);
         }
       }
     }
@@ -276,6 +315,9 @@ function RemoteControl() {
         mediaFileName: q.mediaFileName && fileNameMap.has(q.mediaFileName)
           ? fileNameMap.get(q.mediaFileName)!
           : q.mediaFileName,
+        answerImageFileName: q.answerImageFileName && fileNameMap.has(q.answerImageFileName)
+          ? fileNameMap.get(q.answerImageFileName)!
+          : q.answerImageFileName,
       })),
     }));
   };
@@ -545,6 +587,41 @@ function RemoteControl() {
                 value={questionAnswer}
                 onChange={(e) => setQuestionAnswer(e.target.value)}
               />
+              <div className="file-upload-row">
+                <label>Answer Image (optional):</label>
+                <input
+                  ref={answerImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    setAnswerImageFile(e.target.files?.[0] ?? null);
+                    if (e.target.files?.[0]) {
+                      setExistingAnswerImageFileName(null);
+                    }
+                  }}
+                />
+                {answerImageFile && (
+                  <span className="file-name">{answerImageFile.name}</span>
+                )}
+                {!answerImageFile && existingAnswerImageFileName && (
+                  <span className="file-name">Current file: {existingAnswerImageFileName}</span>
+                )}
+                {(answerImageFile || existingAnswerImageFileName) && (
+                  <button
+                    type="button"
+                    className="btn-remove"
+                    onClick={() => {
+                      setAnswerImageFile(null);
+                      setExistingAnswerImageFileName(null);
+                      if (answerImageInputRef.current) {
+                        answerImageInputRef.current.value = "";
+                      }
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
               <select
                 value={questionPoints}
                 onChange={(e) => setQuestionPoints(Number(e.target.value))}
@@ -802,6 +879,15 @@ function RemoteControl() {
                 <p className="answer-text">
                   Answer: {gameState.currentQuestion.answer}
                 </p>
+                {gameState.currentQuestion.answerImageFileName && (
+                  <div className="answer-image-preview">
+                    <img
+                      src={`/uploads/${gameState.currentQuestion.answerImageFileName}`}
+                      alt="Answer"
+                      className="answer-image-thumb"
+                    />
+                  </div>
+                )}
               </div>
               {!gameState.questionRevealed && (
                 <button

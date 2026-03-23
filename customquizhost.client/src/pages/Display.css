@@ -243,6 +243,24 @@
   animation: answerReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.display-answer-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  animation: answerReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.display-answer-image {
+  max-width: 60%;
+  max-height: 40vh;
+  border-radius: 12px;
+  object-fit: contain;
+  animation: answerReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3);
+}
+
 @keyframes answerReveal {
   0% {
     opacity: 0;

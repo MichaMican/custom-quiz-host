@@ -612,6 +612,18 @@
   color: #94a3b8;
 }
 
+.answer-image-preview {
+  margin-top: 4px;
+}
+
+.answer-image-thumb {
+  max-width: 120px;
+  max-height: 80px;
+  border-radius: 6px;
+  object-fit: contain;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
 .media-controls {
   margin-bottom: 8px;
 }

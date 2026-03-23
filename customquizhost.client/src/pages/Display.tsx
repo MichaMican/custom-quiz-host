@@ -108,7 +108,16 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
             <div className="display-question-text">{question.text}</div>
           )}
           {!imageFullscreen && answerRevealed && (
-            <div className="display-answer-text">{question.answer}</div>
+            <div className="display-answer-section">
+              {question.answer && <div className="display-answer-text">{question.answer}</div>}
+              {question.answerImageFileName && (
+                <img
+                  src={`/uploads/${question.answerImageFileName}`}
+                  alt="Answer"
+                  className="display-answer-image"
+                />
+              )}
+            </div>
           )}
         </>
       );
@@ -130,7 +139,16 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
             <div className="display-question-text">{question.text}</div>
           )}
           {!imageFullscreen && answerRevealed && (
-            <div className="display-answer-text">{question.answer}</div>
+            <div className="display-answer-section">
+              {question.answer && <div className="display-answer-text">{question.answer}</div>}
+              {question.answerImageFileName && (
+                <img
+                  src={`/uploads/${question.answerImageFileName}`}
+                  alt="Answer"
+                  className="display-answer-image"
+                />
+              )}
+            </div>
           )}
         </>
       );
@@ -150,7 +168,16 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
             <div className="display-question-text">{question.text}</div>
           )}
           {answerRevealed && (
-            <div className="display-answer-text">{question.answer}</div>
+            <div className="display-answer-section">
+              {question.answer && <div className="display-answer-text">{question.answer}</div>}
+              {question.answerImageFileName && (
+                <img
+                  src={`/uploads/${question.answerImageFileName}`}
+                  alt="Answer"
+                  className="display-answer-image"
+                />
+              )}
+            </div>
           )}
         </>
       );
@@ -172,7 +199,16 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
             <div className="display-question-text">{question.text}</div>
           )}
           {!imageFullscreen && answerRevealed && (
-            <div className="display-answer-text">{question.answer}</div>
+            <div className="display-answer-section">
+              {question.answer && <div className="display-answer-text">{question.answer}</div>}
+              {question.answerImageFileName && (
+                <img
+                  src={`/uploads/${question.answerImageFileName}`}
+                  alt="Answer"
+                  className="display-answer-image"
+                />
+              )}
+            </div>
           )}
         </>
       );
@@ -184,7 +220,16 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
           <div className="display-question-points">{question.points}</div>
           <div className="display-question-text">{question.text}</div>
           {answerRevealed && (
-            <div className="display-answer-text">{question.answer}</div>
+            <div className="display-answer-section">
+              {question.answer && <div className="display-answer-text">{question.answer}</div>}
+              {question.answerImageFileName && (
+                <img
+                  src={`/uploads/${question.answerImageFileName}`}
+                  alt="Answer"
+                  className="display-answer-image"
+                />
+              )}
+            </div>
           )}
         </>
       );
