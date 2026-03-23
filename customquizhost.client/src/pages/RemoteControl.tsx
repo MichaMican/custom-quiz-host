@@ -848,8 +848,8 @@ function RemoteControl() {
                     Clear Buzz Order
                   </button>
                   <button
-                    onClick={() => invoke("SetHighlightedBuzzIndex", gameState.highlightedBuzzIndex + 1)}
-                    disabled={gameState.highlightedBuzzIndex >= gameState.buzzOrder.length - 1}
+                    onClick={() => invoke("NextBuzzer")}
+                    disabled={gameState.buzzOrder.length === 0}
                   >
                     Next Buzz
                   </button>
