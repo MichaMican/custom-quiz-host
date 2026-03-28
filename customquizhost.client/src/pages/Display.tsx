@@ -366,11 +366,15 @@ function Display() {
     : null;
 
   useEffect(() => {
-    if (preloadVideoRef.current) {
-      preloadVideoRef.current.removeAttribute("src");
-      preloadVideoRef.current.load();
-      preloadVideoRef.current = null;
-    }
+    const cleanupPreload = () => {
+      if (preloadVideoRef.current) {
+        preloadVideoRef.current.removeAttribute("src");
+        preloadVideoRef.current.load();
+        preloadVideoRef.current = null;
+      }
+    };
+
+    cleanupPreload();
     if (videoPreloadUrl) {
       const video = document.createElement("video");
       video.preload = "auto";
@@ -378,13 +382,7 @@ function Display() {
       video.load();
       preloadVideoRef.current = video;
     }
-    return () => {
-      if (preloadVideoRef.current) {
-        preloadVideoRef.current.removeAttribute("src");
-        preloadVideoRef.current.load();
-        preloadVideoRef.current = null;
-      }
-    };
+    return cleanupPreload;
   }, [videoPreloadUrl]);
 
   const currentQuestion = gameState?.currentQuestion ?? null;
