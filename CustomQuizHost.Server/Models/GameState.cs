@@ -76,7 +76,7 @@ public class BuzzIn
 {
     public string PlayerId { get; set; } = "";
     public string PlayerName { get; set; } = "";
-    public DateTime Timestamp { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
 }
 
 public class PlayerAnswer
