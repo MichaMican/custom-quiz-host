@@ -272,10 +272,39 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
   }
 }
 
-function getWinners(players: Player[]): Player[] {
+interface RankedPlayer extends Player {
+  rank: number;
+}
+
+function getRankedPlayers(players: Player[]): RankedPlayer[] {
   if (players.length === 0) return [];
-  const maxScore = Math.max(...players.map((p) => p.score));
-  return players.filter((p) => p.score === maxScore);
+  const sorted = [...players].sort((a, b) => b.score - a.score);
+  const ranked: RankedPlayer[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const rank = i === 0 || sorted[i].score !== sorted[i - 1].score
+      ? i + 1
+      : ranked[i - 1].rank;
+    ranked.push({ ...sorted[i], rank });
+  }
+  return ranked;
+}
+
+function getRankColor(rank: number): string {
+  switch (rank) {
+    case 1: return "#fbbf24"; // Gold
+    case 2: return "#c0c0c0"; // Silver
+    case 3: return "#cd7f32"; // Bronze
+    default: return "#e2e8f0"; // Light gray
+  }
+}
+
+function getRankLabel(rank: number): string {
+  switch (rank) {
+    case 1: return "🥇";
+    case 2: return "🥈";
+    case 3: return "🥉";
+    default: return `#${rank}`;
+  }
 }
 
 const CONFETTI_COUNT = 80;
@@ -305,27 +334,56 @@ function ConfettiPiece({ pieceIndex }: { pieceIndex: number }) {
   );
 }
 
-function WinnerOverlay({ winners }: { winners: Player[] }) {
+function WinnerOverlay({ players }: { players: RankedPlayer[] }) {
   const confettiPieces = Array.from({ length: CONFETTI_COUNT }, (_, i) => (
     <ConfettiPiece key={i} pieceIndex={i} />
   ));
+
+  // Podium: first 3 visual slots (regardless of tied ranks)
+  const podiumPlayers = players.slice(0, 3);
+  const restPlayers = players.slice(3);
 
   return (
     <div className="winner-overlay">
       <div className="confetti-container">{confettiPieces}</div>
       <div className="winner-content">
         <div className="winner-trophy">🏆</div>
-        <div className="winner-title">
-          {winners.length > 1 ? "Winners!" : "Winner!"}
-        </div>
-        <div className="winner-names">
-          {winners.map((w) => (
-            <div key={w.id} className="winner-name">
-              {w.name}
-              <div className="winner-score">{w.score} pts</div>
+        <div className="winner-title">Results</div>
+        <div className="podium">
+          {podiumPlayers.map((p, i) => (
+            <div key={p.id} className={`podium-entry podium-entry-${i + 1}`}>
+              <div
+                className="podium-rank"
+                style={{ color: getRankColor(p.rank) }}
+              >
+                {getRankLabel(p.rank)}
+              </div>
+              <div className="podium-name">{p.name}</div>
+              <div
+                className="podium-score"
+                style={{ color: getRankColor(p.rank) }}
+              >
+                {p.score} pts
+              </div>
             </div>
           ))}
         </div>
+        {restPlayers.length > 0 && (
+          <div className="runner-up-list">
+            {restPlayers.map((p) => (
+              <div key={p.id} className="runner-up-entry">
+                <span
+                  className="runner-up-rank"
+                  style={{ color: getRankColor(p.rank) }}
+                >
+                  #{p.rank}
+                </span>
+                <span className="runner-up-name">{p.name}</span>
+                <span className="runner-up-score">{p.score} pts</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -526,7 +584,7 @@ function Display() {
   return (
     <div className="display-container">
       {gameState.winnerDeclared ? (
-        <WinnerOverlay winners={getWinners(gameState.players)} />
+        <WinnerOverlay players={getRankedPlayers(gameState.players)} />
       ) : (
         <>
           <div className={`display-view-wrapper ${viewAnimClass}`}>
