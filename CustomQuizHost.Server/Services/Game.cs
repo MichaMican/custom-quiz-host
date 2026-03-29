@@ -442,6 +442,12 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task SetBuzzerSyncEnabled(bool value)
+    {
+        _gameState.BuzzerSyncEnabled = value;
+        await BroadcastGameState();
+    }
+
     public async Task SetAnswerInputEnabled(bool value)
     {
         _gameState.AnswerInputEnabled = value;

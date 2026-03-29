@@ -14,20 +14,34 @@ function Buzzer() {
   const [buzzerPressed, setBuzzerPressed] = useState(false);
 
   // NTP-like time synchronization for accurate buzz timestamps
+  // Only active when host enables buzzer sync
   const timeSyncRef = useRef<TimeSync | null>(null);
+  const stopTimeSync = () => {
+    if (timeSyncRef.current) {
+      timeSyncRef.current.stop();
+      timeSyncRef.current = null;
+    }
+  };
   useEffect(() => {
-    const ts = new TimeSync();
-    timeSyncRef.current = ts;
-    ts.start();
-    return () => ts.stop();
-  }, []);
+    if (gameState?.buzzerSyncEnabled) {
+      if (!timeSyncRef.current) {
+        const ts = new TimeSync();
+        timeSyncRef.current = ts;
+        ts.start();
+      }
+    } else {
+      stopTimeSync();
+    }
+    return stopTimeSync;
+  }, [gameState?.buzzerSyncEnabled]);
 
   const handleBuzzIn = async () => {
     if (!selectedPlayerId || !gameState?.buzzerActive) return;
 
-    // Compute latency-compensated timestamp (approximate server time at buzz moment)
+    // When sync is enabled, compute latency-compensated timestamp.
+    // When disabled, send 0 so the server uses pure receive time.
     const ts = timeSyncRef.current;
-    const adjustedTimestamp = ts ? ts.getServerTime() : Date.now();
+    const adjustedTimestamp = ts && ts.isSynced() ? ts.getServerTime() : 0;
 
     // Fire-and-forget HTTP POST for minimum latency – we don't await the
     // response before showing the "Buzzed!" state (SignalR will confirm).

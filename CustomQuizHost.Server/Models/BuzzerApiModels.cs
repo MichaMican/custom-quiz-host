@@ -9,7 +9,6 @@ public class TimeSyncResponse
 {
     public long ClientSendTime { get; set; }
     public long ServerReceiveTime { get; set; }
-    public long ServerSendTime { get; set; }
 }
 
 public class BuzzRequest
