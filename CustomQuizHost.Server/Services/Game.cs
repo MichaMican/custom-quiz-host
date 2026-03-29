@@ -229,27 +229,49 @@ public class GameService
 
     public async Task BuzzIn(string playerId)
     {
-        if (!_gameState.BuzzerActive) return;
-        if (_gameState.BuzzOrder.Any(b => b.PlayerId == playerId)) return;
+        await BuzzIn(playerId, null);
+    }
+
+    /// <summary>
+    /// Registers a buzz-in for the given player. When an adjusted timestamp is
+    /// provided (from the low-latency HTTP endpoint with NTP-like compensation),
+    /// it is used for ordering. Otherwise falls back to the current server time.
+    /// Buzzes are inserted in timestamp order so that latency-compensated
+    /// timestamps produce the correct ordering.
+    /// </summary>
+    public async Task<bool> BuzzIn(string playerId, DateTime? adjustedTimestamp)
+    {
+        if (!_gameState.BuzzerActive) return false;
+        if (_gameState.BuzzOrder.Any(b => b.PlayerId == playerId)) return false;
 
         var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
-        if (player != null)
+        if (player == null) return false;
+
+        var buzzTimestamp = adjustedTimestamp ?? DateTime.UtcNow;
+
+        var entry = new BuzzIn
         {
-            _gameState.BuzzOrder.Add(new BuzzIn
-            {
-                PlayerId = playerId,
-                PlayerName = player.Name,
-                Timestamp = DateTime.UtcNow
-            });
+            PlayerId = playerId,
+            PlayerName = player.Name,
+            Timestamp = buzzTimestamp
+        };
 
-            if (_gameState.PauseOnBuzz)
-            {
-                _gameState.MediaPlaying = false;
-                _gameState.MozaikRevealing = false;
-            }
+        // Insert in sorted order by timestamp so that latency-compensated
+        // buzzes are correctly ordered even if they arrive out of order.
+        var insertIndex = _gameState.BuzzOrder.FindIndex(b => b.Timestamp > buzzTimestamp);
+        if (insertIndex < 0)
+            _gameState.BuzzOrder.Add(entry);
+        else
+            _gameState.BuzzOrder.Insert(insertIndex, entry);
 
-            await BroadcastGameState();
+        if (_gameState.PauseOnBuzz)
+        {
+            _gameState.MediaPlaying = false;
+            _gameState.MozaikRevealing = false;
         }
+
+        await BroadcastGameState();
+        return true;
     }
 
     public async Task ClearBuzzOrder()

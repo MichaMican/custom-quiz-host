@@ -1,0 +1,69 @@
+using CustomQuizHost.Server.Models;
+using CustomQuizHost.Server.Services;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomQuizHost.Server.Controllers;
+
+[ApiController]
+[Route("api/buzzer")]
+public class BuzzerController : ControllerBase
+{
+    private readonly GameService _gameService;
+
+    public BuzzerController(GameService gameService)
+    {
+        _gameService = gameService;
+    }
+
+    /// <summary>
+    /// NTP-like time synchronization endpoint.
+    /// Client sends its send timestamp, server returns server receive and send timestamps.
+    /// Client uses these to compute clock offset and RTT.
+    /// </summary>
+    [HttpPost("sync")]
+    public ActionResult<TimeSyncResponse> Sync([FromBody] TimeSyncRequest request)
+    {
+        var serverReceiveTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        return Ok(new TimeSyncResponse
+        {
+            ClientSendTime = request.ClientSendTime,
+            ServerReceiveTime = serverReceiveTime,
+            ServerSendTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+        });
+    }
+
+    /// <summary>
+    /// Low-latency buzz endpoint. Accepts a client timestamp that has been
+    /// adjusted using the NTP-like clock offset, so the server can determine
+    /// accurate buzz ordering even when players have different network latencies.
+    /// </summary>
+    [HttpPost("buzz")]
+    public async Task<ActionResult<BuzzResponse>> Buzz([FromBody] BuzzRequest request)
+    {
+        if (string.IsNullOrEmpty(request.PlayerId))
+        {
+            return BadRequest(new BuzzResponse { Success = false, Error = "PlayerId is required" });
+        }
+
+        var serverReceiveTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        // Use the client's adjusted timestamp but cap it at server receive time
+        // to prevent any clock drift from giving an unfair advantage.
+        // The adjusted timestamp should approximate server time at the moment of the buzz.
+        var adjustedTimestamp = request.ClientTimestamp > 0
+            ? Math.Min(request.ClientTimestamp, serverReceiveTime)
+            : serverReceiveTime;
+
+        var buzzTime = DateTimeOffset.FromUnixTimeMilliseconds(adjustedTimestamp).UtcDateTime;
+
+        var success = await _gameService.BuzzIn(request.PlayerId, buzzTime);
+
+        if (!success)
+        {
+            return Ok(new BuzzResponse { Success = false, Error = "Buzz not accepted" });
+        }
+
+        return Ok(new BuzzResponse { Success = true });
+    }
+}

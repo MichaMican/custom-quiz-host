@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
+import { TimeSync } from "../utils/timeSync";
 import EventHistory from "../components/EventHistory";
 import "./Buzzer.css";
 
@@ -11,9 +12,35 @@ function Buzzer() {
   const [playerAnswer, setPlayerAnswer] = useState("");
   const [showHistory, setShowHistory] = useState(false);
 
+  // NTP-like time synchronization for accurate buzz timestamps
+  const timeSyncRef = useRef<TimeSync | null>(null);
+  useEffect(() => {
+    const ts = new TimeSync();
+    timeSyncRef.current = ts;
+    ts.start();
+    return () => ts.stop();
+  }, []);
+
   const handleBuzzIn = async () => {
     if (!selectedPlayerId || !gameState?.buzzerActive) return;
-    await invoke("BuzzIn", selectedPlayerId);
+
+    // Compute latency-compensated timestamp (approximate server time at buzz moment)
+    const ts = timeSyncRef.current;
+    const adjustedTimestamp = ts ? ts.getServerTime() : Date.now();
+
+    // Fire-and-forget HTTP POST for minimum latency – we don't await the
+    // response before showing the "Buzzed!" state (SignalR will confirm).
+    fetch("/api/buzzer/buzz", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        playerId: selectedPlayerId,
+        clientTimestamp: adjustedTimestamp,
+      }),
+      keepalive: true,
+    }).catch(() => {
+      // Silently ignore – the SignalR state update will reflect the outcome.
+    });
   };
 
   const handleSubmitAnswer = async () => {
