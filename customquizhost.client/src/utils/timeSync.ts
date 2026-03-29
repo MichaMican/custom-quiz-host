@@ -89,7 +89,7 @@ export class TimeSync {
     this.rtt = median.rtt;
     this.synced = true;
 
-    console.log(
+    console.debug(
       `[TimeSync] offset=${this.offset.toFixed(1)}ms, RTT=${this.rtt.toFixed(1)}ms (from ${samples.length} samples)`,
     );
   }
@@ -130,7 +130,7 @@ export class TimeSync {
     const t2 = data.serverReceiveTime;
     const t3 = Number(serverSendTimeHeader);
 
-    console.log(
+    console.debug(
       `[TimeSync] singleSync t0=${t1}, t1=${t2}, t2=${t3}, t3=${t4}`,
     );
 
