@@ -255,10 +255,10 @@ function getRankedPlayers(players: Player[]): RankedPlayer[] {
 
 function getRankColor(rank: number): string {
   switch (rank) {
-    case 1: return "#fbbf24";
-    case 2: return "#c0c0c0";
-    case 3: return "#cd7f32";
-    default: return "#e2e8f0";
+    case 1: return "#fbbf24"; // Gold
+    case 2: return "#c0c0c0"; // Silver
+    case 3: return "#cd7f32"; // Bronze
+    default: return "#e2e8f0"; // Light gray
   }
 }
 
