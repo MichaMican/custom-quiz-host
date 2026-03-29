@@ -38,6 +38,10 @@ The `GameState` includes a `PauseOnBuzz` boolean. When this flag is `true` and a
 
 If you add a new action component, update the `BuzzIn` method in `CustomQuizHost.Server/Services/Game.cs` to also set that component's state to its paused/stopped value inside the `if (_gameState.PauseOnBuzz)` block.
 
+## Date & Time Handling
+
+Always use `DateTimeOffset` instead of `DateTime` in C# server code. When accessing the current time, always use `DateTimeOffset.UtcNow` to ensure UTC is used consistently. This applies to model properties, method parameters, and any timestamp logic.
+
 ## Display Animations & Transitions
 
 All UI changes on the **Display** page (`customquizhost.client/src/pages/Display.tsx`) must use smooth transitions and animations. The Display is the audience-facing projector view, so visual polish is important.

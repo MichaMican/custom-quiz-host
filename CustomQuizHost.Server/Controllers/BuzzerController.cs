@@ -52,12 +52,17 @@ public class BuzzerController : ControllerBase
         // A valid adjusted timestamp should be close to the server receive time
         // (within a few seconds). Fall back to server time for invalid values.
         const long maxDriftMs = 5000;
-        var adjustedTimestamp = request.ClientTimestamp > 0
-            && request.ClientTimestamp > serverReceiveTime - maxDriftMs
-            ? Math.Min(request.ClientTimestamp, serverReceiveTime)
-            : serverReceiveTime;
+        long adjustedTimestamp;
+        if (request.ClientTimestamp > 0 && request.ClientTimestamp > serverReceiveTime - maxDriftMs)
+        {
+            adjustedTimestamp = Math.Min(request.ClientTimestamp, serverReceiveTime);
+        }
+        else
+        {
+            adjustedTimestamp = serverReceiveTime;
+        }
 
-        var buzzTime = DateTimeOffset.FromUnixTimeMilliseconds(adjustedTimestamp).UtcDateTime;
+        var buzzTime = DateTimeOffset.FromUnixTimeMilliseconds(adjustedTimestamp);
 
         var success = await _gameService.BuzzIn(request.PlayerId, buzzTime);
 

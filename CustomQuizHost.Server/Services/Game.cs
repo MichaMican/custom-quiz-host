@@ -239,7 +239,7 @@ public class GameService
     /// Buzzes are inserted in timestamp order so that latency-compensated
     /// timestamps produce the correct ordering.
     /// </summary>
-    public async Task<bool> BuzzIn(string playerId, DateTime? adjustedTimestamp)
+    public async Task<bool> BuzzIn(string playerId, DateTimeOffset? adjustedTimestamp)
     {
         if (!_gameState.BuzzerActive) return false;
         if (_gameState.BuzzOrder.Any(b => b.PlayerId == playerId)) return false;
@@ -247,7 +247,7 @@ public class GameService
         var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
         if (player == null) return false;
 
-        var buzzTimestamp = adjustedTimestamp ?? DateTime.UtcNow;
+        var buzzTimestamp = adjustedTimestamp ?? DateTimeOffset.UtcNow;
 
         var entry = new BuzzIn
         {
