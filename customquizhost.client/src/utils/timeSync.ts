@@ -130,6 +130,10 @@ export class TimeSync {
     const t2 = data.serverReceiveTime;
     const t3 = Number(serverSendTimeHeader);
 
+    console.log(
+      `[TimeSync] singleSync t0=${t1}, t1=${t2}, t2=${t3}, t3=${t4}`,
+    );
+
     const rtt = t4 - t1 - (t3 - t2);
     const offset = (t2 - t1 + (t3 - t4)) / 2;
 
