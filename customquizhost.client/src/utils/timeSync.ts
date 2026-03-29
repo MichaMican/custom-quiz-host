@@ -57,9 +57,9 @@ export class TimeSync {
     return this.synced;
   }
 
-  /** Returns the estimated current server time in ms since epoch. */
+  /** Returns the estimated current server time in ms since epoch (integer). */
   getServerTime(): number {
-    return Date.now() + this.offset;
+    return Math.round(Date.now() + this.offset);
   }
 
   /** Perform a full sync cycle (multiple rounds, take median). */
