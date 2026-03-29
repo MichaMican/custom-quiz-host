@@ -272,6 +272,20 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
   }
 }
 
+/**
+ * Formats the time delta between consecutive buzz-ins for display.
+ * Returns null if the delta exceeds 3 seconds (not shown).
+ * - < 500ms: shown in milliseconds (e.g. "120ms")
+ * - >= 500ms and < 1000ms: seconds with 2 decimal places (e.g. "0.52s")
+ * - >= 1000ms: seconds with 1 decimal place (e.g. "1.3s")
+ */
+function formatBuzzDelta(deltaMs: number): string | null {
+  if (deltaMs > 3000) return null;
+  if (deltaMs < 500) return `${Math.round(deltaMs)}ms`;
+  if (deltaMs < 1000) return `${(deltaMs / 1000).toFixed(2)}s`;
+  return `${(deltaMs / 1000).toFixed(1)}s`;
+}
+
 interface RankedPlayer extends Player {
   rank: number;
 }
@@ -609,11 +623,22 @@ function Display() {
                   <div className="display-buzz-order">
                     <h3>Buzz Order</h3>
                     <ol>
-                      {gameState.buzzOrder.map((buzz, index) => (
-                        <li key={buzz.playerId} className={index === gameState.highlightedBuzzIndex ? "first-buzz" : ""}>
-                          {buzz.playerName}
-                        </li>
-                      ))}
+                      {gameState.buzzOrder.map((buzz, index) => {
+                        let deltaLabel: string | null = null;
+                        if (index > 0) {
+                          const prevTime = new Date(gameState.buzzOrder[index - 1].timestamp).getTime();
+                          const currTime = new Date(buzz.timestamp).getTime();
+                          deltaLabel = formatBuzzDelta(currTime - prevTime);
+                        }
+                        return (
+                          <li key={buzz.playerId} className={index === gameState.highlightedBuzzIndex ? "first-buzz" : ""}>
+                            {deltaLabel && (
+                              <span className="buzz-delta-bubble">+{deltaLabel}</span>
+                            )}
+                            {buzz.playerName}
+                          </li>
+                        );
+                      })}
                     </ol>
                   </div>
                 )}
