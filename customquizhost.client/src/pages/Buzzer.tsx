@@ -38,8 +38,8 @@ function Buzzer() {
         clientTimestamp: adjustedTimestamp,
       }),
       keepalive: true,
-    }).catch(() => {
-      // Silently ignore – the SignalR state update will reflect the outcome.
+    }).catch((err) => {
+      console.error("Buzz request failed:", err);
     });
   };
 

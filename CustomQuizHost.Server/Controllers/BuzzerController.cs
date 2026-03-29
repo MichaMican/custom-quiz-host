@@ -48,10 +48,12 @@ public class BuzzerController : ControllerBase
 
         var serverReceiveTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        // Use the client's adjusted timestamp but cap it at server receive time
-        // to prevent any clock drift from giving an unfair advantage.
-        // The adjusted timestamp should approximate server time at the moment of the buzz.
+        // Validate the client timestamp is within a reasonable window.
+        // A valid adjusted timestamp should be close to the server receive time
+        // (within a few seconds). Fall back to server time for invalid values.
+        const long maxDriftMs = 5000;
         var adjustedTimestamp = request.ClientTimestamp > 0
+            && request.ClientTimestamp > serverReceiveTime - maxDriftMs
             ? Math.Min(request.ClientTimestamp, serverReceiveTime)
             : serverReceiveTime;
 
