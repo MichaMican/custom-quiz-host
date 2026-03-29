@@ -122,7 +122,10 @@ export class TimeSync {
     // Read server send time from the response header (set by middleware
     // just before bytes are written to the network).
     const serverSendTimeHeader = response.headers.get("X-Server-Send-Time");
-    if (!serverSendTimeHeader) return null;
+    if (!serverSendTimeHeader) {
+      console.warn("[TimeSync] X-Server-Send-Time header missing from sync response");
+      return null;
+    }
 
     const t2 = data.serverReceiveTime;
     const t3 = Number(serverSendTimeHeader);

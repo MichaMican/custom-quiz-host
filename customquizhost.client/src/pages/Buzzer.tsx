@@ -16,6 +16,12 @@ function Buzzer() {
   // NTP-like time synchronization for accurate buzz timestamps
   // Only active when host enables buzzer sync
   const timeSyncRef = useRef<TimeSync | null>(null);
+  const stopTimeSync = () => {
+    if (timeSyncRef.current) {
+      timeSyncRef.current.stop();
+      timeSyncRef.current = null;
+    }
+  };
   useEffect(() => {
     if (gameState?.buzzerSyncEnabled) {
       if (!timeSyncRef.current) {
@@ -24,17 +30,9 @@ function Buzzer() {
         ts.start();
       }
     } else {
-      if (timeSyncRef.current) {
-        timeSyncRef.current.stop();
-        timeSyncRef.current = null;
-      }
+      stopTimeSync();
     }
-    return () => {
-      if (timeSyncRef.current) {
-        timeSyncRef.current.stop();
-        timeSyncRef.current = null;
-      }
-    };
+    return stopTimeSync;
   }, [gameState?.buzzerSyncEnabled]);
 
   const handleBuzzIn = async () => {
