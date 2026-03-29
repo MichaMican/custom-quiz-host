@@ -10,6 +10,7 @@ function Buzzer() {
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [playerAnswer, setPlayerAnswer] = useState("");
   const [showHistory, setShowHistory] = useState(false);
+  const [buzzerPressed, setBuzzerPressed] = useState(false);
 
   const handleBuzzIn = async () => {
     if (!selectedPlayerId || !gameState?.buzzerActive) return;
@@ -81,8 +82,15 @@ function Buzzer() {
                 : playerAlreadyBuzzed
                   ? "buzzed"
                   : "ready"
-            }`}
-            onClick={handleBuzzIn}
+            }${buzzerPressed ? " pressed" : ""}`}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              setBuzzerPressed(true);
+              handleBuzzIn();
+            }}
+            onPointerUp={() => setBuzzerPressed(false)}
+            onPointerLeave={() => setBuzzerPressed(false)}
+            onPointerCancel={() => setBuzzerPressed(false)}
             disabled={!gameState.buzzerActive || !!playerAlreadyBuzzed}
           >
             {!gameState.buzzerActive
