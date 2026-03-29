@@ -64,13 +64,18 @@
   font-weight: 700;
   border: none;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.3s;
+  transition: transform 0.15s ease, box-shadow 0.3s, background 0.3s ease,
+    color 0.3s ease, border-color 0.3s ease;
   margin: 20px 0;
   letter-spacing: 0.04em;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 
-.buzz-button:active:not(:disabled) {
-  transform: scale(0.95);
+.buzz-button.pressed:not(:disabled) {
+  transform: scale(0.85);
 }
 
 .buzz-button.ready {

@@ -7,6 +7,7 @@ namespace CustomQuizHost.Server.Services;
 public class GameService
 {
     private readonly IHubContext<GameHub> _hubContext;
+    private readonly Lock _buzzLock = new();
     private GameState _gameState = new();
 
     public GameService(IHubContext<GameHub> hubContext)
@@ -229,27 +230,55 @@ public class GameService
 
     public async Task BuzzIn(string playerId)
     {
-        if (!_gameState.BuzzerActive) return;
-        if (_gameState.BuzzOrder.Any(b => b.PlayerId == playerId)) return;
+        await BuzzIn(playerId, null);
+    }
 
-        var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
-        if (player != null)
+    /// <summary>
+    /// Registers a buzz-in for the given player. When an adjusted timestamp is
+    /// provided (from the low-latency HTTP endpoint with NTP-like compensation),
+    /// it is used for ordering. Otherwise falls back to the current server time.
+    /// Buzzes are inserted in timestamp order so that latency-compensated
+    /// timestamps produce the correct ordering.
+    /// </summary>
+    public async Task<bool> BuzzIn(string playerId, DateTimeOffset? adjustedTimestamp)
+    {
+        lock (_buzzLock)
         {
-            _gameState.BuzzOrder.Add(new BuzzIn
+            if (!_gameState.BuzzerActive) return false;
+            if (_gameState.BuzzOrder.Any(b => b.PlayerId == playerId)) return false;
+
+            var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
+            if (player == null) return false;
+
+            var buzzTimestamp = adjustedTimestamp ?? DateTimeOffset.UtcNow;
+
+            var entry = new BuzzIn
             {
                 PlayerId = playerId,
                 PlayerName = player.Name,
-                Timestamp = DateTime.UtcNow
-            });
+                Timestamp = buzzTimestamp
+            };
+
+            // Insert in sorted order by timestamp so that latency-compensated
+            // buzzes are correctly ordered even if they arrive out of order.
+            var insertIndex = _gameState.BuzzOrder.FindIndex(b => b.Timestamp > buzzTimestamp);
+            if (insertIndex < 0)
+                _gameState.BuzzOrder.Add(entry);
+            else
+                _gameState.BuzzOrder.Insert(insertIndex, entry);
 
             if (_gameState.PauseOnBuzz)
             {
                 _gameState.MediaPlaying = false;
                 _gameState.MozaikRevealing = false;
             }
-
-            await BroadcastGameState();
         }
+
+        // Broadcast outside the lock to avoid holding it during async I/O.
+        // The broadcast always sends the latest state snapshot, so concurrent
+        // modifications result in the newest state being sent by each caller.
+        await BroadcastGameState();
+        return true;
     }
 
     public async Task ClearBuzzOrder()
@@ -410,6 +439,12 @@ public class GameService
     public async Task SetPauseOnBuzz(bool value)
     {
         _gameState.PauseOnBuzz = value;
+        await BroadcastGameState();
+    }
+
+    public async Task SetBuzzerSyncEnabled(bool value)
+    {
+        _gameState.BuzzerSyncEnabled = value;
         await BroadcastGameState();
     }
 

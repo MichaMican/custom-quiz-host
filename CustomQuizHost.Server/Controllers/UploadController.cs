@@ -20,7 +20,8 @@ namespace CustomQuizHost.Server.Controllers
         }
 
         [HttpPost]
-        [RequestSizeLimit(50_000_000)] // 50 MB
+        [RequestSizeLimit(400_000_000)] // 400 MB
+        [RequestFormLimits(MultipartBodyLengthLimit = 400_000_000)]
         public async Task<IActionResult> Upload(IFormFile file, [FromQuery] bool preserveFileName = false)
         {
             if (file == null || file.Length == 0)

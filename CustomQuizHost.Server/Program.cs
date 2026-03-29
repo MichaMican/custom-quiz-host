@@ -1,4 +1,5 @@
 using CustomQuizHost.Server.Hubs;
+using CustomQuizHost.Server.Middleware;
 using CustomQuizHost.Server.Services;
 using Microsoft.Extensions.FileProviders;
 
@@ -16,6 +17,9 @@ Directory.CreateDirectory(uploadsPath);
 
 app.UseDefaultFiles();
 app.MapStaticAssets();
+
+// Capture ServerSendTime just before response bytes are written for /api/buzzer/sync
+app.UseMiddleware<TimeSyncMiddleware>();
 
 // Serve uploaded media files
 app.UseStaticFiles(new StaticFileOptions

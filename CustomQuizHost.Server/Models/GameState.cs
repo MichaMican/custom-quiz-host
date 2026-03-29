@@ -39,6 +39,7 @@ public class GameState
     public bool AnswerRevealed { get; set; }
     public int MediaVolume { get; set; } = 70;
     public bool PauseOnBuzz { get; set; }
+    public bool BuzzerSyncEnabled { get; set; }
     public bool AnswerInputEnabled { get; set; }
     public bool ImageFullscreen { get; set; }
     public bool WinnerDeclared { get; set; }
@@ -76,7 +77,7 @@ public class BuzzIn
 {
     public string PlayerId { get; set; } = "";
     public string PlayerName { get; set; } = "";
-    public DateTime Timestamp { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
 }
 
 public class PlayerAnswer
