@@ -29,10 +29,13 @@ export class TimeSync {
   private rtt = Infinity;
   private synced = false;
   private intervalId: ReturnType<typeof setInterval> | null = null;
+  private stopped = false;
 
   /** Start periodic synchronization. */
   async start(): Promise<void> {
+    this.stopped = false;
     await this.performSync();
+    if (this.stopped) return;
     this.intervalId = setInterval(() => {
       this.performSync();
     }, SYNC_INTERVAL_MS);
@@ -40,6 +43,7 @@ export class TimeSync {
 
   /** Stop periodic synchronization. */
   stop(): void {
+    this.stopped = true;
     if (this.intervalId !== null) {
       clearInterval(this.intervalId);
       this.intervalId = null;
