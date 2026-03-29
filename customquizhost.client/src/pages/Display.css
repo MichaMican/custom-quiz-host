@@ -748,10 +748,9 @@
 /* === Podium === */
 .podium {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
   align-items: flex-end;
   justify-content: center;
-  flex-wrap: wrap;
   margin-bottom: 2rem;
 }
 
@@ -760,28 +759,73 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 1.5rem 2.5rem;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15));
   border-radius: 20px;
   animation: podiumEnter 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* 1st place: center, biggest, elevated */
 .podium-entry-1 {
+  order: 2;
+  padding: 2rem 3rem;
+  margin-bottom: 2rem;
   border: 2px solid rgba(251, 191, 36, 0.5);
-  box-shadow: 0 0 40px rgba(251, 191, 36, 0.2), 0 0 80px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 40px rgba(251, 191, 36, 0.25), 0 0 80px rgba(99, 102, 241, 0.1);
   animation-delay: 0s;
 }
 
+.podium-entry-1 .podium-rank {
+  font-size: 4rem;
+}
+
+.podium-entry-1 .podium-name {
+  font-size: 2.8rem;
+}
+
+.podium-entry-1 .podium-score {
+  font-size: 1.6rem;
+}
+
+/* 2nd place: left, medium size */
 .podium-entry-2 {
+  order: 1;
+  padding: 1.4rem 2rem;
   border: 2px solid rgba(192, 192, 192, 0.5);
   box-shadow: 0 0 30px rgba(192, 192, 192, 0.15), 0 0 60px rgba(99, 102, 241, 0.1);
   animation-delay: 0.15s;
 }
 
+.podium-entry-2 .podium-rank {
+  font-size: 2.8rem;
+}
+
+.podium-entry-2 .podium-name {
+  font-size: 2rem;
+}
+
+.podium-entry-2 .podium-score {
+  font-size: 1.2rem;
+}
+
+/* 3rd place: right, smallest */
 .podium-entry-3 {
+  order: 3;
+  padding: 1.2rem 1.8rem;
   border: 2px solid rgba(205, 127, 50, 0.5);
   box-shadow: 0 0 30px rgba(205, 127, 50, 0.15), 0 0 60px rgba(99, 102, 241, 0.1);
   animation-delay: 0.3s;
+}
+
+.podium-entry-3 .podium-rank {
+  font-size: 2.4rem;
+}
+
+.podium-entry-3 .podium-name {
+  font-size: 1.7rem;
+}
+
+.podium-entry-3 .podium-score {
+  font-size: 1.1rem;
 }
 
 @keyframes podiumEnter {
@@ -796,19 +840,16 @@
 }
 
 .podium-rank {
-  font-size: 3rem;
   line-height: 1;
   margin-bottom: 0.5rem;
 }
 
 .podium-name {
-  font-size: 2.5rem;
   font-weight: 800;
   color: #e2e8f0;
 }
 
 .podium-score {
-  font-size: 1.4rem;
   font-weight: 700;
   margin-top: 0.3rem;
 }
