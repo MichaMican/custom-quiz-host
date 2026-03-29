@@ -19,6 +19,10 @@ interface SyncSample {
  *
  * The buzz endpoint receives this adjusted timestamp so the server can order
  * buzzes by the estimated "true" time, compensating for network latency.
+ *
+ * The server send time (t3) is captured by ASP.NET middleware and returned in
+ * the X-Server-Send-Time response header. This ensures the timestamp accounts
+ * for JSON serialization overhead.
  */
 export class TimeSync {
   private offset = 0;
@@ -84,13 +88,17 @@ export class TimeSync {
     this.offset = median.offset;
     this.rtt = median.rtt;
     this.synced = true;
+
+    console.log(
+      `[TimeSync] offset=${this.offset.toFixed(1)}ms, RTT=${this.rtt.toFixed(1)}ms (from ${samples.length} samples)`,
+    );
   }
 
   /**
    * Perform a single NTP-like exchange:
    *   t1 = client send time
-   *   t2 = server receive time  (from response)
-   *   t3 = server send time     (from response)
+   *   t2 = server receive time  (from response body)
+   *   t3 = server send time     (from X-Server-Send-Time response header)
    *   t4 = client receive time
    */
   private async singleSync(): Promise<SyncSample | null> {
@@ -109,11 +117,15 @@ export class TimeSync {
     const data = (await response.json()) as {
       clientSendTime: number;
       serverReceiveTime: number;
-      serverSendTime: number;
     };
 
+    // Read server send time from the response header (set by middleware
+    // just before bytes are written to the network).
+    const serverSendTimeHeader = response.headers.get("X-Server-Send-Time");
+    if (!serverSendTimeHeader) return null;
+
     const t2 = data.serverReceiveTime;
-    const t3 = data.serverSendTime;
+    const t3 = Number(serverSendTimeHeader);
 
     const rtt = t4 - t1 - (t3 - t2);
     const offset = (t2 - t1 + (t3 - t4)) / 2;

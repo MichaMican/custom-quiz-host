@@ -17,8 +17,9 @@ public class BuzzerController : ControllerBase
 
     /// <summary>
     /// NTP-like time synchronization endpoint.
-    /// Client sends its send timestamp, server returns server receive and send timestamps.
-    /// Client uses these to compute clock offset and RTT.
+    /// Client sends its send timestamp, server returns server receive time in the body.
+    /// The server send time is captured by TimeSyncMiddleware and returned as the
+    /// X-Server-Send-Time response header (set just before bytes hit the network).
     /// </summary>
     [HttpPost("sync")]
     public ActionResult<TimeSyncResponse> Sync([FromBody] TimeSyncRequest request)
@@ -28,8 +29,7 @@ public class BuzzerController : ControllerBase
         return Ok(new TimeSyncResponse
         {
             ClientSendTime = request.ClientSendTime,
-            ServerReceiveTime = serverReceiveTime,
-            ServerSendTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            ServerReceiveTime = serverReceiveTime
         });
     }
 

@@ -101,6 +101,7 @@ function RemoteControl() {
         answerRevealed: false,
         mediaVolume: 70,
         pauseOnBuzz: false,
+        buzzerSyncEnabled: false,
         answerInputEnabled: false,
         imageFullscreen: false,
         winnerDeclared: false,
@@ -689,6 +690,18 @@ function RemoteControl() {
                 </ul>
               </>
             )}
+          </section>
+
+          <section className="remote-section">
+            <h2>Buzzer Settings</h2>
+            <label className="pause-on-buzz-label">
+              <input
+                type="checkbox"
+                checked={gameState?.buzzerSyncEnabled ?? false}
+                onChange={(e) => invoke("SetBuzzerSyncEnabled", e.target.checked)}
+              />
+              Activate Buzzer Sync (experimental)
+            </label>
           </section>
 
           <section className="remote-section">
