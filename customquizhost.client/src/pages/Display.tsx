@@ -19,6 +19,7 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [mozaikBlur, setMozaikBlur] = useState(40);
+  const [videoBuffering, setVideoBuffering] = useState(false);
 
   // Audio volume control
   useEffect(() => {
@@ -56,6 +57,24 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
     }
   }, [mediaPlaying, question.questionType]);
 
+  // Video buffering detection
+  useEffect(() => {
+    if (question.questionType !== "Video") return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const onWaiting = () => setVideoBuffering(true);
+    const onPlaying = () => setVideoBuffering(false);
+
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("playing", onPlaying);
+
+    return () => {
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("playing", onPlaying);
+    };
+  }, [question.questionType]);
+
   // Mozaik blur animation
   useEffect(() => {
     if (question.questionType !== "ImageMozaik") return;
@@ -75,6 +94,56 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
     return () => clearInterval(interval);
   }, [mozaikRevealing, mozaikRevealSpeed, question.questionType]);
 
+  const mediaUrl = question.mediaFileName ? `/uploads/${question.mediaFileName}` : null;
+
+  // Handle Video questions in both revealed and unrevealed states
+  // to keep the same <video> element in the React tree and preserve buffered data
+  if (question.questionType === "Video") {
+    return (
+      <>
+        {(!revealed || !imageFullscreen) && (
+          <div className="display-question-category">{categoryName}</div>
+        )}
+        {(!revealed || !imageFullscreen) && (
+          <div className="display-question-points">{question.points}</div>
+        )}
+        {mediaUrl && (
+          <div className={`display-video-wrapper${!revealed ? " preloading" : ""}`}>
+            <video
+              ref={videoRef}
+              src={mediaUrl}
+              preload="auto"
+              className={`display-question-video${revealed && imageFullscreen ? " fullscreen" : ""}`}
+            />
+            {revealed && videoBuffering && mediaPlaying && (
+              <div className={`display-video-spinner-overlay${imageFullscreen ? " fullscreen" : ""}`}>
+                <div className="display-video-spinner" />
+              </div>
+            )}
+          </div>
+        )}
+        {!revealed && questionTextRevealed && question.text && (
+          <div className="display-question-text">{question.text}</div>
+        )}
+        {revealed && !imageFullscreen && questionTextRevealed && question.text && (
+          <div className="display-question-text">{question.text}</div>
+        )}
+        {revealed && !imageFullscreen && answerRevealed && (
+          <div className="display-answer-section">
+            {question.answer && <div className="display-answer-text">{question.answer}</div>}
+            {question.answerImageFileName && (
+              <img
+                src={`/uploads/${question.answerImageFileName}`}
+                alt="Answer"
+                className="display-answer-image"
+              />
+            )}
+          </div>
+        )}
+      </>
+    );
+  }
+
   if (!revealed) {
     return (
       <>
@@ -88,8 +157,6 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
       </>
     );
   }
-
-  const mediaUrl = question.mediaFileName ? `/uploads/${question.mediaFileName}` : null;
 
   switch (question.questionType) {
     case "Image":
@@ -168,37 +235,6 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
             <div className="display-question-text">{question.text}</div>
           )}
           {answerRevealed && (
-            <div className="display-answer-section">
-              {question.answer && <div className="display-answer-text">{question.answer}</div>}
-              {question.answerImageFileName && (
-                <img
-                  src={`/uploads/${question.answerImageFileName}`}
-                  alt="Answer"
-                  className="display-answer-image"
-                />
-              )}
-            </div>
-          )}
-        </>
-      );
-
-    case "Video":
-      return (
-        <>
-          {!imageFullscreen && <div className="display-question-category">{categoryName}</div>}
-          {!imageFullscreen && <div className="display-question-points">{question.points}</div>}
-          {mediaUrl && (
-            <video
-              ref={videoRef}
-              src={mediaUrl}
-              preload="auto"
-              className={`display-question-video${imageFullscreen ? " fullscreen" : ""}`}
-            />
-          )}
-          {!imageFullscreen && questionTextRevealed && question.text && (
-            <div className="display-question-text">{question.text}</div>
-          )}
-          {!imageFullscreen && answerRevealed && (
             <div className="display-answer-section">
               {question.answer && <div className="display-answer-text">{question.answer}</div>}
               {question.answerImageFileName && (
@@ -321,6 +357,33 @@ function Display() {
     audio.load();
     preloadedBuzzerRef.current = audio;
   }, []);
+
+  // Preload video content as soon as a video question is selected,
+  // even before the view transition, to give streaming a head start
+  const preloadVideoRef = useRef<HTMLVideoElement | null>(null);
+  const videoPreloadUrl = gameState?.currentQuestion?.questionType === "Video" && gameState?.currentQuestion?.mediaFileName
+    ? `/uploads/${gameState.currentQuestion.mediaFileName}`
+    : null;
+
+  useEffect(() => {
+    const cleanupPreload = () => {
+      if (preloadVideoRef.current) {
+        preloadVideoRef.current.removeAttribute("src");
+        preloadVideoRef.current.load();
+        preloadVideoRef.current = null;
+      }
+    };
+
+    cleanupPreload();
+    if (videoPreloadUrl) {
+      const video = document.createElement("video");
+      video.preload = "auto";
+      video.src = videoPreloadUrl;
+      video.load();
+      preloadVideoRef.current = video;
+    }
+    return cleanupPreload;
+  }, [videoPreloadUrl]);
 
   const currentQuestion = gameState?.currentQuestion ?? null;
   const currentQuestionId = currentQuestion?.id ?? null;
