@@ -868,6 +868,8 @@
   order: 2;
   padding: 2rem 3rem;
   margin-bottom: 2rem;
+  max-width: 300px;
+  width: 300px;
   border: 2px solid rgba(251, 191, 36, 0.5);
   box-shadow: 0 0 40px rgba(251, 191, 36, 0.25), 0 0 80px rgba(99, 102, 241, 0.1);
   animation-delay: 0s;
@@ -889,6 +891,8 @@
 .podium-entry-2 {
   order: 1;
   padding: 1.4rem 2rem;
+  max-width: 240px;
+  width: 240px;
   border: 2px solid rgba(192, 192, 192, 0.5);
   box-shadow: 0 0 30px rgba(192, 192, 192, 0.15), 0 0 60px rgba(99, 102, 241, 0.1);
   animation-delay: 0.15s;
@@ -910,6 +914,8 @@
 .podium-entry-3 {
   order: 3;
   padding: 1.2rem 1.8rem;
+  max-width: 220px;
+  width: 220px;
   border: 2px solid rgba(205, 127, 50, 0.5);
   box-shadow: 0 0 30px rgba(205, 127, 50, 0.15), 0 0 60px rgba(99, 102, 241, 0.1);
   animation-delay: 0.3s;
@@ -946,6 +952,8 @@
 .podium-name {
   font-weight: 800;
   color: #e2e8f0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .podium-score {
