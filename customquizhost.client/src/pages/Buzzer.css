@@ -1,6 +1,8 @@
 .buzzer-page {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
   background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
 }
 
