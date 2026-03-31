@@ -104,6 +104,7 @@ function RemoteControl() {
         buzzerSyncEnabled: false,
         answerInputEnabled: false,
         imageFullscreen: false,
+        mediaVisible: true,
         winnerDeclared: false,
         eventHistory: [],
       };
@@ -927,6 +928,12 @@ function RemoteControl() {
               )}
               {gameState.questionRevealed && (gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "Video" || gameState.currentQuestion.questionType === "ImageMozaik" || gameState.currentQuestion.questionType === "Image") && (
                 <div className="media-controls">
+                  <button
+                    className={`btn-media ${gameState.mediaVisible ? "" : "active"}`}
+                    onClick={() => invoke(gameState.mediaVisible ? "HideMedia" : "ShowMedia")}
+                  >
+                    {gameState.mediaVisible ? "🙈 Hide Media" : "👁 Show Media"}
+                  </button>
                   {(gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "Video") && (
                     <>
                       <button

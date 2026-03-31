@@ -68,6 +68,7 @@ export interface GameState {
   buzzerSyncEnabled: boolean;
   answerInputEnabled: boolean;
   imageFullscreen: boolean;
+  mediaVisible: boolean;
   winnerDeclared: boolean;
   eventHistory: EventHistoryEntry[];
 }
