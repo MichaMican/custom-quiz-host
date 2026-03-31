@@ -912,28 +912,34 @@ function RemoteControl() {
                   </div>
                 )}
               </div>
-              {!gameState.questionRevealed && (
+              {gameState.currentQuestion.questionType === "Standard" && !gameState.questionRevealed && (
                 <button
                   className="btn-reveal"
                   onClick={() => invoke("RevealQuestion")}
                 >
-                  {gameState.currentQuestion.questionType === "Image" || gameState.currentQuestion.questionType === "ImageMozaik"
-                    ? "Show Image"
-                    : gameState.currentQuestion.questionType === "Audio"
-                      ? "Display Audio"
-                      : gameState.currentQuestion.questionType === "Video"
-                        ? "Show Video"
-                        : "Show Question"}
+                  Show Question
                 </button>
               )}
+              {(gameState.currentQuestion.questionType === "Image" || gameState.currentQuestion.questionType === "ImageMozaik" || gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "Video") && (() => {
+                const qt = gameState.currentQuestion!.questionType;
+                const mediaShowing = gameState.questionRevealed && gameState.mediaVisible;
+                const showLabel = qt === "Audio" ? "Display Audio" : qt === "Video" ? "Show Video" : "Show Image";
+                const hideLabel = qt === "Audio" ? "🙈 Hide Audio" : qt === "Video" ? "🙈 Hide Video" : "🙈 Hide Image";
+                return (
+                  <button
+                    className={`btn-reveal${mediaShowing ? " active" : ""}`}
+                    onClick={() => {
+                      if (!gameState.questionRevealed) invoke("RevealQuestion");
+                      else if (gameState.mediaVisible) invoke("HideMedia");
+                      else invoke("ShowMedia");
+                    }}
+                  >
+                    {mediaShowing ? hideLabel : showLabel}
+                  </button>
+                );
+              })()}
               {gameState.questionRevealed && (gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "Video" || gameState.currentQuestion.questionType === "ImageMozaik" || gameState.currentQuestion.questionType === "Image") && (
                 <div className="media-controls">
-                  <button
-                    className={`btn-media ${gameState.mediaVisible ? "" : "active"}`}
-                    onClick={() => invoke(gameState.mediaVisible ? "HideMedia" : "ShowMedia")}
-                  >
-                    {gameState.mediaVisible ? "🙈 Hide Media" : "👁 Show Media"}
-                  </button>
                   {(gameState.currentQuestion.questionType === "Audio" || gameState.currentQuestion.questionType === "Video") && (
                     <>
                       <button
