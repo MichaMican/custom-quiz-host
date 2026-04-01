@@ -4,7 +4,7 @@ import type { Player, Question } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
 
-function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, questionTextRevealed, answerRevealed, mediaVolume, imageFullscreen }: {
+function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, questionTextRevealed, answerRevealed, mediaVolume, imageFullscreen, mediaVisible }: {
   question: Question;
   categoryName: string;
   revealed: boolean;
@@ -15,6 +15,7 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
   answerRevealed: boolean;
   mediaVolume: number;
   imageFullscreen: boolean;
+  mediaVisible: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -101,21 +102,21 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
   if (question.questionType === "Video") {
     return (
       <>
-        {(!revealed || !imageFullscreen) && (
+        {(!revealed || !imageFullscreen || !mediaVisible) && (
           <div className="display-question-category">{categoryName}</div>
         )}
-        {(!revealed || !imageFullscreen) && (
+        {(!revealed || !imageFullscreen || !mediaVisible) && (
           <div className="display-question-points">{question.points}</div>
         )}
         {mediaUrl && (
-          <div className={`display-video-wrapper${!revealed ? " preloading" : ""}`}>
+          <div className={`display-video-wrapper${!revealed || !mediaVisible ? " preloading" : ""}`}>
             <video
               ref={videoRef}
               src={mediaUrl}
               preload="auto"
-              className={`display-question-video${revealed && imageFullscreen ? " fullscreen" : ""}`}
+              className={`display-question-video${revealed && mediaVisible && imageFullscreen ? " fullscreen" : ""}`}
             />
-            {revealed && videoBuffering && mediaPlaying && (
+            {revealed && mediaVisible && videoBuffering && mediaPlaying && (
               <div className={`display-video-spinner-overlay${imageFullscreen ? " fullscreen" : ""}`}>
                 <div className="display-video-spinner" />
               </div>
@@ -125,10 +126,10 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
         {!revealed && questionTextRevealed && question.text && (
           <div className="display-question-text">{question.text}</div>
         )}
-        {revealed && !imageFullscreen && questionTextRevealed && question.text && (
+        {revealed && (!imageFullscreen || !mediaVisible) && questionTextRevealed && question.text && (
           <div className="display-question-text">{question.text}</div>
         )}
-        {revealed && !imageFullscreen && answerRevealed && (
+        {revealed && (!imageFullscreen || !mediaVisible) && answerRevealed && (
           <div className="display-answer-section">
             {question.answer && <div className="display-answer-text">{question.answer}</div>}
             {question.answerImageFileName && (
@@ -162,19 +163,19 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
     case "Image":
       return (
         <>
-          {!imageFullscreen && <div className="display-question-category">{categoryName}</div>}
-          {!imageFullscreen && <div className="display-question-points">{question.points}</div>}
-          {mediaUrl && (
+          {(!imageFullscreen || !mediaVisible) && <div className="display-question-category">{categoryName}</div>}
+          {(!imageFullscreen || !mediaVisible) && <div className="display-question-points">{question.points}</div>}
+          {mediaUrl && mediaVisible && (
             <img
               src={mediaUrl}
               alt="Question"
               className={`display-question-image${imageFullscreen ? " fullscreen" : ""}`}
             />
           )}
-          {!imageFullscreen && questionTextRevealed && question.text && (
+          {(!imageFullscreen || !mediaVisible) && questionTextRevealed && question.text && (
             <div className="display-question-text">{question.text}</div>
           )}
-          {!imageFullscreen && answerRevealed && (
+          {(!imageFullscreen || !mediaVisible) && answerRevealed && (
             <div className="display-answer-section">
               {question.answer && <div className="display-answer-text">{question.answer}</div>}
               {question.answerImageFileName && (
@@ -192,9 +193,9 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
     case "ImageMozaik":
       return (
         <>
-          {!imageFullscreen && <div className="display-question-category">{categoryName}</div>}
-          {!imageFullscreen && <div className="display-question-points">{question.points}</div>}
-          {mediaUrl && (
+          {(!imageFullscreen || !mediaVisible) && <div className="display-question-category">{categoryName}</div>}
+          {(!imageFullscreen || !mediaVisible) && <div className="display-question-points">{question.points}</div>}
+          {mediaUrl && mediaVisible && (
             <img
               src={mediaUrl}
               alt="Question"
@@ -202,10 +203,10 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
               style={{ filter: `blur(${mozaikBlur}px)` }}
             />
           )}
-          {!imageFullscreen && questionTextRevealed && question.text && (
+          {(!imageFullscreen || !mediaVisible) && questionTextRevealed && question.text && (
             <div className="display-question-text">{question.text}</div>
           )}
-          {!imageFullscreen && answerRevealed && (
+          {(!imageFullscreen || !mediaVisible) && answerRevealed && (
             <div className="display-answer-section">
               {question.answer && <div className="display-answer-text">{question.answer}</div>}
               {question.answerImageFileName && (
@@ -225,9 +226,11 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
         <>
           <div className="display-question-category">{categoryName}</div>
           <div className="display-question-points">{question.points}</div>
-          <div className="display-audio-indicator">
-            {mediaPlaying ? "🔊 Playing..." : "🔇 Waiting for host..."}
-          </div>
+          {mediaVisible && (
+            <div className="display-audio-indicator">
+              {mediaPlaying ? "🔊 Playing..." : "🔇 Waiting for host..."}
+            </div>
+          )}
           {mediaUrl && (
             <audio ref={audioRef} src={mediaUrl} preload="auto" />
           )}
@@ -617,6 +620,7 @@ function Display() {
                     answerRevealed={gameState.answerRevealed}
                     mediaVolume={gameState.mediaVolume}
                     imageFullscreen={gameState.imageFullscreen}
+                    mediaVisible={gameState.mediaVisible}
                   />
                 </div>
                 {gameState.buzzerActive && gameState.buzzOrder.length > 0 && (

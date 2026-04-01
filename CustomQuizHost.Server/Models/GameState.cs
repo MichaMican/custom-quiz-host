@@ -42,6 +42,7 @@ public class GameState
     public bool BuzzerSyncEnabled { get; set; }
     public bool AnswerInputEnabled { get; set; }
     public bool ImageFullscreen { get; set; }
+    public bool MediaVisible { get; set; } = true;
     public bool WinnerDeclared { get; set; }
     public List<EventHistoryEntry> EventHistory { get; set; } = new();
 }

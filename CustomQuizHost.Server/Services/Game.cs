@@ -99,6 +99,7 @@ public class GameService
             _gameState.CurrentQuestion = question;
             _gameState.QuestionRevealed = false;
             _gameState.QuestionTextRevealed = false;
+            _gameState.MediaVisible = true;
             await BroadcastGameState();
         }
     }
@@ -135,6 +136,7 @@ public class GameService
         _gameState.PlayerAnswersRevealed = false;
         _gameState.AnswerRevealed = false;
         _gameState.ImageFullscreen = false;
+        _gameState.MediaVisible = true;
         await BroadcastGameState();
     }
 
@@ -154,6 +156,7 @@ public class GameService
             _gameState.PlayerAnswersRevealed = false;
             _gameState.AnswerRevealed = false;
             _gameState.ImageFullscreen = false;
+            _gameState.MediaVisible = true;
             await BroadcastGameState();
         }
     }
@@ -421,6 +424,18 @@ public class GameService
     public async Task SetMozaikRevealSpeed(int speed)
     {
         _gameState.MozaikRevealSpeed = Math.Clamp(speed, 1, 10);
+        await BroadcastGameState();
+    }
+
+    public async Task ShowMedia()
+    {
+        _gameState.MediaVisible = true;
+        await BroadcastGameState();
+    }
+
+    public async Task HideMedia()
+    {
+        _gameState.MediaVisible = false;
         await BroadcastGameState();
     }
 
