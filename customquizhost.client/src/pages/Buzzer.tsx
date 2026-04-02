@@ -170,7 +170,7 @@ function Buzzer() {
             </button>
             {submittedAnswer && (
               <div className="submitted-answer-display">
-                <span className="submitted-answer-label">Your submitted answer:</span>
+                <span className="submitted-answer-label">Submitted answer:</span>
                 <span className="submitted-answer-text">{submittedAnswer.answer}</span>
               </div>
             )}
