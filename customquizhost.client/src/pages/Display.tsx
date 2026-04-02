@@ -412,16 +412,7 @@ function WinnerOverlay({ players, highScores, showHighScores, winnerName }: { pl
 }
 
 function HighScoreBoard({ entries, winnerName }: { entries: HighScoreEntry[]; winnerName: string | null }) {
-  // Find the most recent entry (the one just added for the current winner)
-  const newestEntry = winnerName
-    ? entries.find(e => e.playerName === winnerName &&
-        e.achievedAt === Math.max(
-          ...entries.filter(x => x.playerName === winnerName).map(x => new Date(x.achievedAt).getTime())
-        ).toString()
-      )
-    : null;
-
-  // More robust: just find the entry with the latest achievedAt that matches the winner name
+  // Find the most recently added entry that matches the current winner
   const newestWinnerEntryId = (() => {
     if (!winnerName) return null;
     const matching = entries.filter(e => e.playerName === winnerName);
@@ -430,8 +421,6 @@ function HighScoreBoard({ entries, winnerName }: { entries: HighScoreEntry[]; wi
       new Date(e.achievedAt).getTime() > new Date(latest.achievedAt).getTime() ? e : latest
     ).id;
   })();
-
-  void newestEntry; // suppress unused
 
   return (
     <div className="highscore-board">
