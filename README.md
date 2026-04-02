@@ -21,6 +21,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Media Support**: Upload and play image, audio, and video files
 - **Score Tracking**: Automatic score updates based on correct/incorrect answers
 - **Persistent State**: Auto-save and restore game state using localStorage
+- **Highscore Board**: Persistent hall of fame across game sessions and restarts, shown alongside the winner screen
 - **Import/Export**: Import and export game state for backup or reuse
 
 ## Technology Stack
@@ -53,10 +54,12 @@ The easiest way to get started is with Docker Compose using the pre-built image 
          - "8080:8080"
        volumes:
          - uploads:/app/uploads
+         - highscores:/app/highscores
        restart: unless-stopped
 
    volumes:
      uploads:
+     highscores:
    ```
 
 2. **Start the application**
@@ -69,7 +72,7 @@ The easiest way to get started is with Docker Compose using the pre-built image 
    - Remote Control: `http://localhost:8080/remote`
    - Buzzer: `http://localhost:8080/buzzer`
 
-Uploaded media files (images, audio) are persisted in the `uploads` Docker volume and survive container restarts.
+Uploaded media files (images, audio) are persisted in the `uploads` Docker volume and survive container restarts. Highscores are stored separately in the `highscores` volume for independent persistence.
 
 ## Prerequisites
 
@@ -123,9 +126,9 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
    docker run -p 8080:8080 custom-quiz-host
    ```
 
-   Option B: With a volume mount (uploads are persisted)
+   Option B: With a volume mount (uploads and highscores are persisted)
    ```bash
-   docker run -p 8080:8080 -v custom-quiz-host-uploads:/app/uploads custom-quiz-host
+   docker run -p 8080:8080 -v custom-quiz-host-uploads:/app/uploads -v custom-quiz-host-highscores:/app/highscores custom-quiz-host
    ```
 
 3. **Access the application**

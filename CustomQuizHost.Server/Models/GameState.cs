@@ -44,6 +44,8 @@ public class GameState
     public bool ImageFullscreen { get; set; }
     public bool MediaVisible { get; set; } = true;
     public bool WinnerDeclared { get; set; }
+    public bool ShowHighScoreBoard { get; set; }
+    public List<HighScoreEntry> HighScoreBoard { get; set; } = new();
     public List<EventHistoryEntry> EventHistory { get; set; } = new();
 }
 
@@ -97,4 +99,12 @@ public class EventHistoryEntry
     public int? Points { get; set; }
     public string? QuestionText { get; set; }
     public string? CategoryName { get; set; }
+}
+
+public class HighScoreEntry
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string PlayerName { get; set; } = "";
+    public int Score { get; set; }
+    public DateTimeOffset AchievedAt { get; set; }
 }

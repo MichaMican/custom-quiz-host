@@ -7,12 +7,15 @@ namespace CustomQuizHost.Server.Services;
 public class GameService
 {
     private readonly IHubContext<GameHub> _hubContext;
+    private readonly HighScoreService _highScoreService;
     private readonly Lock _buzzLock = new();
     private GameState _gameState = new();
 
-    public GameService(IHubContext<GameHub> hubContext)
+    public GameService(IHubContext<GameHub> hubContext, HighScoreService highScoreService)
     {
         _hubContext = hubContext;
+        _highScoreService = highScoreService;
+        _gameState.HighScoreBoard = _highScoreService.LoadHighScores();
     }
 
     public GameState GameState => _gameState;
@@ -508,12 +511,41 @@ public class GameService
     public async Task DeclareWinner()
     {
         _gameState.WinnerDeclared = true;
+
+        // Add the winner (top scoring player) to the persistent highscore board
+        var winner = _gameState.Players
+            .OrderByDescending(p => p.Score)
+            .FirstOrDefault();
+        if (winner != null)
+        {
+            _gameState.HighScoreBoard = _highScoreService.AddHighScore(winner.Name, winner.Score);
+        }
+
         await BroadcastGameState();
     }
 
     public async Task UndeclareWinner()
     {
         _gameState.WinnerDeclared = false;
+        _gameState.ShowHighScoreBoard = false;
+        await BroadcastGameState();
+    }
+
+    public async Task ShowHighScoreBoard()
+    {
+        _gameState.ShowHighScoreBoard = true;
+        await BroadcastGameState();
+    }
+
+    public async Task HideHighScoreBoard()
+    {
+        _gameState.ShowHighScoreBoard = false;
+        await BroadcastGameState();
+    }
+
+    public async Task ClearHighScores()
+    {
+        _gameState.HighScoreBoard = _highScoreService.ClearHighScores();
         await BroadcastGameState();
     }
 

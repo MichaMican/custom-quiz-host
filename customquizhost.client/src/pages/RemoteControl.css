@@ -804,3 +804,49 @@
 .btn-revert-winner:hover {
   box-shadow: 0 4px 16px rgba(100, 116, 139, 0.4);
 }
+
+.winner-extras {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-highscore-toggle {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: rgba(30, 41, 59, 0.5);
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.btn-highscore-toggle.active {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.15));
+  border-color: rgba(251, 191, 36, 0.5);
+  color: #fbbf24;
+}
+
+.btn-highscore-toggle:hover {
+  box-shadow: 0 2px 12px rgba(251, 191, 36, 0.2);
+}
+
+.btn-clear-highscores {
+  padding: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: rgba(30, 41, 59, 0.5);
+  color: #f87171;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-highscores:hover {
+  background: rgba(248, 113, 113, 0.1);
+  box-shadow: 0 2px 12px rgba(248, 113, 113, 0.2);
+}

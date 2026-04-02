@@ -106,6 +106,8 @@ function RemoteControl() {
         imageFullscreen: false,
         mediaVisible: true,
         winnerDeclared: false,
+        showHighScoreBoard: false,
+        highScoreBoard: [],
         eventHistory: [],
       };
       await invoke("ImportGameSettings", emptyState);
@@ -1091,12 +1093,41 @@ function RemoteControl() {
 
           <section className="remote-section">
             {gameState.winnerDeclared ? (
-              <button
-                className="btn-revert-winner"
-                onClick={() => invoke("UndeclareWinner")}
-              >
-                ↩ Revert Winner
-              </button>
+              <>
+                <button
+                  className="btn-revert-winner"
+                  onClick={() => invoke("UndeclareWinner")}
+                >
+                  ↩ Revert Winner
+                </button>
+                <div className="winner-extras">
+                  {gameState.showHighScoreBoard ? (
+                    <button
+                      className="btn-highscore-toggle"
+                      onClick={() => invoke("HideHighScoreBoard")}
+                    >
+                      ⭐ Hide Highscores
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-highscore-toggle active"
+                      onClick={() => invoke("ShowHighScoreBoard")}
+                    >
+                      ⭐ Show Highscores
+                    </button>
+                  )}
+                  <button
+                    className="btn-clear-highscores"
+                    onClick={() => {
+                      if (window.confirm("Clear all highscores? This cannot be undone.")) {
+                        invoke("ClearHighScores");
+                      }
+                    }}
+                  >
+                    🗑️ Clear Highscores
+                  </button>
+                </div>
+              </>
             ) : (
               <button
                 className="btn-declare-winner"
