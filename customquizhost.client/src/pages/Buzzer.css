@@ -214,6 +214,31 @@
   cursor: not-allowed;
 }
 
+.submitted-answer-display {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.submitted-answer-label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.submitted-answer-text {
+  font-size: 1rem;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
 .btn-history {
   width: 100%;
   margin-top: 28px;
