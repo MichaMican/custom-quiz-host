@@ -79,5 +79,6 @@ export interface GameState {
   winnerDeclared: boolean;
   showHighScoreBoard: boolean;
   highScoreBoard: HighScoreEntry[];
+  lowScoreBoard: HighScoreEntry[];
   eventHistory: EventHistoryEntry[];
 }

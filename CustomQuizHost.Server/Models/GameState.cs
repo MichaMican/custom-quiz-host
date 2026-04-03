@@ -46,6 +46,7 @@ public class GameState
     public bool WinnerDeclared { get; set; }
     public bool ShowHighScoreBoard { get; set; }
     public List<HighScoreEntry> HighScoreBoard { get; set; } = new();
+    public List<HighScoreEntry> LowScoreBoard { get; set; } = new();
     public List<EventHistoryEntry> EventHistory { get; set; } = new();
 }
 

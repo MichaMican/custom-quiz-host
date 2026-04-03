@@ -13,6 +13,11 @@ var highScoresPath = Path.Combine(builder.Environment.ContentRootPath, "highscor
 Directory.CreateDirectory(highScoresPath);
 builder.Services.AddSingleton(new HighScoreService(highScoresPath));
 
+// Register LowScoreService with a separate storage path for Docker volume mounting
+var lowScoresPath = Path.Combine(builder.Environment.ContentRootPath, "lowscores");
+Directory.CreateDirectory(lowScoresPath);
+builder.Services.AddSingleton(new LowScoreService(lowScoresPath));
+
 builder.Services.AddSingleton<GameService>();
 
 var app = builder.Build();

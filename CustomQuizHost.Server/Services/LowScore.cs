@@ -3,7 +3,7 @@ using CustomQuizHost.Server.Models;
 
 namespace CustomQuizHost.Server.Services;
 
-public class HighScoreService
+public class LowScoreService
 {
     private readonly string _filePath;
     private readonly Lock _fileLock = new();
@@ -13,65 +13,60 @@ public class HighScoreService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public HighScoreService(string highScoresDirectory)
+    public LowScoreService(string lowScoresDirectory)
     {
-        Directory.CreateDirectory(highScoresDirectory);
-        _filePath = Path.Combine(highScoresDirectory, "highscores.json");
+        Directory.CreateDirectory(lowScoresDirectory);
+        _filePath = Path.Combine(lowScoresDirectory, "lowscores.json");
     }
 
-    public List<HighScoreEntry> LoadHighScores()
+    public List<HighScoreEntry> LoadLowScores()
     {
         lock (_fileLock)
         {
-            if (!File.Exists(_filePath))
-                return new List<HighScoreEntry>();
-
-            var json = File.ReadAllText(_filePath);
-            return JsonSerializer.Deserialize<List<HighScoreEntry>>(json, JsonOptions)
-                   ?? new List<HighScoreEntry>();
+            return LoadLowScoresInternal();
         }
     }
 
     public const int MaxEntries = 5;
 
-    public List<HighScoreEntry> AddHighScore(HighScoreEntry entry)
+    public List<HighScoreEntry> AddLowScore(HighScoreEntry entry)
     {
         lock (_fileLock)
         {
-            var entries = LoadHighScoresInternal();
+            var entries = LoadLowScoresInternal();
             entries.Add(entry);
             entries = entries
-                .OrderByDescending(e => e.Score)
+                .OrderBy(e => e.Score)
                 .ThenBy(e => e.AchievedAt)
                 .Take(MaxEntries)
                 .ToList();
-            SaveHighScores(entries);
+            SaveLowScores(entries);
             return entries;
         }
     }
 
-    public List<HighScoreEntry> RemoveHighScore(string entryId)
+    public List<HighScoreEntry> RemoveLowScore(string entryId)
     {
         lock (_fileLock)
         {
-            var entries = LoadHighScoresInternal();
+            var entries = LoadLowScoresInternal();
             entries.RemoveAll(e => e.Id == entryId);
-            SaveHighScores(entries);
+            SaveLowScores(entries);
             return entries;
         }
     }
 
-    public List<HighScoreEntry> ClearHighScores()
+    public List<HighScoreEntry> ClearLowScores()
     {
         lock (_fileLock)
         {
             var empty = new List<HighScoreEntry>();
-            SaveHighScores(empty);
+            SaveLowScores(empty);
             return empty;
         }
     }
 
-    private List<HighScoreEntry> LoadHighScoresInternal()
+    private List<HighScoreEntry> LoadLowScoresInternal()
     {
         if (!File.Exists(_filePath))
             return new List<HighScoreEntry>();
@@ -81,7 +76,7 @@ public class HighScoreService
                ?? new List<HighScoreEntry>();
     }
 
-    private void SaveHighScores(List<HighScoreEntry> entries)
+    private void SaveLowScores(List<HighScoreEntry> entries)
     {
         var json = JsonSerializer.Serialize(entries, JsonOptions);
         File.WriteAllText(_filePath, json);
