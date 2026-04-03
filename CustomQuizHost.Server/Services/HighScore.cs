@@ -113,17 +113,31 @@ public class HighScoreService
         var json = File.ReadAllText(_filePath);
 
         // Try to load the combined format
-        var data = JsonSerializer.Deserialize<ScoreBoardData>(json, JsonOptions);
-        if (data != null && (data.HighScores.Count > 0 || data.LowScores.Count > 0))
-            return data;
+        try
+        {
+            var data = JsonSerializer.Deserialize<ScoreBoardData>(json, JsonOptions);
+            if (data != null && (data.HighScores.Count > 0 || data.LowScores.Count > 0))
+                return data;
+        }
+        catch (JsonException)
+        {
+            // Fall through to legacy migration
+        }
 
         // Migrate legacy format (plain List<HighScoreEntry>)
-        var legacyEntries = JsonSerializer.Deserialize<List<HighScoreEntry>>(json, JsonOptions);
-        if (legacyEntries != null && legacyEntries.Count > 0)
+        try
         {
-            var migrated = new ScoreBoardData { HighScores = legacyEntries };
-            Save(migrated);
-            return migrated;
+            var legacyEntries = JsonSerializer.Deserialize<List<HighScoreEntry>>(json, JsonOptions);
+            if (legacyEntries != null && legacyEntries.Count > 0)
+            {
+                var migrated = new ScoreBoardData { HighScores = legacyEntries };
+                Save(migrated);
+                return migrated;
+            }
+        }
+        catch (JsonException)
+        {
+            // File is corrupted or in an unknown format — start fresh
         }
 
         return new ScoreBoardData();
