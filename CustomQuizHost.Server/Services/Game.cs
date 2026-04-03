@@ -8,19 +8,18 @@ public class GameService
 {
     private readonly IHubContext<GameHub> _hubContext;
     private readonly HighScoreService _highScoreService;
-    private readonly LowScoreService _lowScoreService;
     private readonly Lock _buzzLock = new();
     private GameState _gameState = new();
     private string? _lastAddedHighScoreId;
     private string? _lastAddedLowScoreId;
 
-    public GameService(IHubContext<GameHub> hubContext, HighScoreService highScoreService, LowScoreService lowScoreService)
+    public GameService(IHubContext<GameHub> hubContext, HighScoreService highScoreService)
     {
         _hubContext = hubContext;
         _highScoreService = highScoreService;
-        _lowScoreService = lowScoreService;
-        _gameState.HighScoreBoard = _highScoreService.LoadHighScores();
-        _gameState.LowScoreBoard = _lowScoreService.LoadLowScores();
+        var scoreBoardData = _highScoreService.LoadAll();
+        _gameState.HighScoreBoard = scoreBoardData.HighScores;
+        _gameState.LowScoreBoard = scoreBoardData.LowScores;
     }
 
     public GameState GameState => _gameState;
@@ -531,7 +530,9 @@ public class GameService
                 AchievedAt = DateTimeOffset.UtcNow
             };
             _lastAddedHighScoreId = entry.Id;
-            _gameState.HighScoreBoard = _highScoreService.AddHighScore(entry);
+            var data = _highScoreService.AddHighScore(entry);
+            _gameState.HighScoreBoard = data.HighScores;
+            _gameState.LowScoreBoard = data.LowScores;
         }
 
         // Add the loser (lowest scoring player) to the persistent lowscore board
@@ -548,7 +549,9 @@ public class GameService
                 AchievedAt = DateTimeOffset.UtcNow
             };
             _lastAddedLowScoreId = entry.Id;
-            _gameState.LowScoreBoard = _lowScoreService.AddLowScore(entry);
+            var data = _highScoreService.AddLowScore(entry);
+            _gameState.HighScoreBoard = data.HighScores;
+            _gameState.LowScoreBoard = data.LowScores;
         }
 
         await BroadcastGameState();
@@ -562,13 +565,17 @@ public class GameService
         // Remove the entry that was added by the last DeclareWinner call
         if (_lastAddedHighScoreId != null)
         {
-            _gameState.HighScoreBoard = _highScoreService.RemoveHighScore(_lastAddedHighScoreId);
+            var data = _highScoreService.RemoveHighScore(_lastAddedHighScoreId);
+            _gameState.HighScoreBoard = data.HighScores;
+            _gameState.LowScoreBoard = data.LowScores;
             _lastAddedHighScoreId = null;
         }
 
         if (_lastAddedLowScoreId != null)
         {
-            _gameState.LowScoreBoard = _lowScoreService.RemoveLowScore(_lastAddedLowScoreId);
+            var data = _highScoreService.RemoveLowScore(_lastAddedLowScoreId);
+            _gameState.HighScoreBoard = data.HighScores;
+            _gameState.LowScoreBoard = data.LowScores;
             _lastAddedLowScoreId = null;
         }
 
@@ -589,13 +596,17 @@ public class GameService
 
     public async Task ClearHighScores()
     {
-        _gameState.HighScoreBoard = _highScoreService.ClearHighScores();
+        var data = _highScoreService.ClearHighScores();
+        _gameState.HighScoreBoard = data.HighScores;
+        _gameState.LowScoreBoard = data.LowScores;
         await BroadcastGameState();
     }
 
     public async Task ClearLowScores()
     {
-        _gameState.LowScoreBoard = _lowScoreService.ClearLowScores();
+        var data = _highScoreService.ClearLowScores();
+        _gameState.HighScoreBoard = data.HighScores;
+        _gameState.LowScoreBoard = data.LowScores;
         await BroadcastGameState();
     }
 
