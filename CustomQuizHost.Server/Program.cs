@@ -7,6 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
+
+// Register HighScoreService with a separate storage path for Docker volume mounting
+var highScoresPath = Path.Combine(builder.Environment.ContentRootPath, "highscores");
+Directory.CreateDirectory(highScoresPath);
+builder.Services.AddSingleton(new HighScoreService(highScoresPath));
+
 builder.Services.AddSingleton<GameService>();
 
 var app = builder.Build();

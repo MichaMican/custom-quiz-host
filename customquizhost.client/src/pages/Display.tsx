@@ -1,6 +1,6 @@
 import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
-import type { Player, Question } from "../types/GameState";
+import type { Player, Question, HighScoreEntry } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
 
@@ -351,7 +351,7 @@ function ConfettiPiece({ pieceIndex }: { pieceIndex: number }) {
   );
 }
 
-function WinnerOverlay({ players }: { players: RankedPlayer[] }) {
+function WinnerOverlay({ players, highScores, showHighScores, winnerName }: { players: RankedPlayer[]; highScores: HighScoreEntry[]; showHighScores: boolean; winnerName: string | null }) {
   const confettiPieces = Array.from({ length: CONFETTI_COUNT }, (_, i) => (
     <ConfettiPiece key={i} pieceIndex={i} />
   ));
@@ -363,43 +363,90 @@ function WinnerOverlay({ players }: { players: RankedPlayer[] }) {
   return (
     <div className="winner-overlay">
       <div className="confetti-container">{confettiPieces}</div>
-      <div className="winner-content">
-        <div className="winner-trophy">🏆</div>
-        <div className="winner-title">Results</div>
-        <div className="podium">
-          {podiumPlayers.map((p, i) => (
-            <div key={p.id} className={`podium-entry podium-entry-${i + 1}`}>
-              <div
-                className="podium-rank"
-                style={{ color: getRankColor(p.rank) }}
-              >
-                {getRankLabel(p.rank)}
-              </div>
-              <div className="podium-name">{p.name}</div>
-              <div
-                className="podium-score"
-                style={{ color: getRankColor(p.rank) }}
-              >
-                {p.score} pts
-              </div>
-            </div>
-          ))}
-        </div>
-        {restPlayers.length > 0 && (
-          <div className="runner-up-list">
-            {restPlayers.map((p) => (
-              <div key={p.id} className="runner-up-entry">
-                <span
-                  className="runner-up-rank"
+      <div className={`winner-layout ${showHighScores ? "with-highscores" : ""}`}>
+        <div className="winner-content">
+          <div className="winner-trophy">🏆</div>
+          <div className="winner-title">Results</div>
+          <div className="podium">
+            {podiumPlayers.map((p, i) => (
+              <div key={p.id} className={`podium-entry podium-entry-${i + 1}`}>
+                <div
+                  className="podium-rank"
                   style={{ color: getRankColor(p.rank) }}
                 >
-                  #{p.rank}
-                </span>
-                <span className="runner-up-name">{p.name}</span>
-                <span className="runner-up-score">{p.score} pts</span>
+                  {getRankLabel(p.rank)}
+                </div>
+                <div className="podium-name">{p.name}</div>
+                <div
+                  className="podium-score"
+                  style={{ color: getRankColor(p.rank) }}
+                >
+                  {p.score} pts
+                </div>
               </div>
             ))}
           </div>
+          {restPlayers.length > 0 && (
+            <div className="runner-up-list">
+              {restPlayers.map((p) => (
+                <div key={p.id} className="runner-up-entry">
+                  <span
+                    className="runner-up-rank"
+                    style={{ color: getRankColor(p.rank) }}
+                  >
+                    #{p.rank}
+                  </span>
+                  <span className="runner-up-name">{p.name}</span>
+                  <span className="runner-up-score">{p.score} pts</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {showHighScores && (
+          <HighScoreBoard entries={highScores} winnerName={winnerName} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HighScoreBoard({ entries, winnerName }: { entries: HighScoreEntry[]; winnerName: string | null }) {
+  // Find the most recently added entry that matches the current winner
+  const newestWinnerEntryId = (() => {
+    if (!winnerName) return null;
+    const matching = entries.filter(e => e.playerName === winnerName);
+    if (matching.length === 0) return null;
+    return matching.reduce((latest, e) =>
+      new Date(e.achievedAt).getTime() > new Date(latest.achievedAt).getTime() ? e : latest
+    ).id;
+  })();
+
+  return (
+    <div className="highscore-board">
+      <div className="highscore-header">
+        <span className="highscore-icon">⭐</span>
+        <span className="highscore-title">Hall of Fame</span>
+      </div>
+      <div className="highscore-list">
+        {entries.map((entry, index) => {
+          const isNew = entry.id === newestWinnerEntryId;
+          return (
+            <div
+              key={entry.id}
+              className={`highscore-entry ${isNew ? "highscore-entry-new" : ""}`}
+              style={{ animationDelay: `${0.6 + index * 0.08}s` }}
+            >
+              <span className="highscore-position" style={{ color: getRankColor(index + 1) }}>
+                {index < 3 ? getRankLabel(index + 1) : `#${index + 1}`}
+              </span>
+              <span className="highscore-name">{entry.playerName}</span>
+              <span className="highscore-score">{entry.score} pts</span>
+            </div>
+          );
+        })}
+        {entries.length === 0 && (
+          <div className="highscore-empty">No highscores yet</div>
         )}
       </div>
     </div>
@@ -601,7 +648,16 @@ function Display() {
   return (
     <div className="display-container">
       {gameState.winnerDeclared ? (
-        <WinnerOverlay players={getRankedPlayers(gameState.players)} />
+        <WinnerOverlay
+          players={getRankedPlayers(gameState.players)}
+          highScores={gameState.highScoreBoard || []}
+          showHighScores={gameState.showHighScoreBoard}
+          winnerName={
+            gameState.players.length > 0
+              ? [...gameState.players].sort((a, b) => b.score - a.score)[0].name
+              : null
+          }
+        />
       ) : (
         <>
           <div className={`display-view-wrapper ${viewAnimClass}`}>

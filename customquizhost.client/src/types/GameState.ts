@@ -48,6 +48,13 @@ export interface EventHistoryEntry {
   categoryName: string | null;
 }
 
+export interface HighScoreEntry {
+  id: string;
+  playerName: string;
+  score: number;
+  achievedAt: string;
+}
+
 export interface GameState {
   players: Player[];
   categories: Category[];
@@ -70,5 +77,7 @@ export interface GameState {
   imageFullscreen: boolean;
   mediaVisible: boolean;
   winnerDeclared: boolean;
+  showHighScoreBoard: boolean;
+  highScoreBoard: HighScoreEntry[];
   eventHistory: EventHistoryEntry[];
 }

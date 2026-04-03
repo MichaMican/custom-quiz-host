@@ -119,6 +119,12 @@ public class GameHub : Hub
 
     public async Task UndeclareWinner() => await _gameService.UndeclareWinner();
 
+    public async Task ShowHighScoreBoard() => await _gameService.ShowHighScoreBoard();
+
+    public async Task HideHighScoreBoard() => await _gameService.HideHighScoreBoard();
+
+    public async Task ClearHighScores() => await _gameService.ClearHighScores();
+
     public async Task DoubleRemainingPoints() => await _gameService.DoubleRemainingPoints();
 
     public async Task HalveRemainingPoints() => await _gameService.HalveRemainingPoints();

@@ -38,4 +38,5 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 RUN mkdir -p /app/uploads
+RUN mkdir -p /app/highscores
 ENTRYPOINT ["dotnet", "CustomQuizHost.Server.dll"]
