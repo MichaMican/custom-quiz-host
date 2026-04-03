@@ -32,21 +32,30 @@ public class HighScoreService
         }
     }
 
-    public List<HighScoreEntry> AddHighScore(string playerName, int score)
+    public const int MaxEntries = 10;
+
+    public List<HighScoreEntry> AddHighScore(HighScoreEntry entry)
     {
         lock (_fileLock)
         {
             var entries = LoadHighScoresInternal();
-            entries.Add(new HighScoreEntry
-            {
-                PlayerName = playerName,
-                Score = score,
-                AchievedAt = DateTimeOffset.UtcNow
-            });
+            entries.Add(entry);
             entries = entries
                 .OrderByDescending(e => e.Score)
                 .ThenBy(e => e.AchievedAt)
+                .Take(MaxEntries)
                 .ToList();
+            SaveHighScores(entries);
+            return entries;
+        }
+    }
+
+    public List<HighScoreEntry> RemoveHighScore(string entryId)
+    {
+        lock (_fileLock)
+        {
+            var entries = LoadHighScoresInternal();
+            entries.RemoveAll(e => e.Id == entryId);
             SaveHighScores(entries);
             return entries;
         }

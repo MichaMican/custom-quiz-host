@@ -10,6 +10,7 @@ public class GameService
     private readonly HighScoreService _highScoreService;
     private readonly Lock _buzzLock = new();
     private GameState _gameState = new();
+    private string? _lastAddedHighScoreId;
 
     public GameService(IHubContext<GameHub> hubContext, HighScoreService highScoreService)
     {
@@ -518,7 +519,14 @@ public class GameService
             .FirstOrDefault();
         if (winner != null)
         {
-            _gameState.HighScoreBoard = _highScoreService.AddHighScore(winner.Name, winner.Score);
+            var entry = new HighScoreEntry
+            {
+                PlayerName = winner.Name,
+                Score = winner.Score,
+                AchievedAt = DateTimeOffset.UtcNow
+            };
+            _lastAddedHighScoreId = entry.Id;
+            _gameState.HighScoreBoard = _highScoreService.AddHighScore(entry);
         }
 
         await BroadcastGameState();
@@ -528,6 +536,14 @@ public class GameService
     {
         _gameState.WinnerDeclared = false;
         _gameState.ShowHighScoreBoard = false;
+
+        // Remove the entry that was added by the last DeclareWinner call
+        if (_lastAddedHighScoreId != null)
+        {
+            _gameState.HighScoreBoard = _highScoreService.RemoveHighScore(_lastAddedHighScoreId);
+            _lastAddedHighScoreId = null;
+        }
+
         await BroadcastGameState();
     }
 
