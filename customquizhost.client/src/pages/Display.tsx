@@ -406,7 +406,7 @@ function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerN
         {showHighScores && (
           <div className="score-boards-sidebar">
             <HighScoreBoard entries={highScores} winnerName={winnerName} />
-            <LowScoreBoard entries={lowScores} winnerName={winnerName} />
+            <LowScoreBoard entries={lowScores} />
           </div>
         )}
       </div>
@@ -456,7 +456,7 @@ function HighScoreBoard({ entries, winnerName }: { entries: HighScoreEntry[]; wi
   );
 }
 
-function LowScoreBoard({ entries, winnerName }: { entries: HighScoreEntry[]; winnerName: string | null }) {
+function LowScoreBoard({ entries }: { entries: HighScoreEntry[] }) {
   // Find the most recently added entry
   const newestLoserEntryId = (() => {
     if (entries.length === 0) return null;
