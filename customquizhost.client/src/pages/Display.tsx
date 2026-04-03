@@ -1,5 +1,6 @@
 import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
+import { useSoundEffects } from "../hooks/useSoundEffects";
 import type { Player, Question, HighScoreEntry } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
@@ -499,6 +500,7 @@ function LowScoreBoard({ entries }: { entries: HighScoreEntry[] }) {
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
   useWakeLock();
+  const { play, playWinnerTracks, stopWinnerTracks } = useSoundEffects();
   const prevBuzzCountRef = useRef(0);
   const preloadedBuzzerRef = useRef<HTMLAudioElement | null>(null);
 
@@ -514,6 +516,10 @@ function Display() {
   const [prevScores, setPrevScores] = useState<Map<string, number>>(new Map());
   const [scoreAnimations, setScoreAnimations] = useState<Map<string, { type: "increase" | "decrease"; delta: number }>>(new Map());
   const [pendingScoreClear, setPendingScoreClear] = useState(false);
+
+  // === Winner / highscore sound tracking ===
+  const prevWinnerDeclaredRef = useRef(false);
+  const prevHighScoreCountRef = useRef<number | null>(null);
 
   // Preload buzzer sound on mount so playback is instant
   useEffect(() => {
@@ -583,22 +589,32 @@ function Display() {
   // Execute timed view transitions (only setTimeout callbacks set state - async, not synchronous)
   useEffect(() => {
     if (!transitionType) return;
+
+    // Play woosh sound when a question is selected (board exits)
+    if (transitionType === "board-to-question" || transitionType === "question-change") {
+      play("questionSelectWoosh");
+    }
+
     const delay = transitionType === "question-change" ? 250 : 350;
     const timer = setTimeout(() => {
       if (transitionType === "board-to-question") {
         setActiveView("question");
         setViewAnimClass("anim-question-enter");
+        // Play bling sound when the question appears
+        play("questionShowBling");
       } else if (transitionType === "question-to-board") {
         setActiveView("board");
         setLastQuestion(null);
         setViewAnimClass("anim-board-enter");
       } else {
         setViewAnimClass("anim-question-enter");
+        // Play bling sound when the new question appears
+        play("questionShowBling");
       }
       setTransitionType(null);
     }, delay);
     return () => clearTimeout(timer);
-  }, [transitionType]);
+  }, [transitionType, play]);
 
   // Clear enter/exit animation classes after they complete
   useEffect(() => {
@@ -628,6 +644,12 @@ function Display() {
       if (changes.size > 0) {
         setScoreAnimations(changes);
         setPendingScoreClear(true);
+
+        // Play score change sounds
+        const hasIncrease = [...changes.values()].some(c => c.type === "increase");
+        const hasDecrease = [...changes.values()].some(c => c.type === "decrease");
+        if (hasIncrease) play("pointsAddKling");
+        if (hasDecrease) play("pointsRemoveSlash");
       }
     }
   }
@@ -661,6 +683,27 @@ function Display() {
     }
     prevBuzzCountRef.current = buzzCount;
   }, [buzzCount]);
+
+  // Play winner tracks when winner is declared; stop when undeclared
+  useEffect(() => {
+    const winnerDeclared = gameState?.winnerDeclared ?? false;
+    if (winnerDeclared && !prevWinnerDeclaredRef.current) {
+      playWinnerTracks();
+    } else if (!winnerDeclared && prevWinnerDeclaredRef.current) {
+      stopWinnerTracks();
+    }
+    prevWinnerDeclaredRef.current = winnerDeclared;
+  }, [gameState?.winnerDeclared, playWinnerTracks, stopWinnerTracks]);
+
+  // Play fanfare when a new entry appears on the highscore board
+  useEffect(() => {
+    if (!gameState?.showHighScoreBoard) return;
+    const count = (gameState.highScoreBoard?.length ?? 0) + (gameState.lowScoreBoard?.length ?? 0);
+    if (prevHighScoreCountRef.current !== null && count > prevHighScoreCountRef.current) {
+      play("highscoreFanfare");
+    }
+    prevHighScoreCountRef.current = count;
+  }, [gameState?.highScoreBoard?.length, gameState?.lowScoreBoard?.length, gameState?.showHighScoreBoard, play]);
 
   if (connectionStatus !== "Connected") {
     return (
