@@ -351,7 +351,7 @@ function ConfettiPiece({ pieceIndex }: { pieceIndex: number }) {
   );
 }
 
-function WinnerOverlay({ players, highScores, showHighScores, winnerName }: { players: RankedPlayer[]; highScores: HighScoreEntry[]; showHighScores: boolean; winnerName: string | null }) {
+function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerName }: { players: RankedPlayer[]; highScores: HighScoreEntry[]; lowScores: HighScoreEntry[]; showHighScores: boolean; winnerName: string | null }) {
   const confettiPieces = Array.from({ length: CONFETTI_COUNT }, (_, i) => (
     <ConfettiPiece key={i} pieceIndex={i} />
   ));
@@ -404,7 +404,10 @@ function WinnerOverlay({ players, highScores, showHighScores, winnerName }: { pl
           )}
         </div>
         {showHighScores && (
-          <HighScoreBoard entries={highScores} winnerName={winnerName} />
+          <div className="score-boards-sidebar">
+            <HighScoreBoard entries={highScores} winnerName={winnerName} />
+            <LowScoreBoard entries={lowScores} />
+          </div>
         )}
       </div>
     </div>
@@ -447,6 +450,46 @@ function HighScoreBoard({ entries, winnerName }: { entries: HighScoreEntry[]; wi
         })}
         {entries.length === 0 && (
           <div className="highscore-empty">No highscores yet</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LowScoreBoard({ entries }: { entries: HighScoreEntry[] }) {
+  // Find the most recently added entry
+  const newestLoserEntryId = (() => {
+    if (entries.length === 0) return null;
+    return entries.reduce((latest, e) =>
+      new Date(e.achievedAt).getTime() > new Date(latest.achievedAt).getTime() ? e : latest
+    ).id;
+  })();
+
+  return (
+    <div className="lowscore-board">
+      <div className="lowscore-header">
+        <span className="lowscore-icon">💀</span>
+        <span className="lowscore-title">Hall of Shame</span>
+      </div>
+      <div className="lowscore-list">
+        {entries.map((entry, index) => {
+          const isNew = entry.id === newestLoserEntryId;
+          return (
+            <div
+              key={entry.id}
+              className={`lowscore-entry ${isNew ? "lowscore-entry-new" : ""}`}
+              style={{ animationDelay: `${0.6 + index * 0.08}s` }}
+            >
+              <span className="lowscore-position">
+                {index === 0 ? "💩" : `#${index + 1}`}
+              </span>
+              <span className="lowscore-name">{entry.playerName}</span>
+              <span className="lowscore-score">{entry.score} pts</span>
+            </div>
+          );
+        })}
+        {entries.length === 0 && (
+          <div className="lowscore-empty">No lowscores yet</div>
         )}
       </div>
     </div>
@@ -651,6 +694,7 @@ function Display() {
         <WinnerOverlay
           players={getRankedPlayers(gameState.players)}
           highScores={gameState.highScoreBoard || []}
+          lowScores={gameState.lowScoreBoard || []}
           showHighScores={gameState.showHighScoreBoard}
           winnerName={
             gameState.players.length > 0

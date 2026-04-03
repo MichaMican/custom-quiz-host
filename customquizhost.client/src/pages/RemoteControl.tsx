@@ -108,6 +108,7 @@ function RemoteControl() {
         winnerDeclared: false,
         showHighScoreBoard: false,
         highScoreBoard: [],
+        lowScoreBoard: [],
         eventHistory: [],
       };
       await invoke("ImportGameSettings", emptyState);
@@ -1125,6 +1126,16 @@ function RemoteControl() {
                     }}
                   >
                     🗑️ Clear Highscores
+                  </button>
+                  <button
+                    className="btn-clear-highscores"
+                    onClick={() => {
+                      if (window.confirm("Clear all lowscores? This cannot be undone.")) {
+                        invoke("ClearLowScores");
+                      }
+                    }}
+                  >
+                    🗑️ Clear Lowscores
                   </button>
                 </div>
               </>

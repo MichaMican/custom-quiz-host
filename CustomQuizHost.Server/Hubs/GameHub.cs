@@ -125,6 +125,8 @@ public class GameHub : Hub
 
     public async Task ClearHighScores() => await _gameService.ClearHighScores();
 
+    public async Task ClearLowScores() => await _gameService.ClearLowScores();
+
     public async Task DoubleRemainingPoints() => await _gameService.DoubleRemainingPoints();
 
     public async Task HalveRemainingPoints() => await _gameService.HalveRemainingPoints();

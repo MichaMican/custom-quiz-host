@@ -19,71 +19,139 @@ public class HighScoreService
         _filePath = Path.Combine(highScoresDirectory, "highscores.json");
     }
 
-    public List<HighScoreEntry> LoadHighScores()
+    public const int MaxEntries = 5;
+
+    public ScoreBoardData LoadAll()
     {
         lock (_fileLock)
         {
-            if (!File.Exists(_filePath))
-                return new List<HighScoreEntry>();
-
-            var json = File.ReadAllText(_filePath);
-            return JsonSerializer.Deserialize<List<HighScoreEntry>>(json, JsonOptions)
-                   ?? new List<HighScoreEntry>();
+            return LoadInternal();
         }
     }
 
-    public const int MaxEntries = 10;
-
-    public List<HighScoreEntry> AddHighScore(HighScoreEntry entry)
+    public ScoreBoardData AddHighScore(HighScoreEntry entry)
     {
         lock (_fileLock)
         {
-            var entries = LoadHighScoresInternal();
-            entries.Add(entry);
-            entries = entries
+            var data = LoadInternal();
+            data.HighScores.Add(entry);
+            data.HighScores = data.HighScores
                 .OrderByDescending(e => e.Score)
                 .ThenBy(e => e.AchievedAt)
                 .Take(MaxEntries)
                 .ToList();
-            SaveHighScores(entries);
-            return entries;
+            Save(data);
+            return data;
         }
     }
 
-    public List<HighScoreEntry> RemoveHighScore(string entryId)
+    public ScoreBoardData RemoveHighScore(string entryId)
     {
         lock (_fileLock)
         {
-            var entries = LoadHighScoresInternal();
-            entries.RemoveAll(e => e.Id == entryId);
-            SaveHighScores(entries);
-            return entries;
+            var data = LoadInternal();
+            data.HighScores.RemoveAll(e => e.Id == entryId);
+            Save(data);
+            return data;
         }
     }
 
-    public List<HighScoreEntry> ClearHighScores()
+    public ScoreBoardData ClearHighScores()
     {
         lock (_fileLock)
         {
-            var empty = new List<HighScoreEntry>();
-            SaveHighScores(empty);
-            return empty;
+            var data = LoadInternal();
+            data.HighScores.Clear();
+            Save(data);
+            return data;
         }
     }
 
-    private List<HighScoreEntry> LoadHighScoresInternal()
+    public ScoreBoardData AddLowScore(HighScoreEntry entry)
+    {
+        lock (_fileLock)
+        {
+            var data = LoadInternal();
+            data.LowScores.Add(entry);
+            data.LowScores = data.LowScores
+                .OrderBy(e => e.Score)
+                .ThenBy(e => e.AchievedAt)
+                .Take(MaxEntries)
+                .ToList();
+            Save(data);
+            return data;
+        }
+    }
+
+    public ScoreBoardData RemoveLowScore(string entryId)
+    {
+        lock (_fileLock)
+        {
+            var data = LoadInternal();
+            data.LowScores.RemoveAll(e => e.Id == entryId);
+            Save(data);
+            return data;
+        }
+    }
+
+    public ScoreBoardData ClearLowScores()
+    {
+        lock (_fileLock)
+        {
+            var data = LoadInternal();
+            data.LowScores.Clear();
+            Save(data);
+            return data;
+        }
+    }
+
+    private ScoreBoardData LoadInternal()
     {
         if (!File.Exists(_filePath))
-            return new List<HighScoreEntry>();
+            return new ScoreBoardData();
 
         var json = File.ReadAllText(_filePath);
-        return JsonSerializer.Deserialize<List<HighScoreEntry>>(json, JsonOptions)
-               ?? new List<HighScoreEntry>();
+
+        // Try to load the combined format
+        try
+        {
+            var data = JsonSerializer.Deserialize<ScoreBoardData>(json, JsonOptions);
+            if (data != null && (data.HighScores.Count > 0 || data.LowScores.Count > 0))
+                return data;
+        }
+        catch (JsonException)
+        {
+            // Fall through to legacy migration
+        }
+
+        // Migrate legacy format (plain List<HighScoreEntry>)
+        try
+        {
+            var legacyEntries = JsonSerializer.Deserialize<List<HighScoreEntry>>(json, JsonOptions);
+            if (legacyEntries != null && legacyEntries.Count > 0)
+            {
+                var migrated = new ScoreBoardData { HighScores = legacyEntries };
+                Save(migrated);
+                return migrated;
+            }
+        }
+        catch (JsonException)
+        {
+            // File is corrupted or in an unknown format — start fresh
+        }
+
+        return new ScoreBoardData();
     }
 
-    private void SaveHighScores(List<HighScoreEntry> entries)
+    private void Save(ScoreBoardData data)
     {
-        var json = JsonSerializer.Serialize(entries, JsonOptions);
+        var json = JsonSerializer.Serialize(data, JsonOptions);
         File.WriteAllText(_filePath, json);
     }
+}
+
+public class ScoreBoardData
+{
+    public List<HighScoreEntry> HighScores { get; set; } = new();
+    public List<HighScoreEntry> LowScores { get; set; } = new();
 }
