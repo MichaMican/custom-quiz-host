@@ -646,8 +646,13 @@ function Display() {
         setPendingScoreClear(true);
 
         // Play score change sounds
-        const hasIncrease = [...changes.values()].some(c => c.type === "increase");
-        const hasDecrease = [...changes.values()].some(c => c.type === "decrease");
+        let hasIncrease = false;
+        let hasDecrease = false;
+        for (const c of changes.values()) {
+          if (c.type === "increase") hasIncrease = true;
+          else hasDecrease = true;
+          if (hasIncrease && hasDecrease) break;
+        }
         if (hasIncrease) play("pointsAddKling");
         if (hasDecrease) play("pointsRemoveSlash");
       }
@@ -697,7 +702,11 @@ function Display() {
 
   // Play fanfare when a new entry appears on the highscore board
   useEffect(() => {
-    if (!gameState?.showHighScoreBoard) return;
+    if (!gameState?.showHighScoreBoard) {
+      // Reset when the board is hidden so it doesn't false-trigger next time
+      prevHighScoreCountRef.current = null;
+      return;
+    }
     const count = (gameState.highScoreBoard?.length ?? 0) + (gameState.lowScoreBoard?.length ?? 0);
     if (prevHighScoreCountRef.current !== null && count > prevHighScoreCountRef.current) {
       play("highscoreFanfare");
