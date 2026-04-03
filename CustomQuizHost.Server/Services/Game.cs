@@ -535,10 +535,11 @@ public class GameService
         }
 
         // Add the loser (lowest scoring player) to the persistent lowscore board
+        // Skip if the loser is the same as the winner (e.g. single-player game)
         var loser = _gameState.Players
             .OrderBy(p => p.Score)
             .FirstOrDefault();
-        if (loser != null)
+        if (loser != null && loser.Id != winner?.Id)
         {
             var entry = new HighScoreEntry
             {

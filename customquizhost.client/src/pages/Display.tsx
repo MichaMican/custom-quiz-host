@@ -457,11 +457,8 @@ function HighScoreBoard({ entries, winnerName }: { entries: HighScoreEntry[]; wi
 }
 
 function LowScoreBoard({ entries, winnerName }: { entries: HighScoreEntry[]; winnerName: string | null }) {
-  // Find the most recently added entry that matches the lowest scorer
+  // Find the most recently added entry
   const newestLoserEntryId = (() => {
-    if (!winnerName) return null;
-    const matching = entries.filter(e => e.playerName !== winnerName);
-    // Highlight the newest entry overall
     if (entries.length === 0) return null;
     return entries.reduce((latest, e) =>
       new Date(e.achievedAt).getTime() > new Date(latest.achievedAt).getTime() ? e : latest
