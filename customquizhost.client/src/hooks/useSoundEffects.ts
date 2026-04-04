@@ -8,6 +8,9 @@ import { useEffect, useRef, useCallback } from "react";
 const SOUND_PATHS = {
   questionSelectWoosh: "/sounds/question-select-woosh.mp3",
   questionShowBling: "/sounds/question-show-bling.mp3",
+  questionTextReveal: "/sounds/question-text-reveal.mp3",
+  answerReveal: "/sounds/answer-reveal.mp3",
+  questionDismiss: "/sounds/question-dismiss.mp3",
   highscoreFanfare: "/sounds/highscore-fanfare.mp3",
   pointsAddKling: "/sounds/points-add-kling.mp3",
   pointsRemoveSlash: "/sounds/points-remove-slash.mp3",

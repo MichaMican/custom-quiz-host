@@ -521,6 +521,10 @@ function Display() {
   const prevWinnerDeclaredRef = useRef(false);
   const prevHighScoreCountRef = useRef<number | null>(null);
 
+  // === Question / answer reveal sound tracking ===
+  const prevQuestionRevealedRef = useRef(false);
+  const prevAnswerRevealedRef = useRef(false);
+
   // Preload buzzer sound on mount so playback is instant
   useEffect(() => {
     const audio = new Audio("/buzzer.mp3");
@@ -593,6 +597,11 @@ function Display() {
     // Play woosh sound when a question is selected (board exits)
     if (transitionType === "board-to-question" || transitionType === "question-change") {
       play("questionSelectWoosh");
+    }
+
+    // Play dismiss sound when returning to the board
+    if (transitionType === "question-to-board") {
+      play("questionDismiss");
     }
 
     const delay = transitionType === "question-change" ? 250 : 350;
@@ -688,6 +697,24 @@ function Display() {
     }
     prevBuzzCountRef.current = buzzCount;
   }, [buzzCount]);
+
+  // Play sound when question text is revealed
+  useEffect(() => {
+    const revealed = gameState?.questionTextRevealed ?? false;
+    if (revealed && !prevQuestionRevealedRef.current) {
+      play("questionTextReveal");
+    }
+    prevQuestionRevealedRef.current = revealed;
+  }, [gameState?.questionTextRevealed, play]);
+
+  // Play sound when the answer is revealed
+  useEffect(() => {
+    const revealed = gameState?.answerRevealed ?? false;
+    if (revealed && !prevAnswerRevealedRef.current) {
+      play("answerReveal");
+    }
+    prevAnswerRevealedRef.current = revealed;
+  }, [gameState?.answerRevealed, play]);
 
   // Play winner tracks when winner is declared; stop when undeclared
   useEffect(() => {
