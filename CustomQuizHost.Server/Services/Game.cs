@@ -477,6 +477,12 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task SetMuteSoundEffects(bool value)
+    {
+        _gameState.MuteSoundEffects = value;
+        await BroadcastGameState();
+    }
+
     public async Task EnableImageFullscreen()
     {
         _gameState.ImageFullscreen = true;

@@ -110,6 +110,7 @@ function RemoteControl() {
         highScoreBoard: [],
         lowScoreBoard: [],
         eventHistory: [],
+        muteSoundEffects: false,
       };
       await invoke("ImportGameSettings", emptyState);
       setShowResetModal(false);
@@ -694,6 +695,18 @@ function RemoteControl() {
                 </ul>
               </>
             )}
+          </section>
+
+          <section className="remote-section">
+            <h2>Sound Settings</h2>
+            <label className="pause-on-buzz-label">
+              <input
+                type="checkbox"
+                checked={gameState?.muteSoundEffects ?? false}
+                onChange={(e) => invoke("SetMuteSoundEffects", e.target.checked)}
+              />
+              Mute sound effects
+            </label>
           </section>
 
           <section className="remote-section">

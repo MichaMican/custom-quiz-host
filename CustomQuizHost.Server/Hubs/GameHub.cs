@@ -105,6 +105,8 @@ public class GameHub : Hub
 
     public async Task SetAnswerInputEnabled(bool value) => await _gameService.SetAnswerInputEnabled(value);
 
+    public async Task SetMuteSoundEffects(bool value) => await _gameService.SetMuteSoundEffects(value);
+
     public async Task EnableImageFullscreen() => await _gameService.EnableImageFullscreen();
 
     public async Task DisableImageFullscreen() => await _gameService.DisableImageFullscreen();

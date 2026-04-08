@@ -25,12 +25,18 @@ type SoundName = keyof typeof SOUND_PATHS;
  * Preloads all sound effects and provides a `play` function that triggers
  * instant playback by cloning the preloaded Audio element.
  *
+ * When `muted` is true, `play` and `playWinnerTracks` become no-ops and
+ * any currently playing winner tracks are stopped. This does NOT affect
+ * audio/video question media playback — only UI sound effects.
+ *
  * Winner tracks are returned separately so the caller can stop them when
  * the winner overlay is dismissed.
  */
-export function useSoundEffects() {
+export function useSoundEffects(muted = false) {
   const preloaded = useRef<Map<SoundName, HTMLAudioElement>>(new Map());
   const winnerTracks = useRef<HTMLAudioElement[]>([]);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
 
   // Preload all sound effects on mount
   useEffect(() => {
@@ -44,6 +50,7 @@ export function useSoundEffects() {
 
   /** Play a one-shot sound effect (cloned so overlapping plays work). */
   const play = useCallback((name: SoundName) => {
+    if (mutedRef.current) return;
     const source = preloaded.current.get(name);
     if (!source) return;
     const clone = source.cloneNode(true) as HTMLAudioElement;
@@ -62,6 +69,7 @@ export function useSoundEffects() {
    * Returns nothing — call `stopWinnerTracks` to silence them.
    */
   const playWinnerTracks = useCallback(() => {
+    if (mutedRef.current) return;
     // Stop any previously playing winner tracks first
     for (const t of winnerTracks.current) {
       t.pause();
@@ -94,6 +102,18 @@ export function useSoundEffects() {
     }
     winnerTracks.current = [];
   }, []);
+
+  // Stop winner tracks immediately when muted
+  useEffect(() => {
+    if (muted) {
+      for (const t of winnerTracks.current) {
+        t.pause();
+        t.removeAttribute("src");
+        t.load();
+      }
+      winnerTracks.current = [];
+    }
+  }, [muted]);
 
   // Clean up winner tracks on unmount
   useEffect(() => {

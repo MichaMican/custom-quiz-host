@@ -500,7 +500,7 @@ function LowScoreBoard({ entries }: { entries: HighScoreEntry[] }) {
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
   useWakeLock();
-  const { play, playWinnerTracks, stopWinnerTracks } = useSoundEffects();
+  const { play, playWinnerTracks, stopWinnerTracks } = useSoundEffects(gameState?.muteSoundEffects ?? false);
   const prevBuzzCountRef = useRef(0);
   const preloadedBuzzerRef = useRef<HTMLAudioElement | null>(null);
 

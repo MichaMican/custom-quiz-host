@@ -81,4 +81,5 @@ export interface GameState {
   highScoreBoard: HighScoreEntry[];
   lowScoreBoard: HighScoreEntry[];
   eventHistory: EventHistoryEntry[];
+  muteSoundEffects: boolean;
 }

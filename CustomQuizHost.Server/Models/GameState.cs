@@ -48,6 +48,7 @@ public class GameState
     public List<HighScoreEntry> HighScoreBoard { get; set; } = new();
     public List<HighScoreEntry> LowScoreBoard { get; set; } = new();
     public List<EventHistoryEntry> EventHistory { get; set; } = new();
+    public bool MuteSoundEffects { get; set; }
 }
 
 public class Player
