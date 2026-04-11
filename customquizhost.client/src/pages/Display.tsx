@@ -500,9 +500,7 @@ function LowScoreBoard({ entries }: { entries: HighScoreEntry[] }) {
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
   useWakeLock();
-  const { play, playWinnerTracks, stopWinnerTracks } = useSoundEffects(gameState?.muteSoundEffects ?? false);
-  const prevBuzzCountRef = useRef(0);
-  const preloadedBuzzerRef = useRef<HTMLAudioElement | null>(null);
+  const { playWinnerTracks, stopWinnerTracks } = useSoundEffects(gameState?.muteSoundEffects ?? false);
 
   // === View transition management ===
   const [activeView, setActiveView] = useState<"board" | "question">("board");
@@ -517,21 +515,8 @@ function Display() {
   const [scoreAnimations, setScoreAnimations] = useState<Map<string, { type: "increase" | "decrease"; delta: number }>>(new Map());
   const [pendingScoreClear, setPendingScoreClear] = useState(false);
 
-  // === Winner / highscore sound tracking ===
+  // === Winner sound tracking ===
   const prevWinnerDeclaredRef = useRef(false);
-  const prevHighScoreCountRef = useRef<number | null>(null);
-
-  // === Question / answer reveal sound tracking ===
-  const prevQuestionRevealedRef = useRef(false);
-  const prevAnswerRevealedRef = useRef(false);
-
-  // Preload buzzer sound on mount so playback is instant
-  useEffect(() => {
-    const audio = new Audio("/buzzer.mp3");
-    audio.preload = "auto";
-    audio.load();
-    preloadedBuzzerRef.current = audio;
-  }, []);
 
   // Preload video content as soon as a video question is selected,
   // even before the view transition, to give streaming a head start
@@ -594,36 +579,22 @@ function Display() {
   useEffect(() => {
     if (!transitionType) return;
 
-    // Play woosh sound when a question is selected (board exits)
-    if (transitionType === "board-to-question" || transitionType === "question-change") {
-      play("questionSelectWoosh");
-    }
-
-    // Play dismiss sound when returning to the board
-    if (transitionType === "question-to-board") {
-      play("questionDismiss");
-    }
-
     const delay = transitionType === "question-change" ? 250 : 350;
     const timer = setTimeout(() => {
       if (transitionType === "board-to-question") {
         setActiveView("question");
         setViewAnimClass("anim-question-enter");
-        // Play bling sound when the question appears
-        play("questionShowBling");
       } else if (transitionType === "question-to-board") {
         setActiveView("board");
         setLastQuestion(null);
         setViewAnimClass("anim-board-enter");
       } else {
         setViewAnimClass("anim-question-enter");
-        // Play bling sound when the new question appears
-        play("questionShowBling");
       }
       setTransitionType(null);
     }, delay);
     return () => clearTimeout(timer);
-  }, [transitionType, play]);
+  }, [transitionType]);
 
   // Clear enter/exit animation classes after they complete
   useEffect(() => {
@@ -653,17 +624,6 @@ function Display() {
       if (changes.size > 0) {
         setScoreAnimations(changes);
         setPendingScoreClear(true);
-
-        // Play score change sounds
-        let hasIncrease = false;
-        let hasDecrease = false;
-        for (const c of changes.values()) {
-          if (c.type === "increase") hasIncrease = true;
-          else hasDecrease = true;
-          if (hasIncrease && hasDecrease) break;
-        }
-        if (hasIncrease) play("pointsAddKling");
-        if (hasDecrease) play("pointsRemoveSlash");
       }
     }
   }
@@ -678,44 +638,6 @@ function Display() {
     return () => clearTimeout(timer);
   }, [pendingScoreClear]);
 
-  const buzzCount = gameState?.buzzOrder.length ?? 0;
-
-  // Play buzzer sound when a new player buzzes in
-  useEffect(() => {
-    if (buzzCount > prevBuzzCountRef.current && preloadedBuzzerRef.current) {
-      const newBuzzes = buzzCount - prevBuzzCountRef.current;
-      for (let i = 0; i < newBuzzes; i++) {
-        const audio = preloadedBuzzerRef.current.cloneNode(true) as HTMLAudioElement;
-        audio.addEventListener("ended", () => {
-          audio.removeAttribute("src");
-          audio.load();
-        });
-        audio.play().catch((err) => {
-          console.error("Buzzer sound playback failed:", err);
-        });
-      }
-    }
-    prevBuzzCountRef.current = buzzCount;
-  }, [buzzCount]);
-
-  // Play sound when question text is revealed
-  useEffect(() => {
-    const revealed = gameState?.questionTextRevealed ?? false;
-    if (revealed && !prevQuestionRevealedRef.current) {
-      play("questionTextReveal");
-    }
-    prevQuestionRevealedRef.current = revealed;
-  }, [gameState?.questionTextRevealed, play]);
-
-  // Play sound when the answer is revealed
-  useEffect(() => {
-    const revealed = gameState?.answerRevealed ?? false;
-    if (revealed && !prevAnswerRevealedRef.current) {
-      play("answerReveal");
-    }
-    prevAnswerRevealedRef.current = revealed;
-  }, [gameState?.answerRevealed, play]);
-
   // Play winner tracks when winner is declared; stop when undeclared
   useEffect(() => {
     const winnerDeclared = gameState?.winnerDeclared ?? false;
@@ -726,20 +648,6 @@ function Display() {
     }
     prevWinnerDeclaredRef.current = winnerDeclared;
   }, [gameState?.winnerDeclared, playWinnerTracks, stopWinnerTracks]);
-
-  // Play fanfare when a new entry appears on the highscore board
-  useEffect(() => {
-    if (!gameState?.showHighScoreBoard) {
-      // Reset when the board is hidden so it doesn't false-trigger next time
-      prevHighScoreCountRef.current = null;
-      return;
-    }
-    const count = (gameState.highScoreBoard?.length ?? 0) + (gameState.lowScoreBoard?.length ?? 0);
-    if (prevHighScoreCountRef.current !== null && count > prevHighScoreCountRef.current) {
-      play("highscoreFanfare");
-    }
-    prevHighScoreCountRef.current = count;
-  }, [gameState?.highScoreBoard?.length, gameState?.lowScoreBoard?.length, gameState?.showHighScoreBoard, play]);
 
   if (connectionStatus !== "Connected") {
     return (

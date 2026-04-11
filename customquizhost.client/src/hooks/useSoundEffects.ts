@@ -1,66 +1,37 @@
 import { useEffect, useRef, useCallback } from "react";
 
 /**
- * Sound effect file paths. Files are served from the public/sounds directory.
- * Replace the .mp3 files to swap out effects — the filenames are descriptive
- * so it's clear which animation each sound accompanies.
+ * Winner sound effect file paths. Files are served from the public/sounds directory.
  */
-const SOUND_PATHS = {
-  questionSelectWoosh: "/sounds/question-select-woosh.mp3",
-  questionShowBling: "/sounds/question-show-bling.mp3",
-  questionTextReveal: "/sounds/question-text-reveal.mp3",
-  answerReveal: "/sounds/answer-reveal.mp3",
-  questionDismiss: "/sounds/question-dismiss.mp3",
-  highscoreFanfare: "/sounds/highscore-fanfare.mp3",
-  pointsAddKling: "/sounds/points-add-kling.mp3",
-  pointsRemoveSlash: "/sounds/points-remove-slash.mp3",
+const WINNER_SOUND_PATHS = {
   winnerMusic: "/sounds/winner-music.mp3",
   winnerApplause: "/sounds/winner-applause.mp3",
   winnerCheering: "/sounds/winner-cheering.mp3",
 } as const;
 
-type SoundName = keyof typeof SOUND_PATHS;
+type WinnerSoundName = keyof typeof WINNER_SOUND_PATHS;
 
 /**
- * Preloads all sound effects and provides a `play` function that triggers
- * instant playback by cloning the preloaded Audio element.
+ * Preloads winner sound effects and provides functions to play/stop them.
  *
- * When `muted` is true, `play` and `playWinnerTracks` become no-ops and
- * any currently playing winner tracks are stopped. This does NOT affect
- * audio/video question media playback — only UI sound effects.
- *
- * Winner tracks are returned separately so the caller can stop them when
- * the winner overlay is dismissed.
+ * When `muted` is true, `playWinnerTracks` becomes a no-op and any
+ * currently playing winner tracks are stopped. This does NOT affect
+ * audio/video question media playback.
  */
 export function useSoundEffects(muted = false) {
-  const preloaded = useRef<Map<SoundName, HTMLAudioElement>>(new Map());
+  const preloaded = useRef<Map<WinnerSoundName, HTMLAudioElement>>(new Map());
   const winnerTracks = useRef<HTMLAudioElement[]>([]);
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
 
-  // Preload all sound effects on mount
+  // Preload winner sound effects on mount
   useEffect(() => {
-    for (const [name, path] of Object.entries(SOUND_PATHS)) {
+    for (const [name, path] of Object.entries(WINNER_SOUND_PATHS)) {
       const audio = new Audio(path);
       audio.preload = "auto";
       audio.load();
-      preloaded.current.set(name as SoundName, audio);
+      preloaded.current.set(name as WinnerSoundName, audio);
     }
-  }, []);
-
-  /** Play a one-shot sound effect (cloned so overlapping plays work). */
-  const play = useCallback((name: SoundName) => {
-    if (mutedRef.current) return;
-    const source = preloaded.current.get(name);
-    if (!source) return;
-    const clone = source.cloneNode(true) as HTMLAudioElement;
-    clone.addEventListener("ended", () => {
-      clone.removeAttribute("src");
-      clone.load();
-    });
-    clone.play().catch((err) => {
-      console.error(`Sound playback failed (${name}):`, err);
-    });
   }, []);
 
   /**
@@ -78,7 +49,7 @@ export function useSoundEffects(muted = false) {
     }
     winnerTracks.current = [];
 
-    const names: SoundName[] = ["winnerMusic", "winnerApplause", "winnerCheering"];
+    const names: WinnerSoundName[] = ["winnerMusic", "winnerApplause", "winnerCheering"];
     for (const name of names) {
       const source = preloaded.current.get(name);
       if (!source) continue;
@@ -126,5 +97,5 @@ export function useSoundEffects(muted = false) {
     };
   }, []);
 
-  return { play, playWinnerTracks, stopWinnerTracks };
+  return { playWinnerTracks, stopWinnerTracks };
 }
