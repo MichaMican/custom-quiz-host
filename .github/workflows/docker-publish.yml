@@ -8,18 +8,26 @@ on:
       - ".github/**"
       - ".vscode/**"
       - "*.md"
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore:
+      - ".github/**"
+      - ".vscode/**"
+      - "*.md"
   workflow_dispatch:
 
 concurrency:
-  group: docker-publish
-  cancel-in-progress: false
+  group: docker-publish-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   version:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     uses: MichaMican/reusable-actions/.github/workflows/semver-version.yml@main
     with:
       is_prerelease: ${{ github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/main' }}
       suppress_release: ${{ github.ref != 'refs/heads/main' }}
+      suppress_tag: ${{ github.event_name == 'pull_request' }}
       prerelease_name: ${{ github.ref != 'refs/heads/main' && 'internal' || (github.event_name == 'push' && 'prerelease') || '' }}
     permissions:
       contents: write
@@ -31,6 +39,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -53,8 +62,8 @@ jobs:
         run: |
           TAGS="${IMAGE_NAME}:${{ needs.version.outputs.version }}"
 
-          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
-            # Internal release: version + internal
+          if [ "${{ github.event_name }}" == "pull_request" ] || [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            # Internal release (PR or non-main branch): version + internal
             TAGS="$TAGS"$'\n'"${IMAGE_NAME}:internal"
           elif [ "${{ github.event_name }}" == "push" ]; then
             # Preview release: version + preview
@@ -81,3 +90,33 @@ jobs:
           build-args: |
             VERSION=${{ needs.version.outputs.version }}
           tags: ${{ steps.docker-tags.outputs.tags }}
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+          TAGS: ${{ steps.docker-tags.outputs.tags }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # Build the tag list (extract tag name after the last colon)
+          TAG_LIST=$(echo "$TAGS" | rev | cut -d: -f1 | rev | sed 's/^/- `/' | sed 's/$/`/')
+
+          COMMENT_BODY="<!-- docker-publish-comment -->
+          ### 🚀 Docker Image Published
+
+          **Version:** \`${VERSION}\`
+
+          **Channels (image tags):**
+          ${TAG_LIST}"
+
+          # Update existing comment if present, otherwise create a new one
+          COMMENT_ID=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            --jq '.[] | select(.body | contains("<!-- docker-publish-comment -->")) | .id' | tail -1 || true)
+
+          if [ -n "$COMMENT_ID" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/${COMMENT_ID}" \
+              -X PATCH -f body="$COMMENT_BODY"
+          else
+            gh pr comment "${PR_NUMBER}" --body "$COMMENT_BODY"
+          fi
