@@ -358,8 +358,6 @@ const WINNER_SOUND_TRACKS = [
 ];
 
 function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerName }: { players: RankedPlayer[]; highScores: HighScoreEntry[]; lowScores: HighScoreEntry[]; showHighScores: boolean; winnerName: string | null }) {
-  const winnerAudioRefs = useRef<HTMLAudioElement[]>([]);
-
   // Play all winner sound tracks on mount, stop on unmount
   useEffect(() => {
     const audioElements: HTMLAudioElement[] = WINNER_SOUND_TRACKS.map((src) => {
@@ -370,7 +368,6 @@ function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerN
       });
       return audio;
     });
-    winnerAudioRefs.current = audioElements;
 
     return () => {
       for (const audio of audioElements) {
@@ -378,7 +375,6 @@ function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerN
         audio.removeAttribute("src");
         audio.load();
       }
-      winnerAudioRefs.current = [];
     };
   }, []);
 
