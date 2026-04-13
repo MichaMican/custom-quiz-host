@@ -38,3 +38,11 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # eslint v10 not compatible with eslint-plugin-react-hooks as of April 2026.
+      # Remove this once upstream plugins release v10-compatible versions.
+      # Tracking: https://github.com/jsx-eslint/eslint-plugin-react/issues/3977
+      - dependency-name: "eslint"
+        versions: [">=10.0.0"]
+      - dependency-name: "@eslint/js"
+        versions: [">=10.0.0"]
