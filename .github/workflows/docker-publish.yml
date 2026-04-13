@@ -48,6 +48,30 @@ jobs:
       - name: Set lowercase image name
         run: echo "IMAGE_NAME=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      - name: Determine Docker tags
+        id: docker-tags
+        run: |
+          TAGS="${IMAGE_NAME}:${{ needs.version.outputs.version }}"
+
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            # Internal release: version + internal
+            TAGS="$TAGS"$'\n'"${IMAGE_NAME}:internal"
+          elif [ "${{ github.event_name }}" == "push" ]; then
+            # Preview release: version + preview
+            TAGS="$TAGS"$'\n'"${IMAGE_NAME}:preview"
+          else
+            # Stable release: version + latest + preview + internal
+            TAGS="$TAGS"$'\n'"${IMAGE_NAME}:latest"
+            TAGS="$TAGS"$'\n'"${IMAGE_NAME}:preview"
+            TAGS="$TAGS"$'\n'"${IMAGE_NAME}:internal"
+          fi
+
+          {
+            echo "tags<<EOF"
+            echo "$TAGS"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
@@ -56,6 +80,4 @@ jobs:
           push: true
           build-args: |
             VERSION=${{ needs.version.outputs.version }}
-          tags: |
-            ${{ env.IMAGE_NAME }}:${{ needs.version.outputs.version }}
-            ${{ env.IMAGE_NAME }}:latest
+          tags: ${{ steps.docker-tags.outputs.tags }}
