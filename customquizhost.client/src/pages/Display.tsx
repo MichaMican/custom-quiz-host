@@ -351,7 +351,37 @@ function ConfettiPiece({ pieceIndex }: { pieceIndex: number }) {
   );
 }
 
+const WINNER_SOUND_TRACKS = [
+  "/winner-music.mp3",
+  "/winner-applause.mp3",
+  "/winner-cheering.mp3",
+];
+
 function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerName }: { players: RankedPlayer[]; highScores: HighScoreEntry[]; lowScores: HighScoreEntry[]; showHighScores: boolean; winnerName: string | null }) {
+  const winnerAudioRefs = useRef<HTMLAudioElement[]>([]);
+
+  // Play all winner sound tracks on mount, stop on unmount
+  useEffect(() => {
+    const audioElements: HTMLAudioElement[] = WINNER_SOUND_TRACKS.map((src) => {
+      const audio = new Audio(src);
+      audio.loop = true;
+      audio.play().catch((err) => {
+        console.error(`Winner sound playback failed (${src}):`, err);
+      });
+      return audio;
+    });
+    winnerAudioRefs.current = audioElements;
+
+    return () => {
+      for (const audio of audioElements) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }
+      winnerAudioRefs.current = [];
+    };
+  }, []);
+
   const confettiPieces = Array.from({ length: CONFETTI_COUNT }, (_, i) => (
     <ConfettiPiece key={i} pieceIndex={i} />
   ));
