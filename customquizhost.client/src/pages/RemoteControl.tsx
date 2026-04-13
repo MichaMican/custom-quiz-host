@@ -1093,6 +1093,17 @@ function RemoteControl() {
           )}
 
           <section className="remote-section">
+            <div className="volume-control">
+              <label htmlFor="winner-volume-slider">🔊 Volume: {gameState.mediaVolume}%</label>
+              <input
+                id="winner-volume-slider"
+                type="range"
+                min={0}
+                max={100}
+                value={gameState.mediaVolume}
+                onChange={(e) => invoke("SetMediaVolume", parseInt(e.target.value))}
+              />
+            </div>
             {gameState.winnerDeclared ? (
               <>
                 <button
