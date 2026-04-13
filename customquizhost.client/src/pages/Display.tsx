@@ -360,18 +360,27 @@ const WINNER_SOUND_TRACKS = [
 function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerName, mediaVolume }: { players: RankedPlayer[]; highScores: HighScoreEntry[]; lowScores: HighScoreEntry[]; showHighScores: boolean; winnerName: string | null; mediaVolume: number }) {
   const winnerAudioRef = useRef<HTMLAudioElement[]>([]);
 
-  // Play all winner sound tracks on mount, stop on unmount
+  // Play all winner sound tracks on mount, stop on unmount.
+  // Playback is deferred via setTimeout so that React StrictMode's
+  // immediate cleanup can clearTimeout before play() is ever called,
+  // preventing the tracks from starting twice in parallel.
   useEffect(() => {
     const audioElements: HTMLAudioElement[] = WINNER_SOUND_TRACKS.map((src) => {
       const audio = new Audio(src);
-      audio.play().catch((err) => {
-        console.error(`Winner sound playback failed (${src}):`, err);
-      });
       return audio;
     });
     winnerAudioRef.current = audioElements;
 
+    const timerId = setTimeout(() => {
+      for (const audio of audioElements) {
+        audio.play().catch((err) => {
+          console.error(`Winner sound playback failed (${audio.src}):`, err);
+        });
+      }
+    }, 0);
+
     return () => {
+      clearTimeout(timerId);
       for (const audio of audioElements) {
         audio.pause();
         audio.removeAttribute("src");
