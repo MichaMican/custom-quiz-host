@@ -357,17 +357,22 @@ const WINNER_SOUND_TRACKS = [
   "/winner-cheering.mp3",
 ];
 
-function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerName }: { players: RankedPlayer[]; highScores: HighScoreEntry[]; lowScores: HighScoreEntry[]; showHighScores: boolean; winnerName: string | null }) {
+function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerName, mediaVolume }: { players: RankedPlayer[]; highScores: HighScoreEntry[]; lowScores: HighScoreEntry[]; showHighScores: boolean; winnerName: string | null; mediaVolume: number }) {
+  const winnerAudioRef = useRef<HTMLAudioElement[]>([]);
+
   // Play all winner sound tracks on mount, stop on unmount
   useEffect(() => {
+    const volume = Math.max(0, Math.min(1, mediaVolume / 100));
     const audioElements: HTMLAudioElement[] = WINNER_SOUND_TRACKS.map((src) => {
       const audio = new Audio(src);
       audio.loop = true;
+      audio.volume = volume;
       audio.play().catch((err) => {
         console.error(`Winner sound playback failed (${src}):`, err);
       });
       return audio;
     });
+    winnerAudioRef.current = audioElements;
 
     return () => {
       for (const audio of audioElements) {
@@ -375,8 +380,18 @@ function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerN
         audio.removeAttribute("src");
         audio.load();
       }
+      winnerAudioRef.current = [];
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Update volume when mediaVolume changes
+  useEffect(() => {
+    const volume = Math.max(0, Math.min(1, mediaVolume / 100));
+    for (const audio of winnerAudioRef.current) {
+      audio.volume = volume;
+    }
+  }, [mediaVolume]);
 
   const confettiPieces = Array.from({ length: CONFETTI_COUNT }, (_, i) => (
     <ConfettiPiece key={i} pieceIndex={i} />
@@ -722,6 +737,7 @@ function Display() {
           highScores={gameState.highScoreBoard || []}
           lowScores={gameState.lowScoreBoard || []}
           showHighScores={gameState.showHighScoreBoard}
+          mediaVolume={gameState.mediaVolume}
           winnerName={
             gameState.players.length > 0
               ? [...gameState.players].sort((a, b) => b.score - a.score)[0].name
