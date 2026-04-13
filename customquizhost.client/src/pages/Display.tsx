@@ -329,23 +329,25 @@ const CONFETTI_COLORS = ["#fbbf24", "#f59e0b", "#818cf8", "#c7d2fe", "#4ade80", 
 
 function ConfettiPiece({ pieceIndex }: { pieceIndex: number }) {
   const color = CONFETTI_COLORS[pieceIndex % CONFETTI_COLORS.length];
-  const left = Math.random() * 100;
-  const delay = Math.random() * 3;
-  const duration = 2.5 + Math.random() * 2;
-  const size = 6 + Math.random() * 8;
-  const rotation = Math.random() * 360;
+  const [style] = useState(() => ({
+    left: Math.random() * 100,
+    delay: Math.random() * 3,
+    duration: 2.5 + Math.random() * 2,
+    size: 6 + Math.random() * 8,
+    rotation: Math.random() * 360,
+  }));
 
   return (
     <div
       className="confetti-piece"
       style={{
-        left: `${left}%`,
-        width: `${size}px`,
-        height: `${size * 0.6}px`,
+        left: `${style.left}%`,
+        width: `${style.size}px`,
+        height: `${style.size * 0.6}px`,
         backgroundColor: color,
-        animationDelay: `${delay}s`,
-        animationDuration: `${duration}s`,
-        transform: `rotate(${rotation}deg)`,
+        animationDelay: `${style.delay}s`,
+        animationDuration: `${style.duration}s`,
+        transform: `rotate(${style.rotation}deg)`,
       }}
     />
   );
