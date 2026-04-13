@@ -364,7 +364,6 @@ function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerN
   useEffect(() => {
     const audioElements: HTMLAudioElement[] = WINNER_SOUND_TRACKS.map((src) => {
       const audio = new Audio(src);
-      audio.loop = true;
       audio.play().catch((err) => {
         console.error(`Winner sound playback failed (${src}):`, err);
       });
