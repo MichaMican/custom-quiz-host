@@ -44,13 +44,29 @@ function RemoteControl() {
   const hasRestoredRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const answerImageInputRef = useRef<HTMLInputElement>(null);
+  // Local slider state for immediate feedback (avoids controlled range input round-trip delay)
+  const [localMozaikSpeed, setLocalMozaikSpeed] = useState(5);
+  const [localMediaVolume, setLocalMediaVolume] = useState(70);
   const selectedCategoryQuestions = gameState?.categories
     .find((c) => c.id === selectedCategoryId)
     ?.questions;
 
-  // Auto-save game state to localStorage whenever it changes
+  // Sync local slider state from server state whenever the server value changes
+  const serverMozaikSpeed = gameState?.mozaikRevealSpeed;
+  const serverMediaVolume = gameState?.mediaVolume;
   useEffect(() => {
-    if (gameState) {
+    if (serverMozaikSpeed !== undefined) {
+      setLocalMozaikSpeed(serverMozaikSpeed);
+    }
+    if (serverMediaVolume !== undefined) {
+      setLocalMediaVolume(serverMediaVolume);
+    }
+  }, [serverMozaikSpeed, serverMediaVolume]);
+
+  // Auto-save game state to localStorage whenever it changes
+  // Guard with hasRestoredRef to avoid overwriting saved data before restore attempt
+  useEffect(() => {
+    if (gameState && hasRestoredRef.current) {
       saveGameState(gameState);
     }
   }, [gameState]);
@@ -954,14 +970,18 @@ function RemoteControl() {
                           : gameState.currentQuestion.questionType === "Video" ? "▶ Play Video" : "▶ Play Audio"}
                       </button>
                       <div className="volume-control">
-                        <label htmlFor="volume-slider">🔊 Volume: {gameState.mediaVolume}%</label>
+                        <label htmlFor="volume-slider">🔊 Volume: {localMediaVolume}%</label>
                         <input
                           id="volume-slider"
                           type="range"
                           min={0}
                           max={100}
-                          value={gameState.mediaVolume}
-                          onChange={(e) => invoke("SetMediaVolume", parseInt(e.target.value))}
+                          value={localMediaVolume}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setLocalMediaVolume(val);
+                            invoke("SetMediaVolume", val);
+                          }}
                         />
                       </div>
                     </>
@@ -975,14 +995,18 @@ function RemoteControl() {
                         {gameState.mozaikRevealing ? "⏸ Stop Reveal" : "▶ Start Reveal"}
                       </button>
                       <div className="volume-control">
-                        <label htmlFor="mozaik-speed-slider">🖼 Reveal Speed: {gameState.mozaikRevealSpeed}</label>
+                        <label htmlFor="mozaik-speed-slider">🖼 Reveal Speed: {localMozaikSpeed}</label>
                         <input
                           id="mozaik-speed-slider"
                           type="range"
                           min={1}
                           max={10}
-                          value={gameState.mozaikRevealSpeed}
-                          onChange={(e) => invoke("SetMozaikRevealSpeed", parseInt(e.target.value))}
+                          value={localMozaikSpeed}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setLocalMozaikSpeed(val);
+                            invoke("SetMozaikRevealSpeed", val);
+                          }}
                         />
                       </div>
                     </>
@@ -1094,14 +1118,18 @@ function RemoteControl() {
 
           <section className="remote-section">
             <div className="volume-control">
-              <label htmlFor="winner-volume-slider">🔊 Volume: {gameState.mediaVolume}%</label>
+              <label htmlFor="winner-volume-slider">🔊 Volume: {localMediaVolume}%</label>
               <input
                 id="winner-volume-slider"
                 type="range"
                 min={0}
                 max={100}
-                value={gameState.mediaVolume}
-                onChange={(e) => invoke("SetMediaVolume", parseInt(e.target.value))}
+                value={localMediaVolume}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setLocalMediaVolume(val);
+                  invoke("SetMediaVolume", val);
+                }}
               />
             </div>
             {gameState.winnerDeclared ? (
