@@ -362,11 +362,9 @@ function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerN
 
   // Play all winner sound tracks on mount, stop on unmount
   useEffect(() => {
-    const volume = Math.max(0, Math.min(1, mediaVolume / 100));
     const audioElements: HTMLAudioElement[] = WINNER_SOUND_TRACKS.map((src) => {
       const audio = new Audio(src);
       audio.loop = true;
-      audio.volume = volume;
       audio.play().catch((err) => {
         console.error(`Winner sound playback failed (${src}):`, err);
       });
@@ -380,15 +378,14 @@ function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerN
         audio.removeAttribute("src");
         audio.load();
       }
-      winnerAudioRef.current = [];
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update volume when mediaVolume changes
   useEffect(() => {
     const volume = Math.max(0, Math.min(1, mediaVolume / 100));
     for (const audio of winnerAudioRef.current) {
+      // eslint-disable-next-line react-hooks/immutability -- setting DOM Audio element volume, not mutating React state
       audio.volume = volume;
     }
   }, [mediaVolume]);
