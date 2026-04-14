@@ -240,6 +240,12 @@ pre code {
   box-shadow: var(--shadow);
 }
 
+/* Mobile (portrait) screenshots sit narrower – up to 2 per row */
+.screenshot-card--mobile {
+  max-width: 320px;
+  justify-self: center;
+}
+
 .screenshot-card img {
   width: 100%;
   height: auto;
