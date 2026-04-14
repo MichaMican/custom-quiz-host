@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary SEO -->
+  <title>Custom Quiz Host – Open-Source Jeopardy-Style Quiz Game</title>
+  <meta name="description" content="Host your own Jeopardy-style quiz nights with Custom Quiz Host. Real-time buzzers, custom categories, image/audio/video questions, and a beautiful display view – all self-hosted via Docker." />
+  <meta name="keywords" content="quiz host, quiz game, jeopardy, self-hosted, open source, buzzers, real-time quiz, docker, asp.net, react" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://michamican.github.io/custom-quiz-host/" />
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://michamican.github.io/custom-quiz-host/" />
+  <meta property="og:title" content="Custom Quiz Host – Open-Source Jeopardy-Style Quiz Game" />
+  <meta property="og:description" content="Host your own Jeopardy-style quiz nights. Real-time buzzers, custom categories, image/audio/video questions – self-hosted via Docker." />
+  <meta property="og:image" content="https://michamican.github.io/custom-quiz-host/screenshots/point-board.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Structured data for Google -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Custom Quiz Host",
+    "description": "A web-based Jeopardy-style quiz game hosting application built with ASP.NET Core and React.",
+    "url": "https://michamican.github.io/custom-quiz-host/",
+    "codeRepository": "https://github.com/MichaMican/custom-quiz-host",
+    "applicationCategory": "Game",
+    "operatingSystem": "Any (Docker)",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "MichaMican"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════  HERO  ══════════════════════════════ -->
+  <header class="hero">
+    <nav class="nav">
+      <span class="nav-logo">🎯 Custom Quiz Host</span>
+      <a class="btn btn-outline" href="https://github.com/MichaMican/custom-quiz-host" target="_blank" rel="noopener">
+        GitHub
+      </a>
+    </nav>
+
+    <div class="hero-body">
+      <h1>Host Epic Quiz Nights&nbsp;🎉</h1>
+      <p class="hero-sub">
+        A free, open-source, self-hosted Jeopardy-style quiz game built with
+        <strong>ASP.NET Core</strong> and <strong>React</strong>.
+        Real-time buzzers, rich media questions, and a beautiful display view –
+        all running in a single Docker container.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#install">Get Started</a>
+        <a class="btn btn-outline" href="https://github.com/MichaMican/custom-quiz-host" target="_blank" rel="noopener">
+          ⭐ Star on GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-screenshot">
+      <img
+        src="screenshots/point-board.png"
+        alt="Custom Quiz Host game board showing categories and point values"
+        loading="eager"
+        width="1280"
+        height="720"
+      />
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════  FEATURES  ════════════════════════════ -->
+  <section class="section" id="features">
+    <div class="container">
+      <h2>Everything you need for a&nbsp;great quiz night</h2>
+
+      <div class="feature-grid">
+
+        <article class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Real-Time Gameplay</h3>
+          <p>Powered by <strong>SignalR</strong> for instant synchronisation across all connected devices – no refreshing required.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">🖥️</div>
+          <h3>Three Dedicated Views</h3>
+          <p>
+            <strong>Display</strong> – beautiful game board on the projector.<br/>
+            <strong>Remote</strong> – host control panel.<br/>
+            <strong>Buzzer</strong> – player buzzer on any phone.
+          </p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">🏆</div>
+          <h3>Buzzer System</h3>
+          <p>Tracks buzz-in order with precise millisecond timestamps so there are never any arguments about who buzzed first.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">📂</div>
+          <h3>Five Question Types</h3>
+          <p>Standard text, <strong>image</strong>, <strong>image mozaik</strong> (progressive reveal), <strong>audio</strong>, and <strong>video</strong> questions – all supported out of the box.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>Fully Customisable</h3>
+          <p>Create your own categories, set point values (200–1000), upload media files, and tailor every question to your event.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Live Score Tracking</h3>
+          <p>Scores update automatically when the host awards or deducts points. Players see their standing update instantly.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">🥇</div>
+          <h3>Persistent Highscore Board</h3>
+          <p>A hall of fame that survives container restarts. It's displayed alongside the winner screen after every game.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">💾</div>
+          <h3>Import / Export</h3>
+          <p>Save and restore full game state in JSON. Reuse question packs across sessions or share them with friends.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon">🐳</div>
+          <h3>Single Docker Container</h3>
+          <p>Deploy anywhere with one <code>docker compose up</code> command. Media uploads and highscores are stored in named volumes.</p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════  SCREENSHOTS  ════════════════════════ -->
+  <section class="section section-alt" id="screenshots">
+    <div class="container">
+      <h2>See it in action</h2>
+      <div class="screenshot-grid">
+
+        <figure class="screenshot-card">
+          <img
+            src="screenshots/point-board.png"
+            alt="Game board showing all categories (History, Science, Pop Culture) with point values 200–1000"
+            loading="lazy"
+            width="1280"
+            height="720"
+          />
+          <figcaption>Point Board – select a category and value to reveal the question.</figcaption>
+        </figure>
+
+        <figure class="screenshot-card">
+          <img
+            src="screenshots/question-screen.png"
+            alt="Question screen showing the current question text and point value on the display"
+            loading="lazy"
+            width="1280"
+            height="720"
+          />
+          <figcaption>Question Screen – the question is revealed on the projector display.</figcaption>
+        </figure>
+
+        <figure class="screenshot-card">
+          <img
+            src="screenshots/buzz-in-display.png"
+            alt="Display showing Emily buzzed in first with the buzz order visible"
+            loading="lazy"
+            width="1280"
+            height="720"
+          />
+          <figcaption>Buzz-In – the display shows who buzzed in first with millisecond precision.</figcaption>
+        </figure>
+
+        <figure class="screenshot-card">
+          <img
+            src="screenshots/winner-view.png"
+            alt="Winner podium screen showing Emily, Tom, Suzy, Michael, Ashley, and Andrew with their final scores"
+            loading="lazy"
+            width="1280"
+            height="720"
+          />
+          <figcaption>Winner Podium – shown at the end of every game alongside the all-time highscore board.</figcaption>
+        </figure>
+
+        <figure class="screenshot-card">
+          <img
+            src="screenshots/display-answers.png"
+            alt="Display showing submitted player answers from Tom, Suzy, and Michael visible to everyone"
+            loading="lazy"
+            width="1280"
+            height="720"
+          />
+          <figcaption>Player Answers – the host can reveal all submitted answers on the projector at once.</figcaption>
+        </figure>
+
+        <figure class="screenshot-card screenshot-card--tall">
+          <img
+            src="screenshots/remote-setup.png"
+            alt="Remote control setup tab showing player and category management"
+            loading="lazy"
+            width="1280"
+            height="900"
+          />
+          <figcaption>Remote – Setup tab for managing players, categories, and questions.</figcaption>
+        </figure>
+
+        <figure class="screenshot-card screenshot-card--tall">
+          <img
+            src="screenshots/remote-question.png"
+            alt="Remote control host tab showing scoring controls while a question is active"
+            loading="lazy"
+            width="1280"
+            height="900"
+          />
+          <figcaption>Remote – Host tab with point award/deduct buttons during an active question.</figcaption>
+        </figure>
+
+        <figure class="screenshot-card screenshot-card--mobile">
+          <img
+            src="screenshots/buzzer-page.png"
+            alt="Buzzer page on mobile showing the player selection screen"
+            loading="lazy"
+            width="430"
+            height="920"
+          />
+          <figcaption>Buzzer – players pick their name on their phone.</figcaption>
+        </figure>
+
+        <figure class="screenshot-card screenshot-card--mobile">
+          <img
+            src="screenshots/buzzer-ready.png"
+            alt="Buzzer page showing the active BUZZ IN button ready to press"
+            loading="lazy"
+            width="430"
+            height="920"
+          />
+          <figcaption>Buzzer – the big button lights up when the host activates the buzzer.</figcaption>
+        </figure>
+
+        <figure class="screenshot-card screenshot-card--mobile">
+          <img
+            src="screenshots/buzzer-answer-input.png"
+            alt="Buzzer page showing Tom typing an answer into the answer input field"
+            loading="lazy"
+            width="430"
+            height="920"
+          />
+          <figcaption>Buzzer – players can type in their answer which the host sees on screen.</figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════  HOW IT WORKS  ══════════════════════ -->
+  <section class="section" id="how-it-works">
+    <div class="container">
+      <h2>How it works</h2>
+      <div class="steps">
+
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <h3>Set up your game</h3>
+            <p>Open the <strong>Remote Control</strong> (<code>/remote</code>), add players, create categories, and write your questions. Choose a type for each question and upload any media files.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <h3>Connect everyone</h3>
+            <p>Display the <strong>Display View</strong> (<code>/display</code>) on a TV or projector. Each player opens the <strong>Buzzer</strong> (<code>/buzzer</code>) on their phone and selects their name.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <h3>Play!</h3>
+            <p>Select a category and value from the board, reveal the question, and watch the buzzers light up. Award points, move on, and let the quiz engine handle the rest.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-body">
+            <h3>Crown the winner</h3>
+            <p>When all questions are answered the display shows the podium and updates the all-time highscore board automatically.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════  INSTALL  ════════════════════════════ -->
+  <section class="section section-alt" id="install">
+    <div class="container">
+      <h2>Quick Start</h2>
+      <p class="section-intro">The fastest way to run Custom Quiz Host is with Docker Compose.</p>
+
+      <div class="install-steps">
+
+        <div class="install-step">
+          <h3><span class="step-badge">1</span> Create a <code>docker-compose.yml</code></h3>
+          <pre><code>services:
+  custom-quiz-host:
+    image: ghcr.io/michamican/custom-quiz-host:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/app/uploads
+      - highscores:/app/highscores
+    restart: unless-stopped
+
+volumes:
+  uploads:
+  highscores:</code></pre>
+        </div>
+
+        <div class="install-step">
+          <h3><span class="step-badge">2</span> Start the application</h3>
+          <pre><code>docker compose up -d</code></pre>
+        </div>
+
+        <div class="install-step">
+          <h3><span class="step-badge">3</span> Open in your browser</h3>
+          <div class="url-table">
+            <div class="url-row">
+              <span class="url-label">Display (projector)</span>
+              <code>http://localhost:8080/display</code>
+            </div>
+            <div class="url-row">
+              <span class="url-label">Remote Control (host)</span>
+              <code>http://localhost:8080/remote</code>
+            </div>
+            <div class="url-row">
+              <span class="url-label">Buzzer (players)</span>
+              <code>http://localhost:8080/buzzer</code>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <h3 class="alt-install-title">Development Setup</h3>
+      <p>Want to hack on the code? You'll need <strong>.NET SDK 10.0+</strong> and <strong>Node.js 20+</strong>.</p>
+      <pre><code>git clone https://github.com/MichaMican/custom-quiz-host.git
+cd custom-quiz-host/customquizhost.client
+npm install
+cd ../CustomQuizHost.Server
+dotnet run</code></pre>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════  TECH STACK  ════════════════════════ -->
+  <section class="section" id="tech">
+    <div class="container">
+      <h2>Tech Stack</h2>
+      <div class="tech-grid">
+        <div class="tech-card">
+          <div class="tech-label">Backend</div>
+          <ul>
+            <li>ASP.NET Core 10.0</li>
+            <li>SignalR</li>
+            <li>C#</li>
+            <li>Docker</li>
+          </ul>
+        </div>
+        <div class="tech-card">
+          <div class="tech-label">Frontend</div>
+          <ul>
+            <li>React 19</li>
+            <li>TypeScript</li>
+            <li>Vite</li>
+            <li>@microsoft/signalr</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════  CTA / STAR  ══════════════════════════ -->
+  <section class="section section-cta" id="star">
+    <div class="container center">
+      <h2>Love it? Give it a ⭐</h2>
+      <p>Custom Quiz Host is free and open-source. Star the repo to show your support and help others discover it.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="https://github.com/MichaMican/custom-quiz-host" target="_blank" rel="noopener">
+          ⭐ Star on GitHub
+        </a>
+        <a class="btn btn-outline btn-lg" href="https://github.com/MichaMican/custom-quiz-host/issues/new" target="_blank" rel="noopener">
+          🐛 Report an Issue
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════  FOOTER  ════════════════════════════ -->
+  <footer class="footer">
+    <div class="container center">
+      <p>
+        <a href="https://github.com/MichaMican/custom-quiz-host" target="_blank" rel="noopener">Custom Quiz Host</a>
+        is released under the
+        <a href="https://github.com/MichaMican/custom-quiz-host/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.
+      </p>
+      <p class="footer-sub">Made with ❤️ by <a href="https://github.com/MichaMican" target="_blank" rel="noopener">MichaMican</a></p>
+    </div>
+  </footer>
+
+</body>
+</html>

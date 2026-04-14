@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://michamican.github.io/custom-quiz-host/sitemap.xml

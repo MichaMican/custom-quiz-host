@@ -8,12 +8,14 @@ on:
       - ".github/**"
       - ".vscode/**"
       - "*.md"
+      - "website/**"
   pull_request:
     types: [opened, synchronize, ready_for_review]
     paths-ignore:
       - ".github/**"
       - ".vscode/**"
       - "*.md"
+      - "website/**"
   workflow_dispatch:
 
 concurrency:
