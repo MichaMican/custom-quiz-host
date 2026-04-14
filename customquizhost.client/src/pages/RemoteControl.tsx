@@ -42,11 +42,25 @@ function RemoteControl() {
   const [exportMessage, setExportMessage] = useState("");
   const [importExportMode, setImportExportMode] = useState<"questions" | "game">("questions");
   const hasRestoredRef = useRef(false);
+  const hasUnsavedChanges = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const answerImageInputRef = useRef<HTMLInputElement>(null);
   const selectedCategoryQuestions = gameState?.categories
     .find((c) => c.id === selectedCategoryId)
     ?.questions;
+
+  const markDirty = () => { hasUnsavedChanges.current = true; };
+  const markClean = () => { hasUnsavedChanges.current = false; };
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges.current) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   // Auto-save game state to localStorage whenever it changes
   useEffect(() => {
@@ -112,6 +126,7 @@ function RemoteControl() {
         eventHistory: [],
       };
       await invoke("ImportGameSettings", emptyState);
+      markClean();
       setShowResetModal(false);
     } catch {
       alert("Failed to reset the game. Please try again.");
@@ -128,6 +143,7 @@ function RemoteControl() {
     if (!categoryName.trim()) return;
     await invoke("AddCategory", categoryName.trim());
     setCategoryName("");
+    markDirty();
   };
 
   const handleAddQuestion = async () => {
@@ -189,6 +205,7 @@ function RemoteControl() {
       mediaFileName,
       answerImageFileName,
     );
+    markDirty();
     setQuestionText("");
     setQuestionAnswer("");
     setMediaFile(null);
@@ -221,6 +238,7 @@ function RemoteControl() {
       answerImageInputRef.current.value = "";
     }
     try {
+      markDirty();
       await invoke("RemoveQuestion", selectedCategoryId, questionId);
     } catch {
       alert("Failed to remove the original question. Please try again.");
@@ -351,6 +369,7 @@ function RemoteControl() {
       a.download = "quiz-game.zip";
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      markClean();
     } finally {
       setExporting(false);
     }
@@ -380,6 +399,7 @@ function RemoteControl() {
       a.download = "quiz-questions.zip";
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      markClean();
     } finally {
       setExporting(false);
     }
@@ -517,7 +537,7 @@ function RemoteControl() {
                   </span>
                   <button
                     className="btn-remove"
-                    onClick={() => invoke("RemoveCategory", c.id)}
+                    onClick={() => { markDirty(); invoke("RemoveCategory", c.id); }}
                   >
                     ✕
                   </button>
@@ -646,7 +666,7 @@ function RemoteControl() {
               <>
                 <button
                   className="btn-sort"
-                  onClick={() => invoke("SortQuestionsByPoints", selectedCategoryId)}
+                  onClick={() => { markDirty(); invoke("SortQuestionsByPoints", selectedCategoryId); }}
                 >
                   Sort by Points ↑
                 </button>
@@ -667,7 +687,7 @@ function RemoteControl() {
                         <button
                           className="btn-move"
                           disabled={idx === 0}
-                          onClick={() => invoke("MoveQuestion", selectedCategoryId, q.id, "up")}
+                          onClick={() => { markDirty(); invoke("MoveQuestion", selectedCategoryId, q.id, "up"); }}
                           title="Move up"
                         >
                           ▲
@@ -675,16 +695,17 @@ function RemoteControl() {
                         <button
                           className="btn-move"
                           disabled={idx === selectedCategoryQuestions.length - 1}
-                          onClick={() => invoke("MoveQuestion", selectedCategoryId, q.id, "down")}
+                          onClick={() => { markDirty(); invoke("MoveQuestion", selectedCategoryId, q.id, "down"); }}
                           title="Move down"
                         >
                           ▼
                         </button>
                         <button
                           className="btn-remove"
-                          onClick={() =>
-                            invoke("RemoveQuestion", selectedCategoryId, q.id)
-                          }
+                         onClick={() => {
+                            markDirty();
+                            invoke("RemoveQuestion", selectedCategoryId, q.id);
+                          }}
                         >
                           ✕
                         </button>
