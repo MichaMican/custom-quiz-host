@@ -49,6 +49,13 @@
 </head>
 <body>
 
+  <!-- Reusable SVG symbol -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="icon-star" viewBox="0 0 16 16">
+      <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+    </symbol>
+  </svg>
+
   <!-- ═══════════════════════════════  HERO  ══════════════════════════════ -->
   <header class="hero">
     <nav class="nav" id="nav">
@@ -87,7 +94,7 @@
       <div class="hero-cta">
         <a class="btn btn-primary" href="#install">Get Started</a>
         <a class="btn btn-star" href="https://github.com/MichaMican/custom-quiz-host" target="_blank" rel="noopener">
-          <svg class="star-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
+          <svg class="star-icon" width="18" height="18" fill="currentColor"><use href="#icon-star"/></svg>
           Star on GitHub
         </a>
       </div>
@@ -445,7 +452,7 @@ dotnet run</code></pre>
       </div>
       <div class="hero-cta anim-fade-up" data-animate>
         <a class="btn btn-star btn-lg" href="https://github.com/MichaMican/custom-quiz-host" target="_blank" rel="noopener">
-          <svg class="star-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
+          <svg class="star-icon" width="18" height="18" fill="currentColor"><use href="#icon-star"/></svg>
           Star on GitHub
         </a>
         <a class="btn btn-outline btn-lg" href="https://github.com/MichaMican/custom-quiz-host/issues/new" target="_blank" rel="noopener">
@@ -475,6 +482,7 @@ dotnet run</code></pre>
         els.forEach(function (el) { el.classList.add('is-visible'); });
         return;
       }
+      /* 12% threshold triggers the animation when roughly one line of text is visible */
       var observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
