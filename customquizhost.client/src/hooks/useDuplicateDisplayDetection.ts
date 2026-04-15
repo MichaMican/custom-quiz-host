@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const CHANNEL_NAME = "display-tab-presence";
 
@@ -7,16 +7,26 @@ interface PresenceMessage {
   tabId: string;
 }
 
+interface DuplicateDisplayState {
+  /** Whether another Display tab is currently open on this device. */
+  isDuplicate: boolean;
+  /** Whether the user has dismissed the warning for the current set of peers. */
+  dismissed: boolean;
+  /** Call to dismiss the warning. It automatically resets when the peer set changes. */
+  dismiss: () => void;
+}
+
 /**
  * Detects if the Display page is open in multiple browser tabs on the same machine
- * using the BroadcastChannel API. Returns true when another Display tab is detected.
+ * using the BroadcastChannel API.
  *
  * On mount each tab announces itself. When a tab receives an announce from another
  * tab it re-announces so both sides learn about each other. A closing message is
  * sent on beforeunload / cleanup so other tabs can clear the warning immediately.
  */
-export function useDuplicateDisplayDetection(): boolean {
+export function useDuplicateDisplayDetection(): DuplicateDisplayState {
   const [isDuplicate, setIsDuplicate] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     if (typeof BroadcastChannel === "undefined") return;
@@ -38,6 +48,8 @@ export function useDuplicateDisplayDetection(): boolean {
         // Re-announce so the sender also learns about us
         if (isNew) {
           channel.postMessage({ type: "announce", tabId } satisfies PresenceMessage);
+          // A new peer joined – reset any prior dismissal
+          setDismissed(false);
         }
       }
       setIsDuplicate(otherTabs.size > 0);
@@ -62,5 +74,7 @@ export function useDuplicateDisplayDetection(): boolean {
     };
   }, []);
 
-  return isDuplicate;
+  const dismiss = useCallback(() => setDismissed(true), []);
+
+  return { isDuplicate, dismissed, dismiss };
 }

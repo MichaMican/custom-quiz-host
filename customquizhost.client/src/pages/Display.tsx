@@ -540,7 +540,7 @@ function LowScoreBoard({ entries }: { entries: HighScoreEntry[] }) {
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
   useWakeLock();
-  const isDuplicateTab = useDuplicateDisplayDetection();
+  const { isDuplicate: isDuplicateTab, dismissed: duplicateDismissed, dismiss: dismissDuplicate } = useDuplicateDisplayDetection();
   const prevBuzzCountRef = useRef(0);
   const preloadedBuzzerRef = useRef<HTMLAudioElement | null>(null);
 
@@ -732,7 +732,7 @@ function Display() {
 
   return (
     <div className="display-container">
-      <DuplicateTabWarning visible={isDuplicateTab} />
+      <DuplicateTabWarning visible={isDuplicateTab && !duplicateDismissed} onDismiss={dismissDuplicate} />
       {gameState.winnerDeclared ? (
         <WinnerOverlay
           players={getRankedPlayers(gameState.players)}

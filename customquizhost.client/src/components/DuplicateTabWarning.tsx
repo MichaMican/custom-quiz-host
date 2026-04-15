@@ -1,14 +1,12 @@
-import { useState } from "react";
 import "./DuplicateTabWarning.css";
 
 interface DuplicateTabWarningProps {
   visible: boolean;
+  onDismiss: () => void;
 }
 
-function DuplicateTabWarning({ visible }: DuplicateTabWarningProps) {
-  const [dismissed, setDismissed] = useState(false);
-
-  if (!visible || dismissed) return null;
+function DuplicateTabWarning({ visible, onDismiss }: DuplicateTabWarningProps) {
+  if (!visible) return null;
 
   return (
     <div className="duplicate-tab-overlay">
@@ -24,7 +22,7 @@ function DuplicateTabWarning({ visible }: DuplicateTabWarningProps) {
         </p>
         <button
           className="duplicate-tab-close-btn"
-          onClick={() => setDismissed(true)}
+          onClick={onDismiss}
         >
           Dismiss
         </button>
