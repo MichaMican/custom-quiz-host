@@ -1,5 +1,7 @@
 import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
+import { useDuplicateDisplayDetection } from "../hooks/useDuplicateDisplayDetection";
+import DuplicateTabWarning from "../components/DuplicateTabWarning";
 import type { Player, Question, HighScoreEntry } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
@@ -538,6 +540,7 @@ function LowScoreBoard({ entries }: { entries: HighScoreEntry[] }) {
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
   useWakeLock();
+  const { isDuplicate: isDuplicateTab, dismissed: duplicateDismissed, dismiss: dismissDuplicate } = useDuplicateDisplayDetection();
   const prevBuzzCountRef = useRef(0);
   const preloadedBuzzerRef = useRef<HTMLAudioElement | null>(null);
 
@@ -729,6 +732,7 @@ function Display() {
 
   return (
     <div className="display-container">
+      <DuplicateTabWarning visible={isDuplicateTab && !duplicateDismissed} onDismiss={dismissDuplicate} />
       {gameState.winnerDeclared ? (
         <WinnerOverlay
           players={getRankedPlayers(gameState.players)}
