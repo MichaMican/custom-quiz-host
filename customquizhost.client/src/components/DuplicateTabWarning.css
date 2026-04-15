@@ -1,0 +1,83 @@
+.duplicate-tab-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: duplicate-tab-fade-in 0.3s ease;
+}
+
+.duplicate-tab-modal {
+  background: #1e293b;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  border-radius: 14px;
+  padding: 24px;
+  max-width: 460px;
+  width: 90%;
+  animation: duplicate-tab-pop-in 0.3s ease;
+}
+
+.duplicate-tab-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.duplicate-tab-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #fbbf24;
+}
+
+.duplicate-tab-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.duplicate-tab-message {
+  margin: 0 0 20px 0;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.duplicate-tab-close-btn {
+  display: block;
+  margin-left: auto;
+  padding: 8px 20px;
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.duplicate-tab-close-btn:hover {
+  background: rgba(234, 179, 8, 0.25);
+}
+
+@keyframes duplicate-tab-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes duplicate-tab-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
