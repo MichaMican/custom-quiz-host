@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
 
 const CHANNEL_NAME = "display-tab-presence";
-const HEARTBEAT_INTERVAL_MS = 2000;
-const HEARTBEAT_TIMEOUT_MS = 5000;
 
-interface HeartbeatMessage {
-  type: "heartbeat" | "announce" | "closing";
+interface PresenceMessage {
+  type: "announce" | "closing";
   tabId: string;
 }
 
 /**
  * Detects if the Display page is open in multiple browser tabs on the same machine
  * using the BroadcastChannel API. Returns true when another Display tab is detected.
+ *
+ * On mount each tab announces itself. When a tab receives an announce from another
+ * tab it re-announces so both sides learn about each other. A closing message is
+ * sent on beforeunload / cleanup so other tabs can clear the warning immediately.
  */
 export function useDuplicateDisplayDetection(): boolean {
   const [isDuplicate, setIsDuplicate] = useState(false);
@@ -21,26 +23,22 @@ export function useDuplicateDisplayDetection(): boolean {
 
     const tabId = crypto.randomUUID();
     const channel = new BroadcastChannel(CHANNEL_NAME);
-    const otherTabs = new Map<string, number>();
+    const otherTabs = new Set<string>();
 
-    const pruneStale = () => {
-      const now = Date.now();
-      for (const [id, lastSeen] of otherTabs) {
-        if (now - lastSeen > HEARTBEAT_TIMEOUT_MS) {
-          otherTabs.delete(id);
-        }
-      }
-      setIsDuplicate(otherTabs.size > 0);
-    };
-
-    const handleMessage = (event: MessageEvent<HeartbeatMessage>) => {
+    const handleMessage = (event: MessageEvent<PresenceMessage>) => {
       const { type, tabId: senderId } = event.data;
       if (senderId === tabId) return;
 
       if (type === "closing") {
         otherTabs.delete(senderId);
       } else {
-        otherTabs.set(senderId, Date.now());
+        const isNew = !otherTabs.has(senderId);
+        otherTabs.add(senderId);
+
+        // Re-announce so the sender also learns about us
+        if (isNew) {
+          channel.postMessage({ type: "announce", tabId } satisfies PresenceMessage);
+        }
       }
       setIsDuplicate(otherTabs.size > 0);
     };
@@ -48,24 +46,17 @@ export function useDuplicateDisplayDetection(): boolean {
     channel.addEventListener("message", handleMessage);
 
     // Announce presence immediately
-    channel.postMessage({ type: "announce", tabId } satisfies HeartbeatMessage);
-
-    // Send periodic heartbeats
-    const heartbeatTimer = setInterval(() => {
-      channel.postMessage({ type: "heartbeat", tabId } satisfies HeartbeatMessage);
-      pruneStale();
-    }, HEARTBEAT_INTERVAL_MS);
+    channel.postMessage({ type: "announce", tabId } satisfies PresenceMessage);
 
     // Notify other tabs when closing
     const handleBeforeUnload = () => {
-      channel.postMessage({ type: "closing", tabId } satisfies HeartbeatMessage);
+      channel.postMessage({ type: "closing", tabId } satisfies PresenceMessage);
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      clearInterval(heartbeatTimer);
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      channel.postMessage({ type: "closing", tabId } satisfies HeartbeatMessage);
+      channel.postMessage({ type: "closing", tabId } satisfies PresenceMessage);
       channel.removeEventListener("message", handleMessage);
       channel.close();
     };
