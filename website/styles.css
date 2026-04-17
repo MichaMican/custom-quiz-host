@@ -469,17 +469,17 @@ pre code {
 
 /* ─── Star button ────────────────────────────────────────────────────────── */
 .btn-star {
-  background: linear-gradient(135deg, #f5a623, #f7c948);
-  color: #1a1a2e;
-  border: 2px solid #f5a623;
+  background: var(--accent);
+  color: #fff;
+  border: 2px solid var(--accent);
   font-weight: 700;
 }
 
 .btn-star:hover {
-  background: linear-gradient(135deg, #e09600, #f5a623);
-  border-color: #e09600;
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(245, 166, 35, 0.35);
+  box-shadow: 0 4px 20px rgba(108, 99, 255, 0.35);
 }
 
 .btn-star .star-icon {
@@ -488,12 +488,6 @@ pre code {
 
 .btn-star:hover .star-icon {
   transform: scale(1.25) rotate(18deg);
-}
-
-.hero-github-widget {
-  margin-top: 1rem;
-  display: flex;
-  justify-content: center;
 }
 
 .cta-github-widget {
