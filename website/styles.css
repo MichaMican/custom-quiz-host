@@ -132,9 +132,20 @@ pre code {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem;
   max-width: 1100px;
   margin: 0 auto;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(15, 15, 26, 0.85);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: box-shadow 0.3s;
+}
+
+.nav-scrolled {
+  box-shadow: 0 2px 24px rgba(0, 0, 0, 0.4);
 }
 
 .nav-logo {
@@ -142,7 +153,53 @@ pre code {
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.01em;
+  text-decoration: none !important;
 }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s;
+  text-decoration: none !important;
+}
+
+.nav-links a:hover {
+  color: var(--accent);
+  text-decoration: none !important;
+}
+
+/* ── Hamburger toggle (mobile) ───────────────────────────────────────── */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  z-index: 110;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+.nav-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-toggle.open span:nth-child(2) { opacity: 0; }
+.nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
 /* ─── Hero ───────────────────────────────────────────────────────────────── */
 .hero {
@@ -410,10 +467,130 @@ pre code {
 .footer p { font-size: 0.9rem; margin-bottom: 0.4rem; }
 .footer-sub { color: var(--text-muted); font-size: 0.85rem !important; }
 
+/* ─── Star button ────────────────────────────────────────────────────────── */
+.btn-star {
+  background: linear-gradient(135deg, #f5a623, #f7c948);
+  color: #1a1a2e;
+  border: 2px solid #f5a623;
+  font-weight: 700;
+}
+
+.btn-star:hover {
+  background: linear-gradient(135deg, #e09600, #f5a623);
+  border-color: #e09600;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(245, 166, 35, 0.35);
+}
+
+.btn-star .star-icon {
+  transition: transform 0.3s;
+}
+
+.btn-star:hover .star-icon {
+  transform: scale(1.25) rotate(18deg);
+}
+
+.hero-github-widget {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.cta-github-widget {
+  margin-bottom: 1.5rem;
+}
+
+/* ─── Scroll-triggered animations ────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+[data-animate] {
+  opacity: 0;
+}
+
+[data-animate].is-visible.anim-fade {
+  animation: fadeIn 0.7s ease forwards;
+}
+
+[data-animate].is-visible.anim-fade-up {
+  animation: fadeUp 0.6s ease forwards;
+}
+
+/* stagger cards inside grids */
+.feature-grid [data-animate].is-visible:nth-child(1) { animation-delay: 0s; }
+.feature-grid [data-animate].is-visible:nth-child(2) { animation-delay: 0.08s; }
+.feature-grid [data-animate].is-visible:nth-child(3) { animation-delay: 0.16s; }
+.feature-grid [data-animate].is-visible:nth-child(4) { animation-delay: 0.24s; }
+.feature-grid [data-animate].is-visible:nth-child(5) { animation-delay: 0.32s; }
+.feature-grid [data-animate].is-visible:nth-child(6) { animation-delay: 0.40s; }
+.feature-grid [data-animate].is-visible:nth-child(7) { animation-delay: 0.48s; }
+.feature-grid [data-animate].is-visible:nth-child(8) { animation-delay: 0.56s; }
+.feature-grid [data-animate].is-visible:nth-child(9) { animation-delay: 0.64s; }
+
+.steps [data-animate].is-visible:nth-child(1) { animation-delay: 0s; }
+.steps [data-animate].is-visible:nth-child(2) { animation-delay: 0.12s; }
+.steps [data-animate].is-visible:nth-child(3) { animation-delay: 0.24s; }
+.steps [data-animate].is-visible:nth-child(4) { animation-delay: 0.36s; }
+
+.install-steps [data-animate].is-visible:nth-child(1) { animation-delay: 0s; }
+.install-steps [data-animate].is-visible:nth-child(2) { animation-delay: 0.12s; }
+.install-steps [data-animate].is-visible:nth-child(3) { animation-delay: 0.24s; }
+
+/* Hero entrance animations */
+.hero-body {
+  animation: fadeUp 0.8s ease 0.1s both;
+}
+
+.hero-screenshot {
+  animation: fadeUp 0.8s ease 0.3s both;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .nav-toggle { display: flex; }
+
+  .nav-links {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--bg-alt);
+    border-left: 1px solid var(--border);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 4.5rem 2rem 2rem;
+    gap: 1.25rem;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 105;
+  }
+
+  .nav-links.open {
+    transform: translateX(0);
+  }
+}
+
 @media (max-width: 600px) {
   .screenshot-grid { grid-template-columns: 1fr; }
   .step { flex-direction: column; gap: 0.75rem; }
   .url-row { flex-direction: column; gap: 0.25rem; }
   .url-label { min-width: unset; }
+}
+
+/* Reduced-motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  [data-animate] { opacity: 1; }
 }
