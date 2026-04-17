@@ -475,6 +475,11 @@ pre code {
   font-weight: 700;
 }
 
+.nav-star {
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+}
+
 .btn-star:hover {
   background: var(--accent-dark);
   border-color: var(--accent-dark);
