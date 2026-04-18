@@ -2,6 +2,21 @@ import { useCallback, useEffect, useState } from "react";
 
 const CHANNEL_NAME = "display-tab-presence";
 
+/**
+ * Generates a unique tab identifier. Uses `crypto.randomUUID` when available
+ * (secure contexts – HTTPS or localhost), and falls back to a Math.random-based
+ * ID otherwise. `crypto.randomUUID` is not exposed on non-secure origins such
+ * as plain-HTTP LAN addresses (e.g. http://192.168.x.x), so calling it there
+ * throws "crypto.randomUUID is not a function". The tab ID only needs to be
+ * unique across tabs on the same device, so the fallback is sufficient.
+ */
+function generateTabId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `tab-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 interface PresenceMessage {
   type: "announce" | "closing";
   tabId: string;
@@ -31,7 +46,7 @@ export function useDuplicateDisplayDetection(): DuplicateDisplayState {
   useEffect(() => {
     if (typeof BroadcastChannel === "undefined") return;
 
-    const tabId = crypto.randomUUID();
+    const tabId = generateTabId();
     const channel = new BroadcastChannel(CHANNEL_NAME);
     const otherTabs = new Set<string>();
 
