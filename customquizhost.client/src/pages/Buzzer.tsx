@@ -3,6 +3,10 @@ import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { TimeSync } from "../utils/timeSync";
 import EventHistory from "../components/EventHistory";
+import Avatar from "../components/Avatar";
+import CameraCaptureModal, { type CapturedImage } from "../components/CameraCaptureModal";
+import UploadProgressModal from "../components/UploadProgressModal";
+import { uploadFileWithProgress } from "../utils/uploadWithProgress";
 import "./Buzzer.css";
 
 function Buzzer() {
@@ -12,6 +16,10 @@ function Buzzer() {
   const [playerAnswer, setPlayerAnswer] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [buzzerPressed, setBuzzerPressed] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessage, setUploadMessage] = useState("");
 
   // NTP-like time synchronization for accurate buzz timestamps
   // Only active when host enables buzzer sync
@@ -62,6 +70,30 @@ function Buzzer() {
     if (!selectedPlayerId || !playerAnswer.trim()) return;
     await invoke("SubmitPlayerAnswer", selectedPlayerId, playerAnswer.trim());
     setPlayerAnswer("");
+  };
+
+  const handleAvatarCaptured = async (image: CapturedImage) => {
+    if (!selectedPlayerId) return;
+    setShowCamera(false);
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadMessage("Uploading avatar…");
+    try {
+      const result = await uploadFileWithProgress(
+        image.blob,
+        (percent) => setUploadProgress(percent),
+        image.fileName,
+      );
+      await invoke("SetPlayerAvatar", selectedPlayerId, result.fileName);
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      // surface a minimal error — the modal is dismissed on finally
+      alert("Avatar upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      setUploadMessage("");
+    }
   };
 
   const submittedAnswer = gameState?.playerAnswers.find(
@@ -121,6 +153,21 @@ function Buzzer() {
 
         {selectedPlayerId && (
           <button
+            type="button"
+            className="btn-camera"
+            onClick={() => setShowCamera(true)}
+            aria-label="Take or upload avatar picture"
+            title="Take or upload avatar picture"
+          >
+            <span className="btn-camera-icon" aria-hidden="true">📷</span>
+            <span className="btn-camera-label">
+              {selectedPlayer?.avatarFileName ? "Change picture" : "Add picture"}
+            </span>
+          </button>
+        )}
+
+        {selectedPlayerId && (
+          <button
             className={`buzz-button ${
               !gameState.buzzerActive
                 ? "disabled"
@@ -138,11 +185,20 @@ function Buzzer() {
             onPointerCancel={() => setBuzzerPressed(false)}
             disabled={!gameState.buzzerActive || !!playerAlreadyBuzzed}
           >
-            {!gameState.buzzerActive
-              ? "Waiting for Host..."
-              : playerAlreadyBuzzed
-                ? "Buzzed!"
-                : "BUZZ IN!"}
+            <span className="buzz-button-avatar" aria-hidden="true">
+              <Avatar
+                fileName={selectedPlayer?.avatarFileName}
+                grayscale={!gameState.buzzerActive}
+                alt=""
+              />
+            </span>
+            <span className="buzz-button-label">
+              {!gameState.buzzerActive
+                ? "Waiting for Host..."
+                : playerAlreadyBuzzed
+                  ? "Buzzed!"
+                  : "BUZZ IN!"}
+            </span>
           </button>
         )}
 
@@ -217,6 +273,17 @@ function Buzzer() {
           </div>
         </div>
       )}
+
+      <CameraCaptureModal
+        visible={showCamera}
+        onClose={() => setShowCamera(false)}
+        onCaptured={handleAvatarCaptured}
+      />
+      <UploadProgressModal
+        visible={uploading}
+        progress={uploadProgress}
+        message={uploadMessage}
+      />
     </div>
   );
 }
