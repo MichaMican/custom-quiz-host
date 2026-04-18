@@ -224,6 +224,16 @@ public class GameService
         }
     }
 
+    public async Task SetPlayerAvatar(string playerId, string? avatarFileName)
+    {
+        var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);
+        if (player != null)
+        {
+            player.AvatarFileName = string.IsNullOrWhiteSpace(avatarFileName) ? null : avatarFileName;
+            await BroadcastGameState();
+        }
+    }
+
     public async Task ActivateBuzzer()
     {
         _gameState.BuzzerActive = true;

@@ -51,6 +51,9 @@ public class GameHub : Hub
     public async Task SetPlayerScore(string playerId, int score) =>
         await _gameService.SetPlayerScore(playerId, score);
 
+    public async Task SetPlayerAvatar(string playerId, string? avatarFileName) =>
+        await _gameService.SetPlayerAvatar(playerId, avatarFileName);
+
     public async Task ActivateBuzzer() => await _gameService.ActivateBuzzer();
 
     public async Task DeactivateBuzzer() => await _gameService.DeactivateBuzzer();
