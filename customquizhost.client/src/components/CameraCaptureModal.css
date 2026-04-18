@@ -62,6 +62,7 @@
   align-items: center;
   justify-content: center;
   min-height: 320px;
+  container-type: size;
 }
 
 .camera-video {
@@ -86,8 +87,13 @@
 }
 
 .camera-crop-circle {
-  width: min(70vw, 70vh, 360px);
-  height: min(70vw, 70vh, 360px);
+  /* Match the actual captured area: `cropToSquareBlob` crops a centered
+     square whose side equals the shorter video dimension. With the video
+     rendered `object-fit: cover` inside the stage, that square lines up
+     exactly with the shorter side of the stage, so size the circle the
+     same way. */
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
   border-radius: 50%;
   border: 3px solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
