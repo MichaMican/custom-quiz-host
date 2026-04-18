@@ -2,6 +2,7 @@ import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { useDuplicateDisplayDetection } from "../hooks/useDuplicateDisplayDetection";
 import DuplicateTabWarning from "../components/DuplicateTabWarning";
+import Avatar from "../components/Avatar";
 import type { Player, Question, HighScoreEntry } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
@@ -411,6 +412,9 @@ function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerN
           <div className="podium">
             {podiumPlayers.map((p, i) => (
               <div key={p.id} className={`podium-entry podium-entry-${i + 1}`}>
+                <div className="podium-avatar">
+                  <Avatar fileName={p.avatarFileName} alt={p.name} />
+                </div>
                 <div
                   className="podium-rank"
                   style={{ color: getRankColor(p.rank) }}
@@ -839,6 +843,9 @@ function Display() {
               const anim = scoreAnimations.get(player.id);
               return (
                 <div key={player.id} className={`display-player-score ${anim ? `score-${anim.type}` : ""}`}>
+                  <div className="player-avatar">
+                    <Avatar fileName={player.avatarFileName} alt={player.name} />
+                  </div>
                   <span className="player-name">{player.name}</span>
                   <span className="player-score">{player.score}</span>
                   {anim && (
