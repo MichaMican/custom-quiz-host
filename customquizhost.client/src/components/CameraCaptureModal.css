@@ -136,6 +136,18 @@
   margin: 0;
 }
 
+.camera-status-notice {
+  position: absolute;
+  inset: auto 16px 16px 16px;
+  top: auto;
+  background: rgba(2, 6, 23, 0.75);
+  color: #e2e8f0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
 .camera-controls {
   display: flex;
   align-items: center;

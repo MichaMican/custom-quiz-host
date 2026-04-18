@@ -66,8 +66,28 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [facingMode, setFacingMode] = useState<FacingMode>("user");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
-  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const [enumeratedMultipleCameras, setEnumeratedMultipleCameras] = useState(false);
+  const [isMobileLike, setIsMobileLike] = useState(false);
+
+  // On a phone/tablet we can't reliably enumerate cameras until after the user
+  // grants permission, but we *can* rely on `facingMode` to pick front/back.
+  // So detect "mobile-like" environments up-front and always surface the switch
+  // button there. On desktops we keep the stricter enumeration-based check so
+  // single-webcam laptops don't show a useless button.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hasTouch =
+      (typeof navigator !== "undefined" &&
+        typeof navigator.maxTouchPoints === "number" &&
+        navigator.maxTouchPoints > 0) ||
+      (typeof window.matchMedia === "function" &&
+        window.matchMedia("(pointer: coarse)").matches);
+    setIsMobileLike(hasTouch);
+  }, []);
+
+  const hasMultipleCameras = enumeratedMultipleCameras || isMobileLike;
 
   const stopStream = useCallback(() => {
     if (streamRef.current) {
@@ -82,20 +102,26 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
   }, []);
 
   // Detect available camera count once we have permission so we know whether
-  // to show the "switch camera" button.
-  useEffect(() => {
-    if (!visible) return;
+  // to show the "switch camera" button on desktops. On mobile the button is
+  // always shown (see `isMobileLike`) because browsers typically won't reveal
+  // the full camera list until permission has been granted.
+  const refreshCameraList = useCallback(() => {
     if (!navigator.mediaDevices?.enumerateDevices) return;
     navigator.mediaDevices
       .enumerateDevices()
       .then((devices) => {
         const cams = devices.filter((d) => d.kind === "videoinput");
-        setHasMultipleCameras(cams.length > 1);
+        setEnumeratedMultipleCameras(cams.length > 1);
       })
       .catch(() => {
-        // ignore — leave the toggle hidden
+        // ignore — leave the enumerated flag as-is
       });
-  }, [visible]);
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    refreshCameraList();
+  }, [visible, refreshCameraList]);
 
   // Start (or restart) the camera stream when the modal becomes visible or
   // when the user toggles between front/back camera.
@@ -127,20 +153,40 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
       return;
     }
 
-    const constraints: MediaStreamConstraints = {
-      video: {
-        facingMode: { ideal: facingMode },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-      audio: false,
-    };
-
     const start = async () => {
       setError(null);
       setStarting(true);
+      let usedFallback = false;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        let stream: MediaStream;
+        try {
+          // Try the requested facing mode strictly first so we can detect
+          // when the device doesn't actually have that camera.
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { exact: facingMode },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          });
+        } catch (exactErr: unknown) {
+          const name = (exactErr as { name?: string } | null)?.name;
+          if (name === "OverconstrainedError" || name === "NotFoundError") {
+            // Fall back to whatever camera is available.
+            usedFallback = true;
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                facingMode: { ideal: facingMode },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              },
+              audio: false,
+            });
+          } else {
+            throw exactErr;
+          }
+        }
         if (cancelled) {
           for (const track of stream.getTracks()) track.stop();
           return;
@@ -154,6 +200,11 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
             // play() can reject when interrupted by another load — that's fine
           }
         }
+        setNotice(usedFallback ? "Only one camera available." : null);
+        // Labels and the full device list only become available after
+        // permission is granted — refresh now so desktops with a single
+        // webcam can correctly hide the switch button.
+        refreshCameraList();
       } catch (err: unknown) {
         if (cancelled) return;
         const message =
@@ -169,7 +220,7 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
     return () => {
       cancelled = true;
     };
-  }, [visible, facingMode, stopStream]);
+  }, [visible, facingMode, stopStream, refreshCameraList]);
 
   // Make sure the camera is released when the component unmounts.
   useEffect(() => {
@@ -177,8 +228,17 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
   }, [stopStream]);
 
   const handleSwitchCamera = () => {
+    setNotice(null);
     setFacingMode((prev) => (prev === "user" ? "environment" : "user"));
   };
+
+  // Auto-dismiss the transient "only one camera available" notice so it
+  // doesn't linger over the preview.
+  useEffect(() => {
+    if (!notice) return;
+    const id = window.setTimeout(() => setNotice(null), 3000);
+    return () => window.clearTimeout(id);
+  }, [notice]);
 
   const handleCapture = async () => {
     const video = videoRef.current;
@@ -274,6 +334,11 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
               <p className="camera-status-hint">
                 You can still upload a custom image.
               </p>
+            </div>
+          )}
+          {!error && !starting && notice && (
+            <div className="camera-status camera-status-notice" role="status">
+              {notice}
             </div>
           )}
         </div>
