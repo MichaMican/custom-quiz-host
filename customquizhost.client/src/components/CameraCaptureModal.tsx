@@ -108,6 +108,25 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
     let cancelled = false;
     stopStream();
 
+    // `navigator.mediaDevices` is only exposed in secure contexts (HTTPS or
+    // localhost). On mobile Chrome served over plain HTTP the whole
+    // `mediaDevices` object is `undefined`, so accessing `.getUserMedia`
+    // directly would throw a TypeError. Handle that up-front with a helpful
+    // message — the "Upload custom image" button below still works.
+    if (!navigator.mediaDevices?.getUserMedia) {
+      const insecure =
+        typeof window !== "undefined" &&
+        "isSecureContext" in window &&
+        !window.isSecureContext;
+      setError(
+        insecure
+          ? "Camera access requires a secure (HTTPS) connection. You can still upload a custom image below."
+          : "Camera access is not supported in this browser. You can still upload a custom image below.",
+      );
+      setStarting(false);
+      return;
+    }
+
     const constraints: MediaStreamConstraints = {
       video: {
         facingMode: { ideal: facingMode },
