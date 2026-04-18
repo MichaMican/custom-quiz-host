@@ -73,6 +73,71 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.buzz-button-avatar {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.buzz-button-label {
+  position: relative;
+  z-index: 1;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.6);
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  max-width: 80%;
+  pointer-events: none;
+}
+
+.buzz-button.disabled .buzz-button-avatar {
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.btn-camera {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: rgba(30, 41, 59, 0.6);
+  color: #c7d2fe;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-camera:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.2));
+  border-color: rgba(99, 102, 241, 0.55);
+}
+
+.btn-camera:active {
+  transform: scale(0.97);
+}
+
+.btn-camera-icon {
+  font-size: 1.1rem;
 }
 
 .buzz-button.pressed:not(:disabled) {

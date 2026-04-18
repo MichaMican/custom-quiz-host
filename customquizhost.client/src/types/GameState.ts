@@ -6,6 +6,7 @@ export interface Player {
   id: string;
   name: string;
   score: number;
+  avatarFileName: string | null;
 }
 
 export interface Question {
