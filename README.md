@@ -6,23 +6,31 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 
 - **Real-time Gameplay**: Powered by SignalR for instant synchronization across all connected devices
 - **Multiple Views**:
-  - **Display View**: Main game board for audience/players to see
-  - **Remote Control View**: Host interface for managing the game
-  - **Buzzer View**: Player buzzer interface for answering questions
-- **Player Management**: Add, remove, and track player scores in real-time
-- **Custom Categories & Questions**: Create your own categories with customizable point values (200-1000)
+  - **Display View** (`/` or `/display`): Main game board for the audience/projector screen
+  - **Remote Control View** (`/remote`): Host interface for managing every aspect of the game
+  - **Buzzer View** (`/buzzer`): Player interface for buzzing in and submitting answers
+- **Player Management**: Add, remove, and track player scores in real-time; click a score to edit it directly
+- **Player Avatars**: Players can take a selfie or upload a photo from the Buzzer page — avatars appear on their buzz button and on the Display
+- **Custom Categories & Questions**: Create your own categories with customizable point values (200–1000)
+- **Question Ordering**: Reorder questions within a category by dragging or using the ▲/▼ buttons; sort all questions by points with one click
 - **Multiple Question Types**:
   - Standard text questions
   - Image questions
-  - Image mozaik (reveal image progressively)
-  - Audio questions
-  - Video questions
-- **Buzzer System**: Track player buzz-in order with timestamps
-- **Media Support**: Upload and play image, audio, and video files
-- **Score Tracking**: Automatic score updates based on correct/incorrect answers
-- **Persistent State**: Auto-save and restore game state using localStorage
-- **Highscore Board**: Persistent hall of fame across game sessions and restarts, shown alongside the winner screen
-- **Import/Export**: Import and export game state for backup or reuse
+  - Image Mozaik (progressively un-blur the image with adjustable speed)
+  - Audio questions (play/pause with volume control)
+  - Video questions (play/pause with volume control and fullscreen support)
+- **Answer Images**: Optionally attach a reveal image to any question that is shown alongside the text answer on the Display
+- **Buzzer System**: Track player buzz-in order with accurate timestamps; highlight the active buzzer; move to the next buzzer with one click
+- **Pause on Buzz**: Automatically pause audio, video, or mozaik reveal when a player buzzes in
+- **Buzzer Sync** *(experimental)*: NTP-like time synchronisation across devices for fair latency-compensated buzz ordering
+- **Player Answer Input**: Optionally enable a text-answer field on the Buzzer page so players can type their answers, which the host can then reveal on the Display
+- **Media Controls**: Show/hide media (image, audio, video) independently of revealing the question; toggle fullscreen for images and videos; adjust volume with a slider
+- **Score Tracking**: Award or deduct the current question's points per player; set any score manually; double or halve all remaining unanswered question values in one click
+- **Winner Declaration**: Declare the winner at the end of the game to show a winner screen on the Display
+- **High Score & Low Score Boards**: Persistent halls of fame/shame across game sessions and server restarts, shown alongside the winner screen; can be shown/hidden or cleared independently
+- **Event History**: Full log of points awarded/deducted and questions asked, viewable from the Remote Control (History tab) and from the Buzzer page
+- **Persistent State**: Game state is auto-saved to `localStorage` and automatically restored when the Remote Control reconnects to an empty server
+- **Import/Export**: Export questions-only or the full game state (including all media files) as a ZIP archive; import a previously exported ZIP to restore everything
 
 ## Technology Stack
 
@@ -138,54 +146,84 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
 
 ### Setting Up a Game
 
-1. **Open the Remote Control** (`/remote`)
-2. **Setup Tab**:
-   - Add players with their names
-   - Create categories
-   - Add questions to each category with:
-      - Question text
-      - Answer
-      - Point value (200-1000)
-      - Question type (Standard, Image, Image Mozaik, Audio, Video)
-      - Optional media file upload
+1. **Open the Remote Control** (`/remote`) and go to the **Setup** tab.
+2. **Players** – Add each player by name and press Enter or click "Add".
+3. **Categories** – Create one or more categories (e.g. "History", "Science").
+4. **Questions** – For each category, add questions with:
+   - Question type (Standard, Image, Image Mozaik, Audio, Video)
+   - Question text (required for Standard; optional caption for media types)
+   - Media file upload (required for Image / Mozaik / Audio / Video types)
+   - Optional answer image (shown on the Display when the answer is revealed)
+   - Answer text
+   - Point value (200, 400, 600, 800, or 1000)
+5. Use ▲/▼ to reorder questions or **Sort by Points ↑** to sort a category automatically.
+6. **Import** – You can import a previously exported `.zip` file (questions-only or full game state) instead of entering questions manually.
 
 ### Hosting a Game
 
-1. **Open the Display View** (`/display`) on a screen visible to all players
-2. **Open the Remote Control** (`/remote`) on the host's device
-3. **Open Buzzer View** (`/buzzer`) on each player's device
-   - Players select their name from the dropdown
+1. **Open the Display View** (`/` or `/display`) on a screen visible to all players (e.g. a projector or TV).
+2. **Open the Remote Control** (`/remote`) on the host's device.
+3. **Open the Buzzer View** (`/buzzer`) on each player's device.
+   - Players select their name from the dropdown.
+   - Players can optionally take a selfie or upload a photo as their avatar.
 
 ### Playing the Game
 
-1. **Host** selects a question from the Display View using Remote Control
-2. **Host** clicks "Reveal Question" to show the question
-3. **Players** click their buzzer when they know the answer
-4. **Host** can see buzz order and award points for correct answers or deduct for incorrect answers
-5. Game continues until all questions are answered
+Switch to the **Host** tab on the Remote Control.
+
+1. **Select a question** on the board (click the point value cell).
+2. **Reveal** the question to the Display:
+   - Standard: click "Show Question".
+   - Media types: click "Show Image / Display Audio / Show Video" to display the media; use play/pause and the volume slider to control playback; use "Fullscreen" to fill the screen.
+   - Image Mozaik: click "Show Image" then "▶ Start Reveal" to progressively un-blur; adjust speed with the reveal-speed slider.
+3. **Activate the Buzzer** to open it for players; enable *"Pause actions on buzz"* to automatically pause audio/video/mozaik when someone buzzes in.
+4. **Player answers** – If *"Enable answer input for players"* is checked, players can type their answer in the Buzzer view. Use "Show Answers on Display" to reveal them.
+5. **Award or deduct points** using the +/− buttons next to each player's name in the Scoreboard section.
+6. **Show the answer** with "Show Answer on Display" (and the optional answer image).
+7. **Dismiss the question** to return to the board, or **Return to Board** to go back without marking it answered.
+8. Repeat until all questions are answered.
+
+### Ending the Game
+
+1. Click **🏆 Declare Winner** to show a winner screen on the Display.
+2. Use **⭐ Show/Hide Highscores** to display the all-time high score and low score boards alongside the winner.
+3. Use **↩ Revert Winner** if you need to continue playing.
+
+### Import / Export
+
+In the **Setup** tab, under **Import / Export**:
+
+- Choose *Questions only* or *Full Game State* from the dropdown.
+- **📤 Export** – Downloads a `.zip` file containing the JSON data and all referenced media files.
+- **📥 Import** – Uploads a previously exported `.zip` and restores it (media files are re-uploaded automatically).
 
 ### Keyboard Shortcuts (Remote Control)
 
-- Enter: Add players/categories or confirm score edits
-- Escape: Cancel score edits
+| Key    | Action                                      |
+|--------|---------------------------------------------|
+| Enter  | Add player / category; confirm score edit   |
+| Escape | Cancel score edit                           |
 
 ## Project Structure
 
 ```
 custom-quiz-host/
 ├── CustomQuizHost.Server/       # ASP.NET Core backend
-│   ├── Controllers/                 # API controllers
-│   ├── Hubs/                       # SignalR hubs
-│   ├── Models/                     # Data models
-│   ├── Services/                   # Business logic
+│   ├── Controllers/                 # API controllers (upload, buzzer, game)
+│   ├── Hubs/                       # SignalR hub
+│   ├── Middleware/                  # Custom middleware
+│   ├── Models/                     # Data models and GameState
+│   ├── Services/                   # Business logic (game engine, highscores)
 │   └── Program.cs                  # Application entry point
 ├── customquizhost.client/       # React frontend
 │   ├── src/
-│   │   ├── pages/                  # React page components
-│   │   ├── hooks/                  # Custom React hooks
+│   │   ├── components/             # Shared UI components (Avatar, modals, etc.)
+│   │   ├── hooks/                  # Custom React hooks (SignalR, wake lock, …)
+│   │   ├── pages/                  # Page components (Display, RemoteControl, Buzzer)
 │   │   ├── types/                  # TypeScript type definitions
-│   │   └── utils/                  # Utility functions
+│   │   └── utils/                  # Utility functions (localStorage, timeSync, upload)
 │   └── package.json
+├── docs/                        # Documentation assets (screenshots)
 └── README.md
 ```
 
