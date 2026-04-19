@@ -46,22 +46,25 @@ Always use `DateTimeOffset` instead of `DateTime` in C# server code. When access
 
 ### Feature documentation
 
-When implementing a **significant new feature** (comparable in scope to things like the image avatar feature or the highscore board), update the **Features** list in `README.md` to include a short bullet describing the new capability.
+When implementing a **significant new feature** (comparable in scope to things like the image avatar feature or the highscore board), update **both** of the following:
 
-Examples of features that warrant a README update:
+1. The **Features** list in `README.md` — add a short bullet describing the new capability.
+2. The **`website/index.html`** — add the feature to the relevant section(s) so the public-facing website showcases it.
+
+Examples of features that warrant these updates:
 - New question types (e.g. Image Mozaik, Video)
 - New player-facing UI elements (e.g. avatars, highscore board)
 - New host-facing gameplay controls (e.g. pause-on-buzz, import/export)
 
-Minor changes, bug fixes, refactors, or internal-only changes do **not** require a README update.
+Minor changes, bug fixes, refactors, or internal-only changes do **not** require updates to the README or website.
 
 ### Infrastructure & configuration changes
 
 When your change requires a new volume mount, environment variable, port mapping, dependency, or any other change that affects how the application is deployed or configured, update the relevant sections of `README.md` (e.g. the Docker Compose snippet, Prerequisites, Configuration) to reflect the new requirements.
 
-### End-of-session README check
+### End-of-session README & website check
 
-At the end of **every** agent session, read `README.md` and verify it is still accurate given all changes made during the session. If any section is stale or missing information, update it before finishing.
+At the end of **every** agent session, read `README.md` and `website/index.html` and verify both are still accurate given all changes made during the session. If any section is stale or missing information, update it before finishing.
 
 ## Display Animations & Transitions
 
