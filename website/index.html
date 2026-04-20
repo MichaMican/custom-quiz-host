@@ -22,8 +22,6 @@
   <link rel="stylesheet" href="styles.css" />
 
   <!-- GitHub Buttons (official widget – auto-stars when clicked if signed in) -->
-  <script async defer src="https://buttons.github.io/buttons.js"></script>
-
   <!-- Structured data for Google -->
   <script type="application/ld+json">
   {
@@ -75,6 +73,7 @@
           <a class="btn btn-star nav-star" href="https://github.com/MichaMican/custom-quiz-host" target="_blank" rel="noopener" aria-label="Star MichaMican/custom-quiz-host on GitHub">
             <svg class="star-icon" width="14" height="14" fill="currentColor"><use href="#icon-star"/></svg>
             Star
+            <span class="star-count" data-star-count hidden></span>
           </a>
         </li>
       </ul>
@@ -93,6 +92,7 @@
         <a class="btn btn-star" href="https://github.com/MichaMican/custom-quiz-host" target="_blank" rel="noopener">
           <svg class="star-icon" width="18" height="18" fill="currentColor"><use href="#icon-star"/></svg>
           Star on GitHub
+          <span class="star-count" data-star-count hidden></span>
         </a>
       </div>
     </div>
@@ -431,18 +431,11 @@ dotnet run</code></pre>
     <div class="container center">
       <h2 class="anim-fade" data-animate>Love it? Give it a ⭐</h2>
       <p class="anim-fade" data-animate>Custom Quiz Host is free and open-source. Star the repo to show your support and help others discover it.</p>
-      <div class="cta-github-widget anim-fade-up" data-animate>
-        <a class="github-button"
-           href="https://github.com/MichaMican/custom-quiz-host"
-           data-icon="octicon-star"
-           data-size="large"
-           data-show-count="true"
-           aria-label="Star MichaMican/custom-quiz-host on GitHub">Star</a>
-      </div>
       <div class="hero-cta anim-fade-up" data-animate>
         <a class="btn btn-star btn-lg" href="https://github.com/MichaMican/custom-quiz-host" target="_blank" rel="noopener">
           <svg class="star-icon" width="18" height="18" fill="currentColor"><use href="#icon-star"/></svg>
           Star on GitHub
+          <span class="star-count" data-star-count hidden></span>
         </a>
         <a class="btn btn-outline btn-lg" href="https://github.com/MichaMican/custom-quiz-host/issues/new" target="_blank" rel="noopener">
           🐛 Report an Issue
@@ -489,6 +482,28 @@ dotnet run</code></pre>
       window.addEventListener('scroll', function () {
         nav.classList.toggle('nav-scrolled', window.scrollY > 40);
       }, { passive: true });
+    })();
+
+    /* ── Live GitHub star count ────────────────────────────────────────── */
+    (function () {
+      var targets = document.querySelectorAll('[data-star-count]');
+      if (!targets.length) return;
+      fetch('https://api.github.com/repos/MichaMican/custom-quiz-host', {
+        headers: { 'Accept': 'application/vnd.github+json' }
+      })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          if (!data || typeof data.stargazers_count !== 'number') return;
+          var count = data.stargazers_count;
+          var formatted = count >= 1000
+            ? (count / 1000).toFixed(count >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k'
+            : String(count);
+          targets.forEach(function (el) {
+            el.textContent = formatted;
+            el.removeAttribute('hidden');
+          });
+        })
+        .catch(function () { /* silent: button still links to repo */ });
     })();
 
     /* ── Mobile hamburger toggle ───────────────────────────────────────── */
