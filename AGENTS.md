@@ -42,6 +42,30 @@ If you add a new action component, update the `BuzzIn` method in `CustomQuizHost
 
 Always use `DateTimeOffset` instead of `DateTime` in C# server code. When accessing the current time, always use `DateTimeOffset.UtcNow` to ensure UTC is used consistently. This applies to model properties, method parameters, and any timestamp logic.
 
+## Website & README Maintenance
+
+### Feature documentation
+
+When implementing a **significant new feature** (comparable in scope to things like the image avatar feature or the highscore board), update **both** of the following:
+
+1. The **Features** list in `README.md` — add a short bullet describing the new capability.
+2. The **`website/index.html`** — add the feature to the relevant section(s) so the public-facing website showcases it.
+
+Examples of features that warrant these updates:
+- New question types (e.g. Image Mozaik, Video)
+- New player-facing UI elements (e.g. avatars, highscore board)
+- New host-facing gameplay controls (e.g. pause-on-buzz, import/export)
+
+Minor changes, bug fixes, refactors, or internal-only changes do **not** require updates to the README or website.
+
+### Infrastructure & configuration changes
+
+When your change requires a new volume mount, environment variable, port mapping, dependency, or any other change that affects how the application is deployed or configured, update the relevant sections of `README.md` (e.g. the Docker Compose snippet, Prerequisites, Configuration) to reflect the new requirements.
+
+### End-of-session README & website check
+
+At the end of **every** agent session, read `README.md` and `website/index.html` and verify both are still accurate given all changes made during the session. If any section is stale or missing information, update it before finishing.
+
 ## Display Animations & Transitions
 
 All UI changes on the **Display** page (`customquizhost.client/src/pages/Display.tsx`) must use smooth transitions and animations. The Display is the audience-facing projector view, so visual polish is important.
