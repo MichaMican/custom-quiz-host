@@ -1,6 +1,8 @@
 import type { GameState } from "../types/GameState";
 
 const STORAGE_KEY = "quiz-game-state";
+const IMPORTED_GAME_FILENAME_KEY = "quiz-imported-game-filename";
+const IMPORTED_QUESTIONS_FILENAME_KEY = "quiz-imported-questions-filename";
 
 export function saveGameState(state: GameState): void {
   try {
@@ -22,4 +24,49 @@ export function loadGameState(): GameState | null {
 
 export function clearGameState(): void {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+export function saveImportedGameFileName(name: string | null): void {
+  try {
+    if (name) {
+      localStorage.setItem(IMPORTED_GAME_FILENAME_KEY, name);
+    } else {
+      localStorage.removeItem(IMPORTED_GAME_FILENAME_KEY);
+    }
+  } catch {
+    // Silently ignore storage errors
+  }
+}
+
+export function loadImportedGameFileName(): string | null {
+  try {
+    return localStorage.getItem(IMPORTED_GAME_FILENAME_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveImportedQuestionsFileName(name: string | null): void {
+  try {
+    if (name) {
+      localStorage.setItem(IMPORTED_QUESTIONS_FILENAME_KEY, name);
+    } else {
+      localStorage.removeItem(IMPORTED_QUESTIONS_FILENAME_KEY);
+    }
+  } catch {
+    // Silently ignore storage errors
+  }
+}
+
+export function loadImportedQuestionsFileName(): string | null {
+  try {
+    return localStorage.getItem(IMPORTED_QUESTIONS_FILENAME_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function clearImportedFileNames(): void {
+  localStorage.removeItem(IMPORTED_GAME_FILENAME_KEY);
+  localStorage.removeItem(IMPORTED_QUESTIONS_FILENAME_KEY);
 }
