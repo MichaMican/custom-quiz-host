@@ -7,6 +7,11 @@ import {
   saveGameState,
   loadGameState,
   clearGameState,
+  saveImportedGameFileName,
+  loadImportedGameFileName,
+  saveImportedQuestionsFileName,
+  loadImportedQuestionsFileName,
+  clearImportedFileNames,
 } from "../utils/localStorage";
 import { uploadFileWithProgress } from "../utils/uploadWithProgress";
 import UploadProgressModal from "../components/UploadProgressModal";
@@ -41,6 +46,8 @@ function RemoteControl() {
   const [exportProgress, setExportProgress] = useState(0);
   const [exportMessage, setExportMessage] = useState("");
   const [importExportMode, setImportExportMode] = useState<"questions" | "game">("questions");
+  const [importedGameFileName, setImportedGameFileName] = useState<string | null>(() => loadImportedGameFileName());
+  const [importedQuestionsFileName, setImportedQuestionsFileName] = useState<string | null>(() => loadImportedQuestionsFileName());
   const hasRestoredRef = useRef(false);
   const hasUnsavedChanges = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,6 +105,9 @@ function RemoteControl() {
   const handleReset = async () => {
     try {
       clearGameState();
+      clearImportedFileNames();
+      setImportedGameFileName(null);
+      setImportedQuestionsFileName(null);
       const emptyState: GameState = {
         players: [],
         categories: [],
@@ -366,7 +376,7 @@ function RemoteControl() {
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "quiz-game.zip";
+      a.download = importedGameFileName || "quiz-game.zip";
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       markClean();
@@ -396,7 +406,7 @@ function RemoteControl() {
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "quiz-questions.zip";
+      a.download = importedQuestionsFileName || "quiz-questions.zip";
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       markClean();
@@ -422,6 +432,8 @@ function RemoteControl() {
         state.categories = remapMediaFileNames(state.categories, fileNameMap);
       }
       await invoke("ImportGameSettings", state);
+      setImportedGameFileName(file.name);
+      saveImportedGameFileName(file.name);
     } catch {
       alert("Failed to import game: the ZIP file may be corrupted or contain invalid data");
     }
@@ -448,6 +460,8 @@ function RemoteControl() {
       const fileNameMap = await importMediaFromZip(zip);
       const remapped = fileNameMap.size > 0 ? remapMediaFileNames(categories, fileNameMap) : categories;
       await invoke("ImportQuestions", remapped);
+      setImportedQuestionsFileName(file.name);
+      saveImportedQuestionsFileName(file.name);
     } catch {
       alert("Failed to import questions: the ZIP file may be corrupted or contain invalid data");
     }
