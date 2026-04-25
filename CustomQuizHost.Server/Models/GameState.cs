@@ -13,6 +13,15 @@ public enum QuestionType
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
+public enum MozaikDistortion
+{
+    Blur,
+    Pixelate,
+    Brightness,
+    Saturation
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum EventType
 {
     PointsAwarded,
@@ -34,6 +43,7 @@ public class GameState
     public bool MediaPlaying { get; set; }
     public bool MozaikRevealing { get; set; }
     public int MozaikRevealSpeed { get; set; } = 5;
+    public MozaikDistortion MozaikDistortion { get; set; } = MozaikDistortion.Blur;
     public bool QuestionTextRevealed { get; set; }
     public bool PlayerAnswersRevealed { get; set; }
     public bool AnswerRevealed { get; set; }

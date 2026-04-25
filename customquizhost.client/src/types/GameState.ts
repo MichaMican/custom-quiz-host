@@ -1,5 +1,7 @@
 export type QuestionType = "Standard" | "Image" | "ImageMozaik" | "Audio" | "Video";
 
+export type MozaikDistortion = "Blur" | "Pixelate" | "Brightness" | "Saturation";
+
 export type EventType = "PointsAwarded" | "PointsDeducted" | "ScoreSet" | "QuestionAsked";
 
 export interface Player {
@@ -68,6 +70,7 @@ export interface GameState {
   mediaPlaying: boolean;
   mozaikRevealing: boolean;
   mozaikRevealSpeed: number;
+  mozaikDistortion: MozaikDistortion;
   questionTextRevealed: boolean;
   playerAnswersRevealed: boolean;
   answerRevealed: boolean;

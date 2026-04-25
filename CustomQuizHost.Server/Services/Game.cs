@@ -445,6 +445,15 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task SetMozaikDistortion(MozaikDistortion distortion)
+    {
+        _gameState.MozaikDistortion = distortion;
+        // Stop any in-progress reveal so the new distortion starts cleanly from
+        // the fully-distorted state on the display.
+        _gameState.MozaikRevealing = false;
+        await BroadcastGameState();
+    }
+
     public async Task ShowMedia()
     {
         _gameState.MediaVisible = true;

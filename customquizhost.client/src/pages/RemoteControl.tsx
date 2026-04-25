@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
 import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
-import type { GameState, QuestionType, Category } from "../types/GameState";
+import type { GameState, QuestionType, Category, MozaikDistortion } from "../types/GameState";
 import {
   saveGameState,
   loadGameState,
@@ -120,6 +120,7 @@ function RemoteControl() {
         mediaPlaying: false,
         mozaikRevealing: false,
         mozaikRevealSpeed: 5,
+        mozaikDistortion: "Blur",
         questionTextRevealed: false,
         playerAnswersRevealed: false,
         answerRevealed: false,
@@ -1009,6 +1010,19 @@ function RemoteControl() {
                       >
                         {gameState.mozaikRevealing ? "⏸ Stop Reveal" : "▶ Start Reveal"}
                       </button>
+                      <div className="volume-control">
+                        <label htmlFor="mozaik-distortion-select">🎨 Distortion</label>
+                        <select
+                          id="mozaik-distortion-select"
+                          value={gameState.mozaikDistortion}
+                          onChange={(e) => invoke("SetMozaikDistortion", e.target.value as MozaikDistortion)}
+                        >
+                          <option value="Blur">Blur</option>
+                          <option value="Pixelate">Pixelate</option>
+                          <option value="Brightness">Brightness</option>
+                          <option value="Saturation">Saturation</option>
+                        </select>
+                      </div>
                       <div className="volume-control">
                         <label htmlFor="mozaik-speed-slider">🖼 Reveal Speed: {gameState.mozaikRevealSpeed}</label>
                         <input
