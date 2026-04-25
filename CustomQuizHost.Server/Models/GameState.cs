@@ -17,8 +17,7 @@ public enum MozaikDistortion
 {
     Blur,
     Pixelate,
-    Brightness,
-    Saturation
+    Warp
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

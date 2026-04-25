@@ -1019,8 +1019,7 @@ function RemoteControl() {
                         >
                           <option value="Blur">Blur</option>
                           <option value="Pixelate">Pixelate</option>
-                          <option value="Brightness">Brightness</option>
-                          <option value="Saturation">Saturation</option>
+                          <option value="Warp">Warp</option>
                         </select>
                       </div>
                       <div className="volume-control">

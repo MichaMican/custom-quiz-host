@@ -11,11 +11,14 @@ import "./Display.css";
  * Renders the Image Mozaik media using one of several distortion methods.
  * The `intensity` is a 0–100 scalar (0 = fully revealed, 100 = fully distorted).
  *
- *  - "Blur"       → CSS `blur()` filter (max 40 px at intensity 100).
- *  - "Brightness" → CSS `brightness()` filter, fading in from black.
- *  - "Saturation" → CSS `saturate()` filter, fading in from grayscale.
- *  - "Pixelate"   → Canvas-based downscale-then-upscale to produce real
- *                   pixel blocks (max ~40 px blocks at intensity 100).
+ *  - "Blur"     → CSS `blur()` filter (max 40 px at intensity 100).
+ *  - "Pixelate" → Canvas-based downscale-then-upscale to produce real
+ *                 pixel blocks (max ~40 px blocks at intensity 100).
+ *  - "Warp"     → SVG `feTurbulence` + `feDisplacementMap` filter that
+ *                 distorts the image with smooth pseudo-random displacement,
+ *                 producing a warping / morphing effect. At intensity 100
+ *                 the displacement scale is at its maximum; at intensity 0
+ *                 there is no displacement and the image is fully clear.
  */
 function MozaikDistortedImage({ src, distortion, intensity, fullscreen }: {
   src: string;
@@ -105,19 +108,61 @@ function MozaikDistortedImage({ src, distortion, intensity, fullscreen }: {
 
   let filter: string;
   switch (distortion) {
-    case "Brightness":
-      // intensity 100 → brightness 0 (black); intensity 0 → brightness 1 (clear).
-      filter = `brightness(${(1 - intensity / 100).toFixed(3)})`;
-      break;
-    case "Saturation":
-      // intensity 100 → saturate 0 (grayscale); intensity 0 → saturate 1 (clear).
-      filter = `saturate(${(1 - intensity / 100).toFixed(3)})`;
+    case "Warp":
+      // Warp is rendered below using an inline SVG <filter>; no CSS filter.
+      filter = "none";
       break;
     case "Blur":
     default:
       // intensity 100 → blur 40px; intensity 0 → blur 0px.
       filter = `blur(${(intensity * 0.4).toFixed(2)}px)`;
       break;
+  }
+
+  if (distortion === "Warp") {
+    // Use an SVG displacement-map filter driven by Perlin turbulence to warp
+    // the image. The `scale` of feDisplacementMap is bound to intensity so
+    // that intensity 0 leaves the image undistorted and intensity 100 yields
+    // the strongest morphing (~120 px of displacement).
+    // A unique filter id per src+intensity isn't required — id collisions are
+    // fine across instances since the filter definition is identical.
+    const scale = (intensity / 100) * 120;
+    const filterId = "mozaik-warp-filter";
+    return (
+      <>
+        <svg
+          aria-hidden="true"
+          width="0"
+          height="0"
+          style={{ position: "absolute", width: 0, height: 0 }}
+        >
+          <defs>
+            <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.012 0.018"
+                numOctaves="2"
+                seed="7"
+                result="noise"
+              />
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="noise"
+                scale={scale}
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+          </defs>
+        </svg>
+        <img
+          src={src}
+          alt="Question"
+          className={className}
+          style={{ filter: `url(#${filterId})` }}
+        />
+      </>
+    );
   }
 
   return (
@@ -149,7 +194,7 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
   // Distortion intensity for the Image Mozaik question type, expressed on a
   // 0 – 100 scale where 100 means "fully distorted" and 0 means "fully revealed".
   // The same scalar drives every distortion method (blur strength, pixel size,
-  // brightness/saturation), and is decremented over time while revealing.
+  // warp displacement), and is decremented over time while revealing.
   const [mozaikIntensity, setMozaikIntensity] = useState(100);
   // Reset to fully-distorted whenever the host switches the distortion method
   // so the new effect starts from its strongest setting. Done at render time

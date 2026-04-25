@@ -16,7 +16,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Multiple Question Types**:
   - Standard text questions
   - Image questions
-  - Image Mozaik (progressively reveal the image with adjustable speed and a host-selectable distortion method: blur, pixelate, brightness, or saturation)
+  - Image Mozaik (progressively reveal the image with adjustable speed and a host-selectable distortion method: blur, pixelate, or warp)
   - Audio questions (play/pause with volume control)
   - Video questions (play/pause with volume control and fullscreen support)
 - **Answer Images**: Optionally attach a reveal image to any question that is shown alongside the text answer on the Display
@@ -175,7 +175,7 @@ Switch to the **Host** tab on the Remote Control.
 2. **Reveal** the question to the Display:
    - Standard: click "Show Question".
    - Media types: click "Show Image / Display Audio / Show Video" to display the media; use play/pause and the volume slider to control playback; use "Fullscreen" to fill the screen.
-   - Image Mozaik: click "Show Image", choose a **distortion method** (blur / pixelate / brightness / saturation) from the dropdown, then "▶ Start Reveal" to progressively undo the distortion; adjust speed with the reveal-speed slider.
+   - Image Mozaik: click "Show Image", choose a **distortion method** (blur / pixelate / warp) from the dropdown, then "▶ Start Reveal" to progressively undo the distortion; adjust speed with the reveal-speed slider.
 3. **Activate the Buzzer** to open it for players; enable *"Pause actions on buzz"* to automatically pause audio/video/mozaik when someone buzzes in.
 4. **Player answers** – If *"Enable answer input for players"* is checked, players can type their answer in the Buzzer view. Use "Show Answers on Display" to reveal them.
 5. **Award or deduct points** using the +/− buttons next to each player's name in the Scoreboard section.

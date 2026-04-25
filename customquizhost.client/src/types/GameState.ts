@@ -1,6 +1,6 @@
 export type QuestionType = "Standard" | "Image" | "ImageMozaik" | "Audio" | "Video";
 
-export type MozaikDistortion = "Blur" | "Pixelate" | "Brightness" | "Saturation";
+export type MozaikDistortion = "Blur" | "Pixelate" | "Warp";
 
 export type EventType = "PointsAwarded" | "PointsDeducted" | "ScoreSet" | "QuestionAsked";
 
