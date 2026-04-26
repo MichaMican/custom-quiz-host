@@ -3,17 +3,186 @@ import { useWakeLock } from "../hooks/useWakeLock";
 import { useDuplicateDisplayDetection } from "../hooks/useDuplicateDisplayDetection";
 import DuplicateTabWarning from "../components/DuplicateTabWarning";
 import Avatar from "../components/Avatar";
-import type { Player, Question, HighScoreEntry } from "../types/GameState";
+import type { Player, Question, HighScoreEntry, MozaikDistortion } from "../types/GameState";
 import { useEffect, useRef, useState } from "react";
 import "./Display.css";
 
-function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, questionTextRevealed, answerRevealed, mediaVolume, imageFullscreen, mediaVisible }: {
+/**
+ * Renders the Image Mozaik media using one of several distortion methods.
+ * The `intensity` is a 0–100 scalar (0 = fully revealed, 100 = fully distorted).
+ *
+ *  - "Blur"     → CSS `blur()` filter (max 40 px at intensity 100).
+ *  - "Pixelate" → Canvas-based downscale-then-upscale to produce real
+ *                 pixel blocks (max ~40 px blocks at intensity 100).
+ *  - "Warp"     → SVG `feTurbulence` + `feDisplacementMap` filter that
+ *                 distorts the image with smooth pseudo-random displacement,
+ *                 producing a warping / morphing effect. At intensity 100
+ *                 the displacement scale is at its maximum; at intensity 0
+ *                 there is no displacement and the image is fully clear.
+ */
+function MozaikDistortedImage({ src, distortion, intensity, fullscreen }: {
+  src: string;
+  distortion: MozaikDistortion;
+  intensity: number;
+  fullscreen: boolean;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  // Reset the loaded flag during render whenever the source or method changes,
+  // following the "adjust state on prop change" pattern from the React docs.
+  const [prevImageKey, setPrevImageKey] = useState<string>(`${src}|${distortion}`);
+  const imageKey = `${src}|${distortion}`;
+  if (imageKey !== prevImageKey) {
+    setPrevImageKey(imageKey);
+    setImageLoaded(false);
+  }
+
+  // Preload the image for the canvas (Pixelate) renderer.
+  useEffect(() => {
+    if (distortion !== "Pixelate") return;
+    imageRef.current = null;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      imageRef.current = img;
+      setImageLoaded(true);
+    };
+    img.onerror = () => {
+      imageRef.current = null;
+    };
+    img.src = src;
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [src, distortion]);
+
+  // Redraw the pixelated canvas whenever the intensity changes.
+  useEffect(() => {
+    if (distortion !== "Pixelate") return;
+    if (!imageLoaded) return;
+    const canvas = canvasRef.current;
+    const img = imageRef.current;
+    if (!canvas || !img) return;
+    const naturalW = img.naturalWidth;
+    const naturalH = img.naturalHeight;
+    if (naturalW === 0 || naturalH === 0) return;
+
+    if (canvas.width !== naturalW) canvas.width = naturalW;
+    if (canvas.height !== naturalH) canvas.height = naturalH;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Block size scales with intensity. At intensity 0 we draw 1:1 (fully clear).
+    const blockSize = Math.max(1, Math.round((intensity / 100) * 40));
+    const smallW = Math.max(1, Math.floor(naturalW / blockSize));
+    const smallH = Math.max(1, Math.floor(naturalH / blockSize));
+
+    ctx.imageSmoothingEnabled = blockSize === 1;
+    ctx.clearRect(0, 0, naturalW, naturalH);
+    if (blockSize === 1) {
+      ctx.drawImage(img, 0, 0, naturalW, naturalH);
+    } else {
+      // Two-pass: downscale (smoothed) then upscale (nearest-neighbour) to
+      // produce the chunky pixel-block aesthetic.
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(img, 0, 0, smallW, smallH);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(canvas, 0, 0, smallW, smallH, 0, 0, naturalW, naturalH);
+    }
+  }, [intensity, imageLoaded, distortion]);
+
+  const className = `display-question-image mozaik${fullscreen ? " fullscreen" : ""}`;
+
+  if (distortion === "Pixelate") {
+    return (
+      <canvas
+        ref={canvasRef}
+        className={className}
+        style={{ imageRendering: "pixelated" }}
+      />
+    );
+  }
+
+  let filter: string;
+  switch (distortion) {
+    case "Warp":
+      // Warp is rendered below using an inline SVG <filter>; no CSS filter.
+      filter = "none";
+      break;
+    case "Blur":
+    default:
+      // intensity 100 → blur 40px; intensity 0 → blur 0px.
+      filter = `blur(${(intensity * 0.4).toFixed(2)}px)`;
+      break;
+  }
+
+  if (distortion === "Warp") {
+    // Use an SVG displacement-map filter driven by Perlin turbulence to warp
+    // the image. The `scale` of feDisplacementMap is bound to intensity so
+    // that intensity 0 leaves the image undistorted and intensity 100 yields
+    // the strongest morphing (~120 px of displacement).
+    // A unique filter id per src+intensity isn't required — id collisions are
+    // fine across instances since the filter definition is identical.
+    const scale = (intensity / 100) * 120;
+    const filterId = "mozaik-warp-filter";
+    return (
+      <>
+        <svg
+          aria-hidden="true"
+          width="0"
+          height="0"
+          style={{ position: "absolute", width: 0, height: 0 }}
+        >
+          <defs>
+            <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.012 0.018"
+                numOctaves="2"
+                seed="7"
+                result="noise"
+              />
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="noise"
+                scale={scale}
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+          </defs>
+        </svg>
+        <img
+          src={src}
+          alt="Question"
+          className={className}
+          style={{ filter: `url(#${filterId})` }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt="Question"
+      className={className}
+      style={{ filter }}
+    />
+  );
+}
+
+function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, mozaikDistortion, questionTextRevealed, answerRevealed, mediaVolume, imageFullscreen, mediaVisible }: {
   question: Question;
   categoryName: string;
   revealed: boolean;
   mediaPlaying: boolean;
   mozaikRevealing: boolean;
   mozaikRevealSpeed: number;
+  mozaikDistortion: MozaikDistortion;
   questionTextRevealed: boolean;
   answerRevealed: boolean;
   mediaVolume: number;
@@ -22,7 +191,19 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [mozaikBlur, setMozaikBlur] = useState(40);
+  // Distortion intensity for the Image Mozaik question type, expressed on a
+  // 0 – 100 scale where 100 means "fully distorted" and 0 means "fully revealed".
+  // The same scalar drives every distortion method (blur strength, pixel size,
+  // warp displacement), and is decremented over time while revealing.
+  const [mozaikIntensity, setMozaikIntensity] = useState(100);
+  // Reset to fully-distorted whenever the host switches the distortion method
+  // so the new effect starts from its strongest setting. Done at render time
+  // (not in an effect) per React's "adjust state on prop change" pattern.
+  const [prevMozaikDistortion, setPrevMozaikDistortion] = useState(mozaikDistortion);
+  if (mozaikDistortion !== prevMozaikDistortion) {
+    setPrevMozaikDistortion(mozaikDistortion);
+    setMozaikIntensity(100);
+  }
   const [videoBuffering, setVideoBuffering] = useState(false);
 
   // Audio volume control
@@ -79,19 +260,21 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
     };
   }, [question.questionType]);
 
-  // Mozaik blur animation
+  // Mozaik reveal animation – ticks the shared intensity scalar down toward 0.
+  // At speed 5 a reveal from 100 → 0 takes ~8 s, matching the prior blur-only
+  // timing (decrement = speed * 0.25 per 100 ms tick).
   useEffect(() => {
     if (question.questionType !== "ImageMozaik") return;
     if (!mozaikRevealing) return;
 
-    const decrement = mozaikRevealSpeed * 0.1;
+    const decrement = mozaikRevealSpeed * 0.25;
     const interval = setInterval(() => {
-      setMozaikBlur((prev) => {
+      setMozaikIntensity((prev) => {
         if (prev <= 0) {
           clearInterval(interval);
           return 0;
         }
-        return prev - decrement;
+        return Math.max(0, prev - decrement);
       });
     }, 100);
 
@@ -199,11 +382,11 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
           {(!imageFullscreen || !mediaVisible) && <div className="display-question-category">{categoryName}</div>}
           {(!imageFullscreen || !mediaVisible) && <div className="display-question-points">{question.points}</div>}
           {mediaUrl && mediaVisible && (
-            <img
+            <MozaikDistortedImage
               src={mediaUrl}
-              alt="Question"
-              className={`display-question-image mozaik${imageFullscreen ? " fullscreen" : ""}`}
-              style={{ filter: `blur(${mozaikBlur}px)` }}
+              distortion={mozaikDistortion}
+              intensity={mozaikIntensity}
+              fullscreen={imageFullscreen}
             />
           )}
           {(!imageFullscreen || !mediaVisible) && questionTextRevealed && question.text && (
@@ -764,6 +947,7 @@ function Display() {
                     mediaPlaying={gameState.mediaPlaying}
                     mozaikRevealing={gameState.mozaikRevealing}
                     mozaikRevealSpeed={gameState.mozaikRevealSpeed}
+                    mozaikDistortion={gameState.mozaikDistortion}
                     questionTextRevealed={gameState.questionTextRevealed}
                     answerRevealed={gameState.answerRevealed}
                     mediaVolume={gameState.mediaVolume}
