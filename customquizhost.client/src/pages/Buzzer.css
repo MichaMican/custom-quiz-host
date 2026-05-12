@@ -1,6 +1,7 @@
 .buzzer-page {
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
 }
 
