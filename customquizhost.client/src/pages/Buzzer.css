@@ -4,6 +4,23 @@
 }
 
 /*
+ * The global `body` (from index.css) is `display: flex; place-items: center;
+ * min-height: 100vh`. On the buzzer page that:
+ *   - vertically centers the content (we want it top-aligned), and
+ *   - forces the body to be at least viewport-tall using `100vh`, which on
+ *     mobile is the *largest* viewport (URL bar hidden). When the URL bar is
+ *     visible the body is taller than the visible area, creating spurious
+ *     scrollable space even when there's no overflowing content.
+ *
+ * Override both for the buzzer page only. The gradient is painted by the
+ * fixed `::before` layer below, so the body itself doesn't need any height.
+ */
+body:has(.buzzer-page) {
+  display: block;
+  min-height: 0;
+}
+
+/*
  * Paint the gradient behind the page via a fixed-position layer instead of
  * sizing the page itself to the viewport. This way the gradient always
  * covers the visible area regardless of scroll position, and the page only
