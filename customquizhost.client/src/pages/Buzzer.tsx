@@ -9,10 +9,44 @@ import UploadProgressModal from "../components/UploadProgressModal";
 import { uploadFileWithProgress } from "../utils/uploadWithProgress";
 import "./Buzzer.css";
 
+const SELECTED_PLAYER_STORAGE_KEY = "buzzer.selectedPlayerId";
+
 function Buzzer() {
   const { gameState, connectionStatus, invoke } = useSignalR();
   useWakeLock();
-  const [selectedPlayerId, setSelectedPlayerId] = useState("");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(() => {
+    try {
+      return localStorage.getItem(SELECTED_PLAYER_STORAGE_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
+
+  // Persist selected player to local storage so the selection survives page
+  // reloads. Clearing the selection also clears the cache.
+  useEffect(() => {
+    try {
+      if (selectedPlayerId) {
+        localStorage.setItem(SELECTED_PLAYER_STORAGE_KEY, selectedPlayerId);
+      } else {
+        localStorage.removeItem(SELECTED_PLAYER_STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage errors (e.g. private mode, quota exceeded).
+    }
+  }, [selectedPlayerId]);
+
+  // If the cached player no longer exists in the current game state, fall
+  // back to the empty selection. The persistence effect above will then
+  // remove the stale entry from local storage.
+  useEffect(() => {
+    if (!gameState || !selectedPlayerId) return;
+    const exists = gameState.players.some((p) => p.id === selectedPlayerId);
+    if (!exists) {
+      setSelectedPlayerId("");
+    }
+  }, [gameState, selectedPlayerId]);
+
   const [playerAnswer, setPlayerAnswer] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [buzzerPressed, setBuzzerPressed] = useState(false);
