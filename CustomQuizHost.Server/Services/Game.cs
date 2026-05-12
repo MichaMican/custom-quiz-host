@@ -12,6 +12,7 @@ public class GameService
     private GameState _gameState = new();
     private string? _lastAddedHighScoreId;
     private string? _lastAddedLowScoreId;
+    private bool _pointsAwardedThisRound;
 
     public GameService(IHubContext<GameHub> hubContext, HighScoreService highScoreService)
     {
@@ -38,13 +39,34 @@ public class GameService
     {
         var player = new Player { Name = name };
         _gameState.Players.Add(player);
+        // The first player added becomes the initial category selector.
+        if (_gameState.CurrentSelectorPlayerId == null)
+        {
+            _gameState.CurrentSelectorPlayerId = player.Id;
+        }
         await BroadcastGameState();
         return player;
     }
 
     public async Task RemovePlayer(string playerId)
     {
+        var wasSelector = _gameState.CurrentSelectorPlayerId == playerId;
+        var index = _gameState.Players.FindIndex(p => p.Id == playerId);
         _gameState.Players.RemoveAll(p => p.Id == playerId);
+        if (wasSelector)
+        {
+            if (_gameState.Players.Count == 0)
+            {
+                _gameState.CurrentSelectorPlayerId = null;
+            }
+            else
+            {
+                // Pass the selector to the player that took the removed
+                // player's slot (or wrap to the first player).
+                var nextIndex = index >= 0 && index < _gameState.Players.Count ? index : 0;
+                _gameState.CurrentSelectorPlayerId = _gameState.Players[nextIndex].Id;
+            }
+        }
         await BroadcastGameState();
     }
 
@@ -116,6 +138,10 @@ public class GameService
         if (_gameState.CurrentQuestion != null)
         {
             _gameState.QuestionRevealed = true;
+            // A new round starts when the question is asked. Reset the flag
+            // that tracks whether anyone receives points during this round so
+            // that the next selector can be determined when the question ends.
+            _pointsAwardedThisRound = false;
             var category = _gameState.Categories.FirstOrDefault(c => c.Id == _gameState.CurrentQuestion.CategoryId);
             _gameState.EventHistory.Add(new EventHistoryEntry
             {
@@ -164,6 +190,15 @@ public class GameService
             _gameState.AnswerRevealed = false;
             _gameState.ImageFullscreen = false;
             _gameState.MediaVisible = true;
+            // If nobody received points this round, the next player in the
+            // list (after the previous selector) gets to pick. Otherwise the
+            // last player to receive points (already set in AwardPoints) keeps
+            // the selection.
+            if (!_pointsAwardedThisRound)
+            {
+                AdvanceSelectorToNextInList();
+            }
+            _pointsAwardedThisRound = false;
             await BroadcastGameState();
         }
     }
@@ -184,6 +219,14 @@ public class GameService
             if (_gameState.CurrentQuestion != null)
             {
                 _gameState.CurrentQuestion.IsAnswered = true;
+                // Track that points were awarded this round and remember the
+                // most recent recipient – they become the next category
+                // selector once the round ends.
+                if (points > 0)
+                {
+                    _gameState.CurrentSelectorPlayerId = player.Id;
+                    _pointsAwardedThisRound = true;
+                }
             }
             await BroadcastGameState();
         }
@@ -390,7 +433,16 @@ public class GameService
         state.PlayerAnswers ??= new();
         state.EventHistory ??= new();
         state.LowScoreBoard ??= new();
+        // If the imported state doesn't reference a known player as the
+        // current selector (e.g. legacy export, or removed player), fall back
+        // to the first player so the highlight still has a target.
+        if (state.CurrentSelectorPlayerId == null ||
+            state.Players.All(p => p.Id != state.CurrentSelectorPlayerId))
+        {
+            state.CurrentSelectorPlayerId = state.Players.FirstOrDefault()?.Id;
+        }
         _gameState = state;
+        _pointsAwardedThisRound = false;
         await BroadcastGameState();
     }
 
@@ -650,5 +702,25 @@ public class GameService
             question.Points /= 2;
         }
         await BroadcastGameState();
+    }
+
+    /// <summary>
+    /// Advances the current category selector to the next player in the
+    /// player list (wrapping around). Used when a round ends without anyone
+    /// receiving points.
+    /// </summary>
+    private void AdvanceSelectorToNextInList()
+    {
+        if (_gameState.Players.Count == 0)
+        {
+            _gameState.CurrentSelectorPlayerId = null;
+            return;
+        }
+
+        var currentIndex = _gameState.CurrentSelectorPlayerId == null
+            ? -1
+            : _gameState.Players.FindIndex(p => p.Id == _gameState.CurrentSelectorPlayerId);
+        var nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % _gameState.Players.Count;
+        _gameState.CurrentSelectorPlayerId = _gameState.Players[nextIndex].Id;
     }
 }

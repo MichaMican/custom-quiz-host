@@ -134,6 +134,7 @@ function RemoteControl() {
         highScoreBoard: [],
         lowScoreBoard: [],
         eventHistory: [],
+        currentSelectorPlayerId: null,
       };
       await invoke("ImportGameSettings", emptyState);
       markClean();
@@ -788,7 +789,10 @@ function RemoteControl() {
             <h2>Scoreboard</h2>
             <div className="scoreboard-list">
               {gameState.players.map((p) => (
-                <div key={p.id} className="score-row">
+                <div
+                  key={p.id}
+                  className={`score-row ${gameState.currentSelectorPlayerId === p.id ? "is-selector" : ""}`}
+                >
                   <span className="score-name">{p.name}</span>
                   {editingScorePlayerId === p.id ? (
                     <input

@@ -254,6 +254,11 @@
   border-radius: 10px;
 }
 
+.score-row.is-selector {
+  border-color: #f97316;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+}
+
 .score-name {
   flex: 1;
   font-weight: 600;
