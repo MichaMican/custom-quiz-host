@@ -1,7 +1,21 @@
 .buzzer-page {
+  width: 100%;
+  position: relative;
+}
+
+/*
+ * Paint the gradient behind the page via a fixed-position layer instead of
+ * sizing the page itself to the viewport. This way the gradient always
+ * covers the visible area regardless of scroll position, and the page only
+ * takes the height of its actual content — so there's no extra scrollable
+ * space when content fits, and no exposed body background ("black bars")
+ * when content overflows.
+ */
+.buzzer-page::before {
+  content: "";
   position: fixed;
   inset: 0;
-  overflow: hidden;
+  z-index: -1;
   background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
 }
 
