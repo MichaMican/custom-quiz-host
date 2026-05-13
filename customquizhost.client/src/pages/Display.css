@@ -652,6 +652,22 @@
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* Highlight the player whose turn it is to pick the next category. */
+.display-player-score.is-selector {
+  border-color: #f97316;
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.55);
+  animation: selectorPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes selectorPulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(249, 115, 22, 0.7);
+  }
+}
+
 .display-player-score .player-avatar {
   width: 56px;
   height: 56px;

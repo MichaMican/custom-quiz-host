@@ -140,6 +140,8 @@ function RemoteControl() {
         highScoreBoard: [],
         lowScoreBoard: [],
         eventHistory: [],
+        currentSelectorPlayerId: null,
+        selectorHighlightEnabled: true,
       };
       await invoke("ImportGameSettings", emptyState);
       markClean();
@@ -738,6 +740,20 @@ function RemoteControl() {
           </section>
 
           <section className="remote-section">
+            <h2>Gameplay</h2>
+            <label className="pause-on-buzz-label">
+              <input
+                type="checkbox"
+                checked={gameState?.selectorHighlightEnabled ?? true}
+                onChange={(e) =>
+                  invoke("SetSelectorHighlightEnabled", e.target.checked)
+                }
+              />
+              Highlight category selector
+            </label>
+          </section>
+
+          <section className="remote-section">
             <h2>Buzzer Settings</h2>
             <label className="pause-on-buzz-label">
               <input
@@ -794,7 +810,28 @@ function RemoteControl() {
             <h2>Scoreboard</h2>
             <div className="scoreboard-list">
               {gameState.players.map((p) => (
-                <div key={p.id} className="score-row">
+                <div
+                  key={p.id}
+                  className={`score-row ${(gameState.selectorHighlightEnabled ?? true) && gameState.currentSelectorPlayerId === p.id ? "is-selector" : ""}`}
+                >
+                  {(gameState.selectorHighlightEnabled ?? true) ? (
+                    <button
+                      className="btn-set-selector"
+                      onClick={() => invoke("SetSelector", p.id)}
+                      title="Set as category selector"
+                      style={
+                        gameState.currentSelectorPlayerId === p.id
+                          ? { visibility: "hidden" }
+                          : undefined
+                      }
+                      aria-hidden={gameState.currentSelectorPlayerId === p.id}
+                      tabIndex={
+                        gameState.currentSelectorPlayerId === p.id ? -1 : 0
+                      }
+                    >
+                      ★
+                    </button>
+                  ) : null}
                   <span className="score-name">{p.name}</span>
                   {editingScorePlayerId === p.id ? (
                     <input

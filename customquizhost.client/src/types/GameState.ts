@@ -85,4 +85,6 @@ export interface GameState {
   highScoreBoard: HighScoreEntry[];
   lowScoreBoard: HighScoreEntry[];
   eventHistory: EventHistoryEntry[];
+  currentSelectorPlayerId: string | null;
+  selectorHighlightEnabled: boolean;
 }

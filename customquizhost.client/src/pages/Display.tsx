@@ -903,8 +903,14 @@ function Display() {
           <div className="display-scoreboard">
             {gameState.players.map((player) => {
               const anim = scoreAnimations.get(player.id);
+              const isSelector =
+                (gameState.selectorHighlightEnabled ?? true) &&
+                gameState.currentSelectorPlayerId === player.id;
               return (
-                <div key={player.id} className={`display-player-score ${anim ? `score-${anim.type}` : ""}`}>
+                <div
+                  key={player.id}
+                  className={`display-player-score ${anim ? `score-${anim.type}` : ""} ${isSelector ? "is-selector" : ""}`}
+                >
                   <div className="player-avatar">
                     <Avatar fileName={player.avatarFileName} alt={player.name} />
                   </div>
