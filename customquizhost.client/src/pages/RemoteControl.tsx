@@ -808,17 +808,25 @@ function RemoteControl() {
                   key={p.id}
                   className={`score-row ${(gameState.selectorHighlightEnabled ?? true) && gameState.currentSelectorPlayerId === p.id ? "is-selector" : ""}`}
                 >
+                  {(gameState.selectorHighlightEnabled ?? true) ? (
+                    <button
+                      className="btn-set-selector"
+                      onClick={() => invoke("SetSelector", p.id)}
+                      title="Set as category selector"
+                      style={
+                        gameState.currentSelectorPlayerId === p.id
+                          ? { visibility: "hidden" }
+                          : undefined
+                      }
+                      aria-hidden={gameState.currentSelectorPlayerId === p.id}
+                      tabIndex={
+                        gameState.currentSelectorPlayerId === p.id ? -1 : 0
+                      }
+                    >
+                      ★
+                    </button>
+                  ) : null}
                   <span className="score-name">{p.name}</span>
-                  {(gameState.selectorHighlightEnabled ?? true) &&
-                    gameState.currentSelectorPlayerId !== p.id && (
-                      <button
-                        className="btn-set-selector"
-                        onClick={() => invoke("SetSelector", p.id)}
-                        title="Set as category selector"
-                      >
-                        ★
-                      </button>
-                    )}
                   {editingScorePlayerId === p.id ? (
                     <input
                       className="score-edit-input"
