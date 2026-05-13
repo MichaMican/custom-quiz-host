@@ -374,6 +374,13 @@ const RANDOM_WHEEL_COLORS = [
 ];
 
 const RANDOM_WHEEL_SPIN_DURATION_MS = 5500;
+// Number of full clockwise rotations the wheel performs before stopping.
+const RANDOM_WHEEL_FULL_SPINS = 6;
+// Fractional position of the wedge center along its arc (0.5 = middle).
+const RANDOM_WHEEL_WEDGE_CENTER = 0.5;
+// Fraction of a wedge width used as random jitter at the stop position
+// so the wheel doesn't always land on the exact wedge center.
+const RANDOM_WHEEL_JITTER_FACTOR = 0.6;
 
 function RandomWheelOverlay({
   players,
@@ -397,8 +404,11 @@ function RandomWheelOverlay({
     if (!spinId || selectedIndex < 0 || players.length === 0) return;
     const wedgeAngle = 360 / players.length;
     // Add a small random offset within the wedge for a natural-looking stop.
-    const jitter = (Math.random() - 0.5) * wedgeAngle * 0.6;
-    const target = 360 * 6 - (selectedIndex + 0.5) * wedgeAngle + jitter;
+    const jitter = (Math.random() - 0.5) * wedgeAngle * RANDOM_WHEEL_JITTER_FACTOR;
+    const target =
+      360 * RANDOM_WHEEL_FULL_SPINS -
+      (selectedIndex + RANDOM_WHEEL_WEDGE_CENTER) * wedgeAngle +
+      jitter;
 
     let cancelled = false;
     let raf1 = 0;
@@ -460,7 +470,7 @@ function RandomWheelOverlay({
           }}
         >
           {players.map((p, i) => {
-            const angle = (i + 0.5) * wedgeAngle - 90;
+            const angle = (i + RANDOM_WHEEL_WEDGE_CENTER) * wedgeAngle - 90;
             return (
               <div
                 key={p.id}
