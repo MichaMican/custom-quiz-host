@@ -362,6 +362,141 @@ const WINNER_SOUND_TRACKS = [
   "/winner-cheering.mp3",
 ];
 
+const RANDOM_WHEEL_COLORS = [
+  "#6366f1",
+  "#ec4899",
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#ef4444",
+  "#a855f7",
+  "#14b8a6",
+];
+
+const RANDOM_WHEEL_SPIN_DURATION_MS = 5500;
+// Number of full clockwise rotations the wheel performs before stopping.
+const RANDOM_WHEEL_FULL_SPINS = 6;
+// Fractional position of the wedge center along its arc (0.5 = middle).
+const RANDOM_WHEEL_WEDGE_CENTER = 0.5;
+// Fraction of a wedge width used as random jitter at the stop position
+// so the wheel doesn't always land on the exact wedge center.
+const RANDOM_WHEEL_JITTER_FACTOR = 0.6;
+
+function RandomWheelOverlay({
+  players,
+  selectedPlayerId,
+  spinId,
+}: {
+  players: Player[];
+  selectedPlayerId: string | null;
+  spinId: string | null;
+}) {
+  const [rotation, setRotation] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const [showName, setShowName] = useState(false);
+
+  const selectedIndex = selectedPlayerId
+    ? players.findIndex((p) => p.id === selectedPlayerId)
+    : -1;
+  const selectedPlayer = selectedIndex >= 0 ? players[selectedIndex] : null;
+
+  useEffect(() => {
+    if (!spinId || selectedIndex < 0 || players.length === 0) return;
+    const wedgeAngle = 360 / players.length;
+    // Add a small random offset within the wedge for a natural-looking stop.
+    const jitter = (Math.random() - 0.5) * wedgeAngle * RANDOM_WHEEL_JITTER_FACTOR;
+    const target =
+      360 * RANDOM_WHEEL_FULL_SPINS -
+      (selectedIndex + RANDOM_WHEEL_WEDGE_CENTER) * wedgeAngle +
+      jitter;
+
+    let cancelled = false;
+    let raf1 = 0;
+    let raf2 = 0;
+
+    // Phase 1 (async): ensure starting rotation is 0 with no transition.
+    raf1 = requestAnimationFrame(() => {
+      if (cancelled) return;
+      setRotation(0);
+      setAnimating(false);
+      setShowName(false);
+      // Phase 2 (next frame): enable the transition and rotate to target.
+      raf2 = requestAnimationFrame(() => {
+        if (cancelled) return;
+        setAnimating(true);
+        setRotation(target);
+      });
+    });
+
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      setShowName(true);
+    }, RANDOM_WHEEL_SPIN_DURATION_MS + 100);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.clearTimeout(timer);
+    };
+  }, [spinId, selectedIndex, players.length]);
+
+  const wedgeAngle = players.length > 0 ? 360 / players.length : 0;
+  const conicGradient = players.length > 0
+    ? `conic-gradient(from 0deg, ${players
+        .map((_, i) => {
+          const color = RANDOM_WHEEL_COLORS[i % RANDOM_WHEEL_COLORS.length];
+          const start = i * wedgeAngle;
+          const end = (i + 1) * wedgeAngle;
+          return `${color} ${start}deg ${end}deg`;
+        })
+        .join(", ")})`
+    : undefined;
+
+  return (
+    <div className="random-wheel-overlay">
+      <div className="random-wheel-title">🎡 Random Player</div>
+      <div className="random-wheel-stage">
+        <div className="random-wheel-pointer" aria-hidden="true">▼</div>
+        <div className="random-wheel-frame" aria-hidden="true" />
+        <div
+          key={spinId ?? "static"}
+          className="random-wheel-spinner"
+          style={{
+            background: conicGradient,
+            transform: `rotate(${rotation}deg)`,
+            transition: animating
+              ? `transform ${RANDOM_WHEEL_SPIN_DURATION_MS}ms cubic-bezier(0.17, 0.67, 0.12, 0.99)`
+              : "none",
+          }}
+        >
+          {players.map((p, i) => {
+            const angle = (i + RANDOM_WHEEL_WEDGE_CENTER) * wedgeAngle - 90;
+            return (
+              <div
+                key={p.id}
+                className="random-wheel-slice-label"
+                style={{ transform: `rotate(${angle}deg)` }}
+              >
+                <div className="random-wheel-slice-inner">
+                  <div className="random-wheel-slice-avatar">
+                    <Avatar fileName={p.avatarFileName} alt={p.name} />
+                  </div>
+                  <div className="random-wheel-slice-name">{p.name}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="random-wheel-hub" aria-hidden="true" />
+      </div>
+      <div className={`random-wheel-result ${showName && selectedPlayer ? "visible" : ""}`}>
+        {selectedPlayer ? selectedPlayer.name : ""}
+      </div>
+    </div>
+  );
+}
+
 function WinnerOverlay({ players, highScores, lowScores, showHighScores, winnerName, mediaVolume }: { players: RankedPlayer[]; highScores: HighScoreEntry[]; lowScores: HighScoreEntry[]; showHighScores: boolean; winnerName: string | null; mediaVolume: number }) {
   const winnerAudioRef = useRef<HTMLAudioElement[]>([]);
 
@@ -737,6 +872,13 @@ function Display() {
   return (
     <div className="display-container">
       <DuplicateTabWarning visible={isDuplicateTab && !duplicateDismissed} onDismiss={dismissDuplicate} />
+      {gameState.randomWheelActive && (
+        <RandomWheelOverlay
+          players={gameState.players}
+          selectedPlayerId={gameState.randomWheelSelectedPlayerId}
+          spinId={gameState.randomWheelSpinId}
+        />
+      )}
       {gameState.winnerDeclared ? (
         <WinnerOverlay
           players={getRankedPlayers(gameState.players)}

@@ -1403,3 +1403,167 @@
   font-style: italic;
   padding: 1rem;
 }
+
+/* ===== Random Player Wheel Overlay ===== */
+.random-wheel-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(30, 27, 75, 0.96) 0%, rgba(15, 23, 42, 0.98) 100%);
+  z-index: 250;
+  overflow: hidden;
+  animation: randomWheelFadeIn 0.4s ease-out both;
+  gap: 24px;
+  padding: 24px;
+}
+
+@keyframes randomWheelFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.random-wheel-title {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-weight: 800;
+  color: #e2e8f0;
+  text-shadow: 0 2px 12px rgba(168, 85, 247, 0.4);
+  letter-spacing: 0.05em;
+}
+
+.random-wheel-stage {
+  position: relative;
+  width: min(70vh, 70vw);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.random-wheel-pointer {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
+  color: #fbbf24;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.8);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.random-wheel-frame {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 0 0 4px rgba(168, 85, 247, 0.35),
+    0 12px 48px rgba(0, 0, 0, 0.55),
+    inset 0 0 32px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.random-wheel-spinner {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  /* clip-path gives a crisp anti-aliased circle even while rotating,
+     preventing the conic-gradient colors from "leaking" past the rim. */
+  clip-path: circle(50% at 50% 50%);
+  overflow: hidden;
+  will-change: transform;
+  z-index: 1;
+}
+
+.random-wheel-slice-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  height: 0;
+  transform-origin: 0% 50%;
+  pointer-events: none;
+}
+
+.random-wheel-slice-inner {
+  position: absolute;
+  left: 60%;
+  top: 0;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 35%;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  font-weight: 700;
+  font-size: clamp(0.7rem, 1.4vw, 1.1rem);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.random-wheel-slice-avatar {
+  width: clamp(28px, 3.5vw, 48px);
+  height: clamp(28px, 3.5vw, 48px);
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.random-wheel-slice-avatar .avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.random-wheel-slice-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.random-wheel-hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14%;
+  height: 14%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #f1f5f9, #94a3b8 70%, #475569 100%);
+  border: 4px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.random-wheel-result {
+  min-height: clamp(2.5rem, 5vw, 4rem);
+  font-size: clamp(1.6rem, 3.5vw, 3rem);
+  font-weight: 900;
+  color: #fbbf24;
+  text-shadow: 0 2px 18px rgba(251, 191, 36, 0.55);
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.random-wheel-result.visible {
+  opacity: 1;
+  transform: scale(1);
+  animation: randomWheelResultPop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes randomWheelResultPop {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.15); }
+  100% { opacity: 1; transform: scale(1); }
+}
