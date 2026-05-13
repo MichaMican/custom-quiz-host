@@ -136,6 +136,9 @@ function RemoteControl() {
         eventHistory: [],
         currentSelectorPlayerId: null,
         selectorHighlightEnabled: true,
+        randomWheelActive: false,
+        randomWheelSelectedPlayerId: null,
+        randomWheelSpinId: null,
       };
       await invoke("ImportGameSettings", emptyState);
       markClean();
@@ -1161,6 +1164,15 @@ function RemoteControl() {
                   </div>
                 ))}
               </div>
+              <button
+                className={`btn-random-wheel ${gameState.randomWheelActive ? "active" : ""}`}
+                disabled={!gameState.randomWheelActive && gameState.players.length === 0}
+                onClick={() =>
+                  invoke(gameState.randomWheelActive ? "HideRandomWheel" : "ShowRandomWheel")
+                }
+              >
+                {gameState.randomWheelActive ? "Dismiss" : "🎡 Random Wheel"}
+              </button>
             </section>
           )}
 
