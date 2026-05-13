@@ -1451,21 +1451,35 @@
   line-height: 1;
   color: #fbbf24;
   text-shadow: 0 0 12px rgba(251, 191, 36, 0.8);
-  z-index: 3;
+  z-index: 4;
   pointer-events: none;
 }
 
-.random-wheel-spinner {
-  position: relative;
-  width: 100%;
-  height: 100%;
+.random-wheel-frame {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
   border: 6px solid rgba(255, 255, 255, 0.15);
   box-shadow:
     0 0 0 4px rgba(168, 85, 247, 0.35),
     0 12px 48px rgba(0, 0, 0, 0.55),
     inset 0 0 32px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.random-wheel-spinner {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  /* clip-path gives a crisp anti-aliased circle even while rotating,
+     preventing the conic-gradient colors from "leaking" past the rim. */
+  clip-path: circle(50% at 50% 50%);
+  overflow: hidden;
   will-change: transform;
+  z-index: 1;
 }
 
 .random-wheel-slice-label {
@@ -1527,6 +1541,7 @@
   border: 4px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   pointer-events: none;
+  z-index: 3;
 }
 
 .random-wheel-result {

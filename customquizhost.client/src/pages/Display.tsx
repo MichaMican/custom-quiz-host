@@ -458,6 +458,7 @@ function RandomWheelOverlay({
       <div className="random-wheel-title">🎡 Random Player</div>
       <div className="random-wheel-stage">
         <div className="random-wheel-pointer" aria-hidden="true">▼</div>
+        <div className="random-wheel-frame" aria-hidden="true" />
         <div
           key={spinId ?? "static"}
           className="random-wheel-spinner"
@@ -486,8 +487,8 @@ function RandomWheelOverlay({
               </div>
             );
           })}
-          <div className="random-wheel-hub" aria-hidden="true" />
         </div>
+        <div className="random-wheel-hub" aria-hidden="true" />
       </div>
       <div className={`random-wheel-result ${showName && selectedPlayer ? "visible" : ""}`}>
         {selectedPlayer ? selectedPlayer.name : ""}
