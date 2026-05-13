@@ -740,6 +740,39 @@
   box-shadow: none;
 }
 
+.btn-random-wheel {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-random-wheel:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.35);
+}
+
+.btn-random-wheel:disabled {
+  background: linear-gradient(135deg, #64748b, #475569);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.btn-random-wheel.active {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.btn-random-wheel.active:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
+}
+
 .host-player-answers {
   margin-top: 12px;
   padding: 10px;
