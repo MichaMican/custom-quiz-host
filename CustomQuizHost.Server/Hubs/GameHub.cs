@@ -104,6 +104,11 @@ public class GameHub : Hub
 
     public async Task SetPauseOnBuzz(bool value) => await _gameService.SetPauseOnBuzz(value);
 
+    public async Task SetSelector(string playerId) => await _gameService.SetSelector(playerId);
+
+    public async Task SetSelectorHighlightEnabled(bool value) =>
+        await _gameService.SetSelectorHighlightEnabled(value);
+
     public async Task SetBuzzerSyncEnabled(bool value) => await _gameService.SetBuzzerSyncEnabled(value);
 
     public async Task SetAnswerInputEnabled(bool value) => await _gameService.SetAnswerInputEnabled(value);
