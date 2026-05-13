@@ -17,7 +17,7 @@ public class GameService
     // Tracks the selector that was chosen by the "no points awarded" rule.
     // The next no-points rotation always advances from this anchor, even if a
     // later round set the current selector via AwardPoints. This way a player
-    // who picked but had nobody answered correctly is not "skipped" after an
+    // who picked but had nobody answer correctly is not "skipped" after an
     // unrelated player won an intermediate round.
     private string? _lastNoPointsSelectorId;
     // Tracks the most recent recipient of positive points during the current
