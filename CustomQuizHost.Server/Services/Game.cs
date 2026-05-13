@@ -12,6 +12,13 @@ public class GameService
     private GameState _gameState = new();
     private string? _lastAddedHighScoreId;
     private string? _lastAddedLowScoreId;
+    private bool _pointsAwardedThisRound;
+    // Tracks the selector that was chosen by the "no points awarded" rule.
+    // The next no-points rotation always advances from this anchor, even if a
+    // later round set the current selector via AwardPoints. This way a player
+    // who picked but had nobody answer correctly is not "skipped" after an
+    // unrelated player won an intermediate round.
+    private string? _lastNoPointsSelectorId;
 
     public GameService(IHubContext<GameHub> hubContext, HighScoreService highScoreService)
     {
@@ -38,13 +45,49 @@ public class GameService
     {
         var player = new Player { Name = name };
         _gameState.Players.Add(player);
+        // The first player added becomes the initial category selector and
+        // the anchor for the no-points rotation.
+        if (_gameState.CurrentSelectorPlayerId == null)
+        {
+            _gameState.CurrentSelectorPlayerId = player.Id;
+            _lastNoPointsSelectorId = player.Id;
+        }
         await BroadcastGameState();
         return player;
     }
 
     public async Task RemovePlayer(string playerId)
     {
+        var wasSelector = _gameState.CurrentSelectorPlayerId == playerId;
+        var wasAnchor = _lastNoPointsSelectorId == playerId;
+        var index = _gameState.Players.FindIndex(p => p.Id == playerId);
         _gameState.Players.RemoveAll(p => p.Id == playerId);
+        if (wasSelector)
+        {
+            if (_gameState.Players.Count == 0)
+            {
+                _gameState.CurrentSelectorPlayerId = null;
+            }
+            else
+            {
+                // Pass the selector to the player that took the removed
+                // player's slot (or wrap to the first player).
+                var nextIndex = index >= 0 && index < _gameState.Players.Count ? index : 0;
+                _gameState.CurrentSelectorPlayerId = _gameState.Players[nextIndex].Id;
+            }
+        }
+        if (wasAnchor)
+        {
+            if (_gameState.Players.Count == 0)
+            {
+                _lastNoPointsSelectorId = null;
+            }
+            else
+            {
+                var nextIndex = index >= 0 && index < _gameState.Players.Count ? index : 0;
+                _lastNoPointsSelectorId = _gameState.Players[nextIndex].Id;
+            }
+        }
         await BroadcastGameState();
     }
 
@@ -116,6 +159,10 @@ public class GameService
         if (_gameState.CurrentQuestion != null)
         {
             _gameState.QuestionRevealed = true;
+            // A new round starts when the question is asked. Reset the flag
+            // that tracks whether anyone receives points during this round so
+            // that the next selector can be determined when the question ends.
+            _pointsAwardedThisRound = false;
             var category = _gameState.Categories.FirstOrDefault(c => c.Id == _gameState.CurrentQuestion.CategoryId);
             _gameState.EventHistory.Add(new EventHistoryEntry
             {
@@ -164,6 +211,15 @@ public class GameService
             _gameState.AnswerRevealed = false;
             _gameState.ImageFullscreen = false;
             _gameState.MediaVisible = true;
+            // If nobody received points this round, the next player in the
+            // list (after the previous selector) gets to pick. Otherwise the
+            // last player to receive points (already set in AwardPoints) keeps
+            // the selection.
+            if (!_pointsAwardedThisRound)
+            {
+                AdvanceSelectorToNextInList();
+            }
+            _pointsAwardedThisRound = false;
             await BroadcastGameState();
         }
     }
@@ -184,6 +240,14 @@ public class GameService
             if (_gameState.CurrentQuestion != null)
             {
                 _gameState.CurrentQuestion.IsAnswered = true;
+                // Track that points were awarded this round and remember the
+                // most recent recipient – they become the next category
+                // selector once the round ends.
+                if (points > 0)
+                {
+                    _gameState.CurrentSelectorPlayerId = player.Id;
+                    _pointsAwardedThisRound = true;
+                }
             }
             await BroadcastGameState();
         }
@@ -390,7 +454,19 @@ public class GameService
         state.PlayerAnswers ??= new();
         state.EventHistory ??= new();
         state.LowScoreBoard ??= new();
+        // If the imported state doesn't reference a known player as the
+        // current selector (e.g. legacy export, or removed player), fall back
+        // to the first player so the highlight still has a target.
+        if (state.CurrentSelectorPlayerId == null ||
+            state.Players.All(p => p.Id != state.CurrentSelectorPlayerId))
+        {
+            state.CurrentSelectorPlayerId = state.Players.FirstOrDefault()?.Id;
+        }
         _gameState = state;
+        _pointsAwardedThisRound = false;
+        // Reset the no-points anchor to the current selector. It is in-memory
+        // only and has no meaningful value across imports.
+        _lastNoPointsSelectorId = state.CurrentSelectorPlayerId;
         await BroadcastGameState();
     }
 
@@ -650,5 +726,34 @@ public class GameService
             question.Points /= 2;
         }
         await BroadcastGameState();
+    }
+
+    /// <summary>
+    /// Advances the current category selector to the next player after the
+    /// last "no points" selector (wrapping around). Used when a round ends
+    /// without anyone receiving points. The anchor (<see cref="_lastNoPointsSelectorId"/>)
+    /// is updated to the new selector so subsequent no-points rounds keep
+    /// rotating through the player list, even if AwardPoints reassigned the
+    /// current selector in between.
+    /// </summary>
+    private void AdvanceSelectorToNextInList()
+    {
+        if (_gameState.Players.Count == 0)
+        {
+            _gameState.CurrentSelectorPlayerId = null;
+            _lastNoPointsSelectorId = null;
+            return;
+        }
+
+        // Use the anchor as the rotation basis. Fall back to the current
+        // selector if the anchor is unset or refers to a removed player.
+        var anchorId = _lastNoPointsSelectorId ?? _gameState.CurrentSelectorPlayerId;
+        var currentIndex = anchorId == null
+            ? -1
+            : _gameState.Players.FindIndex(p => p.Id == anchorId);
+        var nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % _gameState.Players.Count;
+        var nextId = _gameState.Players[nextIndex].Id;
+        _gameState.CurrentSelectorPlayerId = nextId;
+        _lastNoPointsSelectorId = nextId;
     }
 }
