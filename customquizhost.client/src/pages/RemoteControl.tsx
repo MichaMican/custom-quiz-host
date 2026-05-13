@@ -809,6 +809,16 @@ function RemoteControl() {
                   className={`score-row ${(gameState.selectorHighlightEnabled ?? true) && gameState.currentSelectorPlayerId === p.id ? "is-selector" : ""}`}
                 >
                   <span className="score-name">{p.name}</span>
+                  {(gameState.selectorHighlightEnabled ?? true) &&
+                    gameState.currentSelectorPlayerId !== p.id && (
+                      <button
+                        className="btn-set-selector"
+                        onClick={() => invoke("SetSelector", p.id)}
+                        title="Set as category selector"
+                      >
+                        ★
+                      </button>
+                    )}
                   {editingScorePlayerId === p.id ? (
                     <input
                       className="score-edit-input"
@@ -845,16 +855,6 @@ function RemoteControl() {
                     </span>
                   )}
                   <div className="score-actions">
-                    {(gameState.selectorHighlightEnabled ?? true) &&
-                      gameState.currentSelectorPlayerId !== p.id && (
-                        <button
-                          className="btn-set-selector"
-                          onClick={() => invoke("SetSelector", p.id)}
-                          title="Set as category selector"
-                        >
-                          ★
-                        </button>
-                      )}
                     {gameState.currentQuestion && (
                       <>
                         <button
