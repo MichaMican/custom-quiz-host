@@ -841,7 +841,9 @@ function Display() {
           <div className="display-scoreboard">
             {gameState.players.map((player) => {
               const anim = scoreAnimations.get(player.id);
-              const isSelector = gameState.currentSelectorPlayerId === player.id;
+              const isSelector =
+                (gameState.selectorHighlightEnabled ?? true) &&
+                gameState.currentSelectorPlayerId === player.id;
               return (
                 <div
                   key={player.id}

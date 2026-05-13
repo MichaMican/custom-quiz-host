@@ -306,6 +306,22 @@
   font-weight: 700;
 }
 
+.btn-set-selector {
+  background: transparent;
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.5);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.btn-set-selector:hover {
+  background: rgba(249, 115, 22, 0.15);
+}
+
 .btn-deduct {
   background: linear-gradient(135deg, #dc2626, #b91c1c);
   color: #fff;

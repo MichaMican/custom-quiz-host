@@ -135,6 +135,7 @@ function RemoteControl() {
         lowScoreBoard: [],
         eventHistory: [],
         currentSelectorPlayerId: null,
+        selectorHighlightEnabled: true,
       };
       await invoke("ImportGameSettings", emptyState);
       markClean();
@@ -733,6 +734,20 @@ function RemoteControl() {
           </section>
 
           <section className="remote-section">
+            <h2>Gameplay</h2>
+            <label className="pause-on-buzz-label">
+              <input
+                type="checkbox"
+                checked={gameState?.selectorHighlightEnabled ?? true}
+                onChange={(e) =>
+                  invoke("SetSelectorHighlightEnabled", e.target.checked)
+                }
+              />
+              Highlight category selector
+            </label>
+          </section>
+
+          <section className="remote-section">
             <h2>Buzzer Settings</h2>
             <label className="pause-on-buzz-label">
               <input
@@ -791,7 +806,7 @@ function RemoteControl() {
               {gameState.players.map((p) => (
                 <div
                   key={p.id}
-                  className={`score-row ${gameState.currentSelectorPlayerId === p.id ? "is-selector" : ""}`}
+                  className={`score-row ${(gameState.selectorHighlightEnabled ?? true) && gameState.currentSelectorPlayerId === p.id ? "is-selector" : ""}`}
                 >
                   <span className="score-name">{p.name}</span>
                   {editingScorePlayerId === p.id ? (
@@ -830,6 +845,16 @@ function RemoteControl() {
                     </span>
                   )}
                   <div className="score-actions">
+                    {(gameState.selectorHighlightEnabled ?? true) &&
+                      gameState.currentSelectorPlayerId !== p.id && (
+                        <button
+                          className="btn-set-selector"
+                          onClick={() => invoke("SetSelector", p.id)}
+                          title="Set as category selector"
+                        >
+                          ★
+                        </button>
+                      )}
                     {gameState.currentQuestion && (
                       <>
                         <button
