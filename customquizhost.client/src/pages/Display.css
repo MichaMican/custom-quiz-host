@@ -1421,7 +1421,14 @@
   justify-content: center;
   pointer-events: none;
   z-index: 5;
+  /* Allow the SVG's drop-shadow glow to render outside the 120px box
+     instead of being clipped to a rectangle. */
+  overflow: visible;
   animation: questionTimerEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.display-question-timer.exiting {
+  animation: questionTimerExit 0.55s cubic-bezier(0.55, 0, 0.7, 0.2) both;
 }
 
 @keyframes questionTimerEnter {
@@ -1435,6 +1442,17 @@
   }
 }
 
+@keyframes questionTimerExit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
 .display-question-timer-svg {
   position: absolute;
   inset: 0;
@@ -1442,6 +1460,10 @@
   height: 100%;
   /* Start the progress arc at 12 o'clock and shrink clockwise. */
   transform: rotate(-90deg);
+  /* By default <svg> clips its painted content (including child drop-shadow
+     filters) to its own viewport. Allow the glow to extend beyond it so the
+     soft halo isn't sliced off by a rectangular edge. */
+  overflow: visible;
 }
 
 .display-question-timer-track {
