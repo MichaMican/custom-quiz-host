@@ -87,4 +87,7 @@ export interface GameState {
   eventHistory: EventHistoryEntry[];
   currentSelectorPlayerId: string | null;
   selectorHighlightEnabled: boolean;
+  randomWheelActive: boolean;
+  randomWheelSelectedPlayerId: string | null;
+  randomWheelSpinId: string | null;
 }

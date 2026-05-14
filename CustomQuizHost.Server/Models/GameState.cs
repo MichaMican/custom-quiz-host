@@ -53,6 +53,9 @@ public class GameState
     public List<EventHistoryEntry> EventHistory { get; set; } = new();
     public string? CurrentSelectorPlayerId { get; set; }
     public bool SelectorHighlightEnabled { get; set; } = true;
+    public bool RandomWheelActive { get; set; }
+    public string? RandomWheelSelectedPlayerId { get; set; }
+    public string? RandomWheelSpinId { get; set; }
 }
 
 public class Player

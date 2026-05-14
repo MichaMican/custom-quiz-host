@@ -28,6 +28,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Media Controls**: Show/hide media (image, audio, video) independently of revealing the question; toggle fullscreen for images and videos; adjust volume with a slider
 - **Score Tracking**: Award or deduct the current question's points per player; set any score manually; double or halve all remaining unanswered question values in one click
 - **Category Selector Highlight**: The player who picks the next category is highlighted with an orange border on the Display and Remote Control. The selector is the last player to receive points in the previous round, or the next player in the list if nobody scored. The host can manually override the selector for any player from the Scoreboard (★ button) and can toggle the highlight on or off from the Setup screen.
+- **Random Player Wheel**: Spin a fortune-style wheel of all players (with names and avatars) from the Board section of the Remote to randomly pick a player on the Display. The wheel decelerates and reveals the chosen player; dismiss the overlay with a single click.
 - **Winner Declaration**: Declare the winner at the end of the game to show a winner screen on the Display
 - **High Score & Low Score Boards**: Persistent halls of fame/shame across game sessions and server restarts, shown alongside the winner screen; can be shown/hidden or cleared independently
 - **Event History**: Full log of points awarded/deducted and questions asked, viewable from the Remote Control (History tab) and from the Buzzer page

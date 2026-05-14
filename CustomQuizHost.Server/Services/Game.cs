@@ -658,6 +658,25 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task ShowRandomWheel()
+    {
+        if (_gameState.Players.Count == 0) return;
+        var index = Random.Shared.Next(_gameState.Players.Count);
+        var selected = _gameState.Players[index];
+        _gameState.RandomWheelActive = true;
+        _gameState.RandomWheelSelectedPlayerId = selected.Id;
+        _gameState.RandomWheelSpinId = Guid.NewGuid().ToString();
+        await BroadcastGameState();
+    }
+
+    public async Task HideRandomWheel()
+    {
+        _gameState.RandomWheelActive = false;
+        _gameState.RandomWheelSelectedPlayerId = null;
+        _gameState.RandomWheelSpinId = null;
+        await BroadcastGameState();
+    }
+
     public async Task SetSelector(string playerId)
     {
         var player = _gameState.Players.FirstOrDefault(p => p.Id == playerId);

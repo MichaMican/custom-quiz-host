@@ -108,6 +108,10 @@ public class GameHub : Hub
 
     public async Task SetPauseOnBuzz(bool value) => await _gameService.SetPauseOnBuzz(value);
 
+    public async Task ShowRandomWheel() => await _gameService.ShowRandomWheel();
+
+    public async Task HideRandomWheel() => await _gameService.HideRandomWheel();
+
     public async Task SetSelector(string playerId) => await _gameService.SetSelector(playerId);
 
     public async Task SetSelectorHighlightEnabled(bool value) =>
