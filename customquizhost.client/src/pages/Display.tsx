@@ -278,6 +278,59 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
   }
 }
 
+function QuestionCountdown({ startedAt, durationSeconds }: { startedAt: string; durationSeconds: number }) {
+  // Compute remaining seconds locally, ticking ~10x per second for a smooth animation.
+  // Anchor the countdown to the client's clock at the moment a new timer instance
+  // becomes visible (i.e. when the `startedAt` prop changes). Using the server's
+  // `startedAt` directly would make the countdown drift by the host↔client clock
+  // skew (e.g. start at 13 and end at 3 when the server clock is 3s ahead).
+  const totalMs = durationSeconds * 1000;
+
+  const [remainingMs, setRemainingMs] = useState(totalMs);
+
+  useEffect(() => {
+    const clientStartMs = Date.now();
+    const computeRemaining = () => Math.max(0, totalMs - (Date.now() - clientStartMs));
+    const interval = setInterval(() => {
+      setRemainingMs(computeRemaining());
+    }, 100);
+    return () => clearInterval(interval);
+  }, [startedAt, durationSeconds, totalMs]);
+
+  const remainingSeconds = Math.ceil(remainingMs / 1000);
+  const fraction = totalMs > 0 ? Math.max(0, Math.min(1, remainingMs / totalMs)) : 0;
+  // SVG circle: radius 54 -> circumference ~339.29
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - fraction);
+  const isUrgent = remainingMs > 0 && remainingMs <= 5000;
+  const isFinished = remainingMs <= 0;
+
+  return (
+    <div className={`display-question-timer${isUrgent ? " urgent" : ""}${isFinished ? " finished" : ""}`}>
+      <svg viewBox="0 0 120 120" className="display-question-timer-svg">
+        <circle
+          className="display-question-timer-track"
+          cx="60"
+          cy="60"
+          r={radius}
+        />
+        <circle
+          className="display-question-timer-progress"
+          cx="60"
+          cy="60"
+          r={radius}
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset: dashOffset,
+          }}
+        />
+      </svg>
+      <div className="display-question-timer-value">{remainingSeconds}</div>
+    </div>
+  );
+}
+
 /**
  * Formats the time delta between consecutive buzz-ins for display.
  * Returns null if the delta exceeds 3 seconds (not shown).
@@ -912,6 +965,13 @@ function Display() {
                     imageFullscreen={gameState.imageFullscreen}
                     mediaVisible={gameState.mediaVisible}
                   />
+                  {gameState.questionTimerActive && gameState.questionTimerStartedAt && (
+                    <QuestionCountdown
+                      key={gameState.questionTimerStartedAt}
+                      startedAt={gameState.questionTimerStartedAt}
+                      durationSeconds={gameState.questionTimerDurationSeconds}
+                    />
+                  )}
                 </div>
                 {gameState.buzzerActive && gameState.buzzOrder.length > 0 && (
                   <div className="display-buzz-order">

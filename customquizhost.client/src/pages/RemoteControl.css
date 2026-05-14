@@ -904,3 +904,44 @@
   background: rgba(248, 113, 113, 0.1);
   box-shadow: 0 2px 12px rgba(248, 113, 113, 0.2);
 }
+
+.question-timer-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 12px;
+  flex-wrap: wrap;
+}
+
+.btn-question-timer {
+  padding: 10px 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(30, 41, 59, 0.5);
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.btn-question-timer.active {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  border-color: transparent;
+  color: #fff;
+}
+
+.question-timer-input {
+  width: 72px;
+  padding: 8px 10px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: rgba(15, 23, 42, 0.6);
+  color: #f1f5f9;
+}
+
+.question-timer-suffix {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}

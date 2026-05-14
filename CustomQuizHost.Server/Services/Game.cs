@@ -12,6 +12,7 @@ public class GameService
     private GameState _gameState = new();
     private string? _lastAddedHighScoreId;
     private string? _lastAddedLowScoreId;
+    private CancellationTokenSource? _questionTimerCts;
     private bool _pointsAwardedThisRound;
     // Tracks the selector that was chosen by the "no points awarded" rule.
     // The next no-points rotation always advances from this anchor, even if a
@@ -154,6 +155,7 @@ public class GameService
         var question = category?.Questions.FirstOrDefault(q => q.Id == questionId);
         if (question != null)
         {
+            ClearQuestionTimerState();
             _gameState.CurrentQuestion = question;
             _gameState.QuestionRevealed = false;
             _gameState.QuestionTextRevealed = false;
@@ -187,6 +189,7 @@ public class GameService
 
     public async Task ReturnToBoard()
     {
+        ClearQuestionTimerState();
         _gameState.CurrentQuestion = null;
         _gameState.QuestionRevealed = false;
         _gameState.BuzzerActive = false;
@@ -207,6 +210,7 @@ public class GameService
     {
         if (_gameState.CurrentQuestion != null)
         {
+            ClearQuestionTimerState();
             _gameState.CurrentQuestion.IsAnswered = true;
             _gameState.CurrentQuestion = null;
             _gameState.BuzzerActive = false;
@@ -335,6 +339,78 @@ public class GameService
     public async Task DeactivateBuzzer()
     {
         _gameState.BuzzerActive = false;
+        await BroadcastGameState();
+    }
+
+    /// <summary>
+    /// Clears any pending question timer state without broadcasting.
+    /// Cancels the in-flight Task.Delay (if any) so it cannot deactivate
+    /// the buzzer for a stale timer.
+    /// </summary>
+    private void ClearQuestionTimerState()
+    {
+        var cts = _questionTimerCts;
+        _questionTimerCts = null;
+        if (cts != null)
+        {
+            try { cts.Cancel(); } catch (ObjectDisposedException) { }
+        }
+        _gameState.QuestionTimerActive = false;
+        _gameState.QuestionTimerStartedAt = null;
+    }
+
+    public async Task StartQuestionTimer(int seconds)
+    {
+        if (_gameState.CurrentQuestion == null) return;
+
+        var clamped = Math.Clamp(seconds, 1, 999);
+
+        // Cancel any previously running timer so it doesn't deactivate the buzzer for a stale request.
+        var previous = _questionTimerCts;
+        if (previous != null)
+        {
+            try { previous.Cancel(); } catch (ObjectDisposedException) { }
+        }
+
+        var cts = new CancellationTokenSource();
+        _questionTimerCts = cts;
+
+        _gameState.QuestionTimerActive = true;
+        _gameState.QuestionTimerDurationSeconds = clamped;
+        _gameState.QuestionTimerStartedAt = DateTimeOffset.UtcNow;
+
+        await BroadcastGameState();
+
+        // Fire-and-forget the deactivation task; cancellation is handled silently.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(clamped), cts.Token);
+            }
+            catch (TaskCanceledException)
+            {
+                cts.Dispose();
+                return;
+            }
+
+            // Only act if this timer is still the active one. A newer Start or a
+            // Stop/transition may have replaced or cleared _questionTimerCts.
+            if (ReferenceEquals(_questionTimerCts, cts))
+            {
+                _questionTimerCts = null;
+                _gameState.BuzzerActive = false;
+                _gameState.QuestionTimerActive = false;
+                _gameState.QuestionTimerStartedAt = null;
+                await BroadcastGameState();
+            }
+            cts.Dispose();
+        });
+    }
+
+    public async Task StopQuestionTimer()
+    {
+        ClearQuestionTimerState();
         await BroadcastGameState();
     }
 
@@ -474,12 +550,15 @@ public class GameService
 
     public async Task ImportGameSettings(GameState state)
     {
+        ClearQuestionTimerState();
         state.Players ??= new();
         state.Categories ??= new();
         state.BuzzOrder ??= new();
         state.PlayerAnswers ??= new();
         state.EventHistory ??= new();
         state.LowScoreBoard ??= new();
+        state.QuestionTimerActive = false;
+        state.QuestionTimerStartedAt = null;
         // If the imported state doesn't reference a known player as the
         // current selector (e.g. legacy export, or removed player), fall back
         // to the first player so the highlight still has a target.
@@ -499,6 +578,7 @@ public class GameService
 
     public async Task ImportQuestions(List<Category> categories)
     {
+        ClearQuestionTimerState();
         categories ??= new();
         _gameState.Categories = categories;
         _gameState.CurrentQuestion = null;
