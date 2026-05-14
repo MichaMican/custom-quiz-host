@@ -77,6 +77,9 @@ export interface GameState {
   answerInputEnabled: boolean;
   imageFullscreen: boolean;
   mediaVisible: boolean;
+  questionTimerActive: boolean;
+  questionTimerDurationSeconds: number;
+  questionTimerStartedAt: string | null;
   winnerDeclared: boolean;
   showHighScoreBoard: boolean;
   highScoreBoard: HighScoreEntry[];

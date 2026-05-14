@@ -4,7 +4,7 @@ import { useDuplicateDisplayDetection } from "../hooks/useDuplicateDisplayDetect
 import DuplicateTabWarning from "../components/DuplicateTabWarning";
 import Avatar from "../components/Avatar";
 import type { Player, Question, HighScoreEntry } from "../types/GameState";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./Display.css";
 
 function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, questionTextRevealed, answerRevealed, mediaVolume, imageFullscreen, mediaVisible }: {
@@ -276,6 +276,258 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
         </>
       );
   }
+}
+
+/**
+ * Lazily-created shared AudioContext used to synthesize the question-timer beep
+ * and "timer expired" sounds via Web Audio API oscillators. Using oscillators
+ * (instead of bundling audio assets) keeps the bundle small and lets us tune
+ * the sounds without binary files.
+ */
+let _questionTimerAudioCtx: AudioContext | null = null;
+function getQuestionTimerAudioCtx(): AudioContext | null {
+  if (_questionTimerAudioCtx) return _questionTimerAudioCtx;
+  const Ctx =
+    typeof window !== "undefined"
+      ? window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+      : undefined;
+  if (!Ctx) return null;
+  try {
+    _questionTimerAudioCtx = new Ctx();
+    return _questionTimerAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
+/** Short, bright beep played at each of the final 3 seconds (3, 2, 1). */
+function playQuestionTimerBeep() {
+  const ctx = getQuestionTimerAudioCtx();
+  if (!ctx) return;
+  if (ctx.state === "suspended") {
+    ctx.resume().catch(() => {});
+  }
+  const now = ctx.currentTime;
+  const duration = 0.14;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(880, now);
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.35, now + 0.01);
+  gain.gain.linearRampToValueAtTime(0.35, now + duration - 0.04);
+  gain.gain.linearRampToValueAtTime(0, now + duration);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + duration);
+}
+
+/** Longer descending tone played when the countdown reaches 0. */
+function playQuestionTimerExpired() {
+  const ctx = getQuestionTimerAudioCtx();
+  if (!ctx) return;
+  if (ctx.state === "suspended") {
+    ctx.resume().catch(() => {});
+  }
+  const now = ctx.currentTime;
+  const duration = 0.7;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(523, now);
+  osc.frequency.exponentialRampToValueAtTime(196, now + duration);
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.32, now + 0.02);
+  gain.gain.linearRampToValueAtTime(0.32, now + duration - 0.15);
+  gain.gain.linearRampToValueAtTime(0, now + duration);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + duration);
+}
+
+/**
+ * Container that keeps the countdown visible for a short "hold" period after it
+ * naturally reaches 0, then plays an exit animation before unmounting. When the
+ * server clears the timer state (e.g. due to ShowQuestion / ReturnToBoard /
+ * DismissQuestion / explicit Stop) *before* natural expiry, the timer is
+ * unmounted immediately.
+ */
+function QuestionCountdownContainer({
+  active,
+  startedAt,
+  durationSeconds,
+}: {
+  active: boolean;
+  startedAt: string | null;
+  durationSeconds: number;
+}) {
+  type Phase = "idle" | "running" | "hold" | "exiting";
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [snapshot, setSnapshot] = useState<
+    { startedAt: string; durationSeconds: number } | null
+  >(null);
+  const expiredRef = useRef(false);
+  const holdTimerRef = useRef<number | null>(null);
+  const exitTimerRef = useRef<number | null>(null);
+
+  const clearPendingTimers = useCallback(() => {
+    if (holdTimerRef.current !== null) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (exitTimerRef.current !== null) {
+      clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
+  }, []);
+
+  // Start (or restart) the countdown whenever a new timer arrives. We have to
+  // capture the incoming props into local snapshot state so the countdown can
+  // outlive `active` becoming false (during the post-expiry hold/exit phases).
+  useEffect(() => {
+    if (active && startedAt) {
+      clearPendingTimers();
+      expiredRef.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSnapshot({ startedAt, durationSeconds });
+      setPhase("running");
+    }
+  }, [active, startedAt, durationSeconds, clearPendingTimers]);
+
+  // If the server clears the timer state before natural expiry (explicit
+  // stop / question transition), unmount the countdown immediately so it
+  // doesn't linger over a different view.
+  useEffect(() => {
+    if (!active && phase === "running" && !expiredRef.current) {
+      clearPendingTimers();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPhase("idle");
+      setSnapshot(null);
+    }
+  }, [active, phase, clearPendingTimers]);
+
+  useEffect(() => () => clearPendingTimers(), [clearPendingTimers]);
+
+  // Called by the child when its local countdown reaches 0.
+  const handleExpire = useCallback(() => {
+    if (expiredRef.current) return;
+    expiredRef.current = true;
+    playQuestionTimerExpired();
+    setPhase("hold");
+    holdTimerRef.current = window.setTimeout(() => {
+      holdTimerRef.current = null;
+      setPhase("exiting");
+      exitTimerRef.current = window.setTimeout(() => {
+        exitTimerRef.current = null;
+        setPhase("idle");
+        setSnapshot(null);
+        expiredRef.current = false;
+      }, 600);
+    }, 3000);
+  }, []);
+
+  if (phase === "idle" || !snapshot) return null;
+  return (
+    <QuestionCountdown
+      key={snapshot.startedAt}
+      startedAt={snapshot.startedAt}
+      durationSeconds={snapshot.durationSeconds}
+      onExpire={handleExpire}
+      exiting={phase === "exiting"}
+    />
+  );
+}
+
+function QuestionCountdown({
+  startedAt,
+  durationSeconds,
+  onExpire,
+  exiting,
+}: {
+  startedAt: string;
+  durationSeconds: number;
+  onExpire: () => void;
+  exiting: boolean;
+}) {
+  // Compute remaining seconds locally, ticking ~10x per second for a smooth animation.
+  // Anchor the countdown to the client's clock at the moment a new timer instance
+  // becomes visible (i.e. when the `startedAt` prop changes). Using the server's
+  // `startedAt` directly would make the countdown drift by the host↔client clock
+  // skew (e.g. start at 13 and end at 3 when the server clock is 3s ahead).
+  const totalMs = durationSeconds * 1000;
+
+  const [remainingMs, setRemainingMs] = useState(totalMs);
+  const lastBeepSecondRef = useRef<number | null>(null);
+  const onExpireRef = useRef(onExpire);
+  useEffect(() => {
+    onExpireRef.current = onExpire;
+  }, [onExpire]);
+
+  useEffect(() => {
+    const clientStartMs = Date.now();
+    const computeRemaining = () => Math.max(0, totalMs - (Date.now() - clientStartMs));
+    const interval = setInterval(() => {
+      setRemainingMs(computeRemaining());
+    }, 100);
+    // Fire the natural-expiry callback exactly at totalMs so the hold/exit
+    // animation begins precisely when the visible "0" appears, regardless of
+    // when the server's clear message arrives.
+    const expireTimer = window.setTimeout(() => {
+      onExpireRef.current();
+    }, totalMs);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(expireTimer);
+    };
+  }, [startedAt, durationSeconds, totalMs]);
+
+  const remainingSeconds = Math.ceil(remainingMs / 1000);
+
+  // Beep on each of the last 3 visible seconds (3, 2, 1).
+  useEffect(() => {
+    if (remainingMs <= 0) return;
+    if (remainingSeconds >= 1 && remainingSeconds <= 3) {
+      if (lastBeepSecondRef.current !== remainingSeconds) {
+        lastBeepSecondRef.current = remainingSeconds;
+        playQuestionTimerBeep();
+      }
+    }
+  }, [remainingMs, remainingSeconds]);
+
+  const fraction = totalMs > 0 ? Math.max(0, Math.min(1, remainingMs / totalMs)) : 0;
+  // SVG circle: radius 54 -> circumference ~339.29
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - fraction);
+  const isUrgent = remainingMs > 0 && remainingMs <= 5000;
+  const isFinished = remainingMs <= 0;
+
+  return (
+    <div
+      className={`display-question-timer${isUrgent ? " urgent" : ""}${isFinished ? " finished" : ""}${exiting ? " exiting" : ""}`}
+    >
+      <svg viewBox="0 0 120 120" className="display-question-timer-svg">
+        <circle
+          className="display-question-timer-track"
+          cx="60"
+          cy="60"
+          r={radius}
+        />
+        <circle
+          className="display-question-timer-progress"
+          cx="60"
+          cy="60"
+          r={radius}
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset: dashOffset,
+          }}
+        />
+      </svg>
+      <div className="display-question-timer-value">{remainingSeconds}</div>
+    </div>
+  );
 }
 
 /**
@@ -912,6 +1164,13 @@ function Display() {
                     imageFullscreen={gameState.imageFullscreen}
                     mediaVisible={gameState.mediaVisible}
                   />
+                  {gameState.currentQuestion && (
+                    <QuestionCountdownContainer
+                      active={gameState.questionTimerActive}
+                      startedAt={gameState.questionTimerStartedAt}
+                      durationSeconds={gameState.questionTimerDurationSeconds}
+                    />
+                  )}
                 </div>
                 {gameState.buzzerActive && gameState.buzzOrder.length > 0 && (
                   <div className="display-buzz-order">
