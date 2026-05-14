@@ -280,25 +280,22 @@ function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozai
 
 function QuestionCountdown({ startedAt, durationSeconds }: { startedAt: string; durationSeconds: number }) {
   // Compute remaining seconds locally, ticking ~10x per second for a smooth animation.
-  const startMs = new Date(startedAt).getTime();
+  // Anchor the countdown to the client's clock at the moment a new timer instance
+  // becomes visible (i.e. when the `startedAt` prop changes). Using the server's
+  // `startedAt` directly would make the countdown drift by the host↔client clock
+  // skew (e.g. start at 13 and end at 3 when the server clock is 3s ahead).
   const totalMs = durationSeconds * 1000;
 
-  const computeRemaining = () => {
-    const elapsed = Date.now() - startMs;
-    return Math.max(0, totalMs - elapsed);
-  };
-
-  const [remainingMs, setRemainingMs] = useState(computeRemaining);
+  const [remainingMs, setRemainingMs] = useState(totalMs);
 
   useEffect(() => {
-    setRemainingMs(computeRemaining());
+    const clientStartMs = Date.now();
+    const computeRemaining = () => Math.max(0, totalMs - (Date.now() - clientStartMs));
     const interval = setInterval(() => {
       setRemainingMs(computeRemaining());
     }, 100);
     return () => clearInterval(interval);
-    // computeRemaining closes over startMs / totalMs which are derived from props
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startedAt, durationSeconds]);
+  }, [startedAt, durationSeconds, totalMs]);
 
   const remainingSeconds = Math.ceil(remainingMs / 1000);
   const fraction = totalMs > 0 ? Math.max(0, Math.min(1, remainingMs / totalMs)) : 0;
@@ -970,6 +967,7 @@ function Display() {
                   />
                   {gameState.questionTimerActive && gameState.questionTimerStartedAt && (
                     <QuestionCountdown
+                      key={gameState.questionTimerStartedAt}
                       startedAt={gameState.questionTimerStartedAt}
                       durationSeconds={gameState.questionTimerDurationSeconds}
                     />
