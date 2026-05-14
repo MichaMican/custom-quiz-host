@@ -12,6 +12,8 @@ import {
   saveImportedQuestionsFileName,
   loadImportedQuestionsFileName,
   clearImportedFileNames,
+  saveQuestionTimerDuration,
+  loadQuestionTimerDuration,
 } from "../utils/localStorage";
 import { uploadFileWithProgress } from "../utils/uploadWithProgress";
 import UploadProgressModal from "../components/UploadProgressModal";
@@ -48,6 +50,7 @@ function RemoteControl() {
   const [importExportMode, setImportExportMode] = useState<"questions" | "game">("questions");
   const [importedGameFileName, setImportedGameFileName] = useState<string | null>(() => loadImportedGameFileName());
   const [importedQuestionsFileName, setImportedQuestionsFileName] = useState<string | null>(() => loadImportedQuestionsFileName());
+  const [questionTimerSeconds, setQuestionTimerSeconds] = useState<number>(() => loadQuestionTimerDuration() ?? 10);
   const hasRestoredRef = useRef(false);
   const hasUnsavedChanges = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -129,6 +132,9 @@ function RemoteControl() {
         answerInputEnabled: false,
         imageFullscreen: false,
         mediaVisible: true,
+        questionTimerActive: false,
+        questionTimerDurationSeconds: 10,
+        questionTimerStartedAt: null,
         winnerDeclared: false,
         showHighScoreBoard: false,
         highScoreBoard: [],
@@ -962,6 +968,34 @@ function RemoteControl() {
           {gameState.currentQuestion ? (
             <section className="remote-section">
               <h2>Current Question</h2>
+              <div className="question-timer-controls">
+                <button
+                  className={`btn-question-timer${gameState.questionTimerActive ? " active" : ""}`}
+                  onClick={() =>
+                    invoke(
+                      gameState.questionTimerActive ? "StopQuestionTimer" : "StartQuestionTimer",
+                      questionTimerSeconds,
+                    )
+                  }
+                >
+                  {gameState.questionTimerActive ? "Stop timer" : "Start timer"}
+                </button>
+                <input
+                  type="number"
+                  className="question-timer-input"
+                  min={1}
+                  max={999}
+                  value={questionTimerSeconds}
+                  onChange={(e) => {
+                    const raw = parseInt(e.target.value, 10);
+                    if (Number.isNaN(raw)) return;
+                    const clamped = Math.max(1, Math.min(999, raw));
+                    setQuestionTimerSeconds(clamped);
+                    saveQuestionTimerDuration(clamped);
+                  }}
+                />
+                <span className="question-timer-suffix">seconds</span>
+              </div>
               <div className="current-question-info">
                 <p>
                   <strong>{gameState.currentQuestion.points}</strong>
