@@ -1,0 +1,55 @@
+.plan-container {
+  padding-top: 16px;
+}
+
+.plan-header {
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.plan-title {
+  font-size: 1.6rem;
+  margin: 0 0 6px 0;
+  color: #e2e8f0;
+  letter-spacing: 0.02em;
+}
+
+.plan-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.plan-imported-name {
+  margin: 0 0 8px 0;
+  font-size: 0.85rem;
+  color: #a5b4fc;
+}
+
+.plan-hint {
+  margin: 8px 0 0 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.plan-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.plan-form-actions button {
+  flex: 1;
+}
+
+.btn-cancel-edit {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.item-list li.is-editing {
+  background: rgba(234, 179, 8, 0.1);
+  border-radius: 6px;
+}
