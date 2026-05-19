@@ -123,11 +123,12 @@
 
         <article class="feature-card anim-fade-up" data-animate>
           <div class="feature-icon">🖥️</div>
-          <h3>Three Dedicated Views</h3>
+          <h3>Four Dedicated Views</h3>
           <p>
             <strong>Display</strong> – beautiful game board on the projector.<br/>
             <strong>Remote</strong> – host control panel.<br/>
-            <strong>Buzzer</strong> – player buzzer on any phone.
+            <strong>Buzzer</strong> – player buzzer on any phone.<br/>
+            <strong>Planner</strong> – offline editor for preparing boards.
           </p>
         </article>
 
@@ -183,6 +184,12 @@
           <div class="feature-icon">💾</div>
           <h3>Import / Export</h3>
           <p>Save and restore full game state in JSON. Reuse question packs across sessions or share them with friends.</p>
+        </article>
+
+        <article class="feature-card anim-fade-up" data-animate>
+          <div class="feature-icon">📝</div>
+          <h3>Offline Quiz Planner</h3>
+          <p>Prepare entire quiz boards at <code>/plan</code> without touching a running game. Categories, questions, and uploaded media live in your browser (localStorage + IndexedDB) and export to a ZIP that imports straight into the Remote Control.</p>
         </article>
 
         <article class="feature-card anim-fade-up" data-animate>
@@ -401,6 +408,10 @@ volumes:
             <div class="url-row">
               <span class="url-label">Buzzer (players)</span>
               <code>http://localhost:8080/buzzer</code>
+            </div>
+            <div class="url-row">
+              <span class="url-label">Planner (offline editor)</span>
+              <code>http://localhost:8080/plan</code>
             </div>
           </div>
         </div>

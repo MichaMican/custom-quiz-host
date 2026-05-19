@@ -26,6 +26,16 @@ const ALLOWED_EXTENSIONS = new Set([
   ".mp4", ".webm", ".ogv", ".mov", ".wmv",
 ]);
 
+const VALID_QUESTION_TYPES: ReadonlySet<QuestionType> = new Set<QuestionType>([
+  "Standard", "Image", "ImageMozaik", "Audio", "Video",
+]);
+
+function normalizeQuestionType(value: unknown): QuestionType {
+  return typeof value === "string" && (VALID_QUESTION_TYPES as ReadonlySet<string>).has(value)
+    ? (value as QuestionType)
+    : "Standard";
+}
+
 function getExtension(name: string): string {
   const idx = name.lastIndexOf(".");
   return idx >= 0 ? name.slice(idx).toLowerCase() : "";
@@ -359,7 +369,7 @@ function Plan() {
             points: typeof q.points === "number" ? q.points : 200,
             isAnswered: false,
             categoryId: catId,
-            questionType: (q.questionType as QuestionType) ?? "Standard",
+            questionType: normalizeQuestionType(q.questionType),
             mediaFileName: q.mediaFileName ?? null,
             answerImageFileName: q.answerImageFileName ?? null,
           })),
