@@ -130,6 +130,7 @@ function RemoteControl() {
         pauseOnBuzz: false,
         buzzerSyncEnabled: false,
         answerInputEnabled: false,
+        playerSelectionDisabled: false,
         imageFullscreen: false,
         mediaVisible: true,
         questionTimerActive: false,
@@ -765,6 +766,16 @@ function RemoteControl() {
                 onChange={(e) => invoke("SetBuzzerSyncEnabled", e.target.checked)}
               />
               Activate Buzzer Sync (experimental)
+            </label>
+            <label className="pause-on-buzz-label">
+              <input
+                type="checkbox"
+                checked={gameState?.playerSelectionDisabled ?? false}
+                onChange={(e) =>
+                  invoke("SetPlayerSelectionDisabled", e.target.checked)
+                }
+              />
+              Disable Player selection
             </label>
           </section>
 

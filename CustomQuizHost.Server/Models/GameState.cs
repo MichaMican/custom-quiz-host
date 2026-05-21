@@ -41,6 +41,7 @@ public class GameState
     public bool PauseOnBuzz { get; set; }
     public bool BuzzerSyncEnabled { get; set; }
     public bool AnswerInputEnabled { get; set; }
+    public bool PlayerSelectionDisabled { get; set; }
     public bool ImageFullscreen { get; set; }
     public bool MediaVisible { get; set; } = true;
     public bool QuestionTimerActive { get; set; }
