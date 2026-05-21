@@ -707,6 +707,12 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task SetPlayerSelectionDisabled(bool value)
+    {
+        _gameState.PlayerSelectionDisabled = value;
+        await BroadcastGameState();
+    }
+
     public async Task EnableImageFullscreen()
     {
         _gameState.ImageFullscreen = true;
