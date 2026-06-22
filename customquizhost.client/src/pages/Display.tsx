@@ -3,6 +3,7 @@ import { useWakeLock } from "../hooks/useWakeLock";
 import { useDuplicateDisplayDetection } from "../hooks/useDuplicateDisplayDetection";
 import DuplicateTabWarning from "../components/DuplicateTabWarning";
 import Avatar from "../components/Avatar";
+import { QRCodeSVG } from "qrcode.react";
 import type { Player, Question, HighScoreEntry } from "../types/GameState";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./Display.css";
@@ -928,6 +929,23 @@ function LowScoreBoard({ entries }: { entries: HighScoreEntry[] }) {
   );
 }
 
+function QrCodeOverlay() {
+  const buzzerUrl = `${window.location.origin}/buzzer`;
+  return (
+    <div className="display-qr-overlay">
+      <div className="display-qr-card">
+        <QRCodeSVG
+          value={buzzerUrl}
+          className="display-qr-code"
+          level="M"
+          marginSize={2}
+        />
+        <div className="display-qr-url">{buzzerUrl}</div>
+      </div>
+    </div>
+  );
+}
+
 function Display() {
   const { gameState, connectionStatus } = useSignalR();
   useWakeLock();
@@ -1131,6 +1149,7 @@ function Display() {
           spinId={gameState.randomWheelSpinId}
         />
       )}
+      {gameState.showQrCode && <QrCodeOverlay />}
       {gameState.winnerDeclared ? (
         <WinnerOverlay
           players={getRankedPlayers(gameState.players)}
@@ -1215,6 +1234,7 @@ function Display() {
                 style={{
                   gridTemplateColumns: `repeat(${gameState.categories.length}, 1fr)`,
                   gridTemplateRows: `auto repeat(${maxQuestions}, 1fr)`,
+                  visibility: gameState.hideBoard ? "hidden" : "visible",
                 }}
               >
                 {gameState.categories.map((category) => (
