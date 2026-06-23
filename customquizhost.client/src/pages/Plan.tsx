@@ -88,7 +88,9 @@ function Plan() {
     setQuestionText("");
     setQuestionAnswer("");
     setQuestionPoints(200);
-    setQuestionType("Standard");
+    // Note: questionType is intentionally not reset here so that the user's
+    // selection is preserved after adding/saving a question. Callers that
+    // need to reset it (e.g. full plan reset, import) do so explicitly.
     setMediaFile(null);
     setExistingMediaFileName(null);
     setAnswerImageFile(null);
@@ -260,6 +262,7 @@ function Plan() {
       // ignore
     }
     resetQuestionForm();
+    setQuestionType("Standard");
     setSelectedCategoryId("");
     setShowResetModal(false);
   };
@@ -299,7 +302,10 @@ function Plan() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = importedFileName || "quiz-questions.zip";
+      const downloadName = importedFileName?.trim() || "quiz-questions.zip";
+      a.download = downloadName.toLowerCase().endsWith(".zip")
+        ? downloadName
+        : `${downloadName}.zip`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
@@ -379,6 +385,7 @@ function Plan() {
       setCategories(normalized);
       setSelectedCategoryId("");
       resetQuestionForm();
+      setQuestionType("Standard");
       setImportedFileName(file.name);
       savePlanImportedFileName(file.name);
       // Prune any pre-existing blobs that aren't referenced by the new import
@@ -608,9 +615,21 @@ function Plan() {
 
           <section className="remote-section">
             <h2>Import / Export</h2>
-            {importedFileName && (
-              <p className="plan-imported-name">Current file: {importedFileName}</p>
-            )}
+            <label className="plan-filename-label">
+              Export filename:
+              <input
+                type="text"
+                className="plan-filename-input"
+                placeholder="quiz-questions.zip"
+                value={importedFileName ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const next = value.length > 0 ? value : null;
+                  setImportedFileName(next);
+                  savePlanImportedFileName(next);
+                }}
+              />
+            </label>
             <div className="input-row">
               <button onClick={handleExport}>📤 Export Questions</button>
               <label className="btn-import">
