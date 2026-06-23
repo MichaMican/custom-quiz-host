@@ -57,6 +57,8 @@ public class GameState
     public bool RandomWheelActive { get; set; }
     public string? RandomWheelSelectedPlayerId { get; set; }
     public string? RandomWheelSpinId { get; set; }
+    public bool HideBoard { get; set; }
+    public bool ShowQrCode { get; set; }
 }
 
 public class Player
