@@ -10,6 +10,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
   - **Remote Control View** (`/remote`): Host interface for managing every aspect of the game
   - **Buzzer View** (`/buzzer`): Player interface for buzzing in and submitting answers
   - **Planner View** (`/plan`): Offline, browser-only editor for preparing quiz boards (categories, questions, media) without touching the live game session — export a ZIP and import it on the Remote Control when you're ready to play
+  - **Merge View** (`/merge`): Offline, browser-only tool for combining two or more quiz ZIPs (exported from `/plan` or as "Questions only" from `/remote`) into a single ZIP, merging categories that share the same name
 - **Player Management**: Add, remove, and track player scores in real-time; click a score to edit it directly
 - **Player Avatars**: Players can take a selfie or upload a photo from the Buzzer page — avatars appear on their buzz button and on the Display
 - **Custom Categories & Questions**: Create your own categories with customizable point values (200–1000)
@@ -38,6 +39,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Persistent State**: Game state is auto-saved to `localStorage` and automatically restored when the Remote Control reconnects to an empty server
 - **Import/Export**: Export questions-only or the full game state (including all media files) as a ZIP archive; import a previously exported ZIP to restore everything
 - **Offline Quiz Planner**: A dedicated `/plan` page lets you build complete quiz boards in the browser without affecting any live session. Categories, questions, and uploaded media are persisted locally (localStorage + IndexedDB) and can be exported as a `Questions only` ZIP that imports cleanly into the Remote Control's Setup tab
+- **Offline Quiz Merger**: A dedicated `/merge` page lets you combine two or more previously exported quiz ZIPs (from `/plan` or `/remote` "Questions only" exports) into a single merged ZIP. Categories with the same name are merged together and their questions are concatenated. The page runs entirely in your browser and never touches a running game
 
 ## Technology Stack
 
@@ -87,6 +89,7 @@ The easiest way to get started is with Docker Compose using the pre-built image 
    - Remote Control: `http://localhost:8080/remote`
    - Buzzer: `http://localhost:8080/buzzer`
    - Planner: `http://localhost:8080/plan`
+   - Merger: `http://localhost:8080/merge`
 
 Uploaded media files (images, audio) are persisted in the `uploads` Docker volume and survive container restarts. Highscores are stored separately in the `highscores` volume for independent persistence.
 
@@ -127,6 +130,7 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
     - Remote Control: `https://localhost:5173/remote`
     - Buzzer: `https://localhost:5173/buzzer`
     - Planner: `https://localhost:5173/plan`
+    - Merger: `https://localhost:5173/merge`
     - Backend API and SignalR hub (proxied by Vite): `https://localhost:7135/` or `http://localhost:5200/`
 
 ### Docker Deployment

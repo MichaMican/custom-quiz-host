@@ -201,6 +201,12 @@
         </article>
 
         <article class="feature-card anim-fade-up" data-animate>
+          <div class="feature-icon">🔀</div>
+          <h3>Offline Quiz Merger</h3>
+          <p>Combine two or more quiz ZIPs at <code>/merge</code> into a single bundle. Categories that share the same name are merged into one and their questions are concatenated – all done in your browser without touching the live game.</p>
+        </article>
+
+        <article class="feature-card anim-fade-up" data-animate>
           <div class="feature-icon">🐳</div>
           <h3>Single Docker Container</h3>
           <p>Deploy anywhere with one <code>docker compose up</code> command. Media uploads and highscores are stored in named volumes.</p>
@@ -420,6 +426,10 @@ volumes:
             <div class="url-row">
               <span class="url-label">Planner (offline editor)</span>
               <code>http://localhost:8080/plan</code>
+            </div>
+            <div class="url-row">
+              <span class="url-label">Merger (offline ZIP merger)</span>
+              <code>http://localhost:8080/merge</code>
             </div>
           </div>
         </div>
