@@ -75,6 +75,7 @@ export interface GameState {
   pauseOnBuzz: boolean;
   buzzerSyncEnabled: boolean;
   answerInputEnabled: boolean;
+  playerSelectionDisabled: boolean;
   imageFullscreen: boolean;
   mediaVisible: boolean;
   questionTimerActive: boolean;
@@ -90,4 +91,6 @@ export interface GameState {
   randomWheelActive: boolean;
   randomWheelSelectedPlayerId: string | null;
   randomWheelSpinId: string | null;
+  hideBoard: boolean;
+  showQrCode: boolean;
 }

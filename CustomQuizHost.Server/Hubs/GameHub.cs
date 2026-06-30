@@ -108,6 +108,10 @@ public class GameHub : Hub
 
     public async Task SetPauseOnBuzz(bool value) => await _gameService.SetPauseOnBuzz(value);
 
+    public async Task SetHideBoard(bool value) => await _gameService.SetHideBoard(value);
+
+    public async Task SetShowQrCode(bool value) => await _gameService.SetShowQrCode(value);
+
     public async Task ShowRandomWheel() => await _gameService.ShowRandomWheel();
 
     public async Task HideRandomWheel() => await _gameService.HideRandomWheel();
@@ -120,6 +124,8 @@ public class GameHub : Hub
     public async Task SetBuzzerSyncEnabled(bool value) => await _gameService.SetBuzzerSyncEnabled(value);
 
     public async Task SetAnswerInputEnabled(bool value) => await _gameService.SetAnswerInputEnabled(value);
+
+    public async Task SetPlayerSelectionDisabled(bool value) => await _gameService.SetPlayerSelectionDisabled(value);
 
     public async Task EnableImageFullscreen() => await _gameService.EnableImageFullscreen();
 

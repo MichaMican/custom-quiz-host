@@ -130,6 +130,7 @@ function RemoteControl() {
         pauseOnBuzz: false,
         buzzerSyncEnabled: false,
         answerInputEnabled: false,
+        playerSelectionDisabled: false,
         imageFullscreen: false,
         mediaVisible: true,
         questionTimerActive: false,
@@ -145,6 +146,8 @@ function RemoteControl() {
         randomWheelActive: false,
         randomWheelSelectedPlayerId: null,
         randomWheelSpinId: null,
+        hideBoard: false,
+        showQrCode: false,
       };
       await invoke("ImportGameSettings", emptyState);
       markClean();
@@ -765,6 +768,36 @@ function RemoteControl() {
                 onChange={(e) => invoke("SetBuzzerSyncEnabled", e.target.checked)}
               />
               Activate Buzzer Sync (experimental)
+            </label>
+            <label className="pause-on-buzz-label">
+              <input
+                type="checkbox"
+                checked={gameState?.playerSelectionDisabled ?? false}
+                onChange={(e) =>
+                  invoke("SetPlayerSelectionDisabled", e.target.checked)
+                }
+              />
+              Disable Player selection
+            </label>
+          </section>
+
+          <section className="remote-section">
+            <h2>Display Settings</h2>
+            <label className="pause-on-buzz-label">
+              <input
+                type="checkbox"
+                checked={gameState?.hideBoard ?? false}
+                onChange={(e) => invoke("SetHideBoard", e.target.checked)}
+              />
+              Hide board
+            </label>
+            <label className="pause-on-buzz-label">
+              <input
+                type="checkbox"
+                checked={gameState?.showQrCode ?? false}
+                onChange={(e) => invoke("SetShowQrCode", e.target.checked)}
+              />
+              Show QR Code
             </label>
           </section>
 

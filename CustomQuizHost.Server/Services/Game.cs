@@ -658,6 +658,18 @@ public class GameService
         await BroadcastGameState();
     }
 
+    public async Task SetHideBoard(bool value)
+    {
+        _gameState.HideBoard = value;
+        await BroadcastGameState();
+    }
+
+    public async Task SetShowQrCode(bool value)
+    {
+        _gameState.ShowQrCode = value;
+        await BroadcastGameState();
+    }
+
     public async Task ShowRandomWheel()
     {
         if (_gameState.Players.Count == 0) return;
@@ -704,6 +716,12 @@ public class GameService
     public async Task SetAnswerInputEnabled(bool value)
     {
         _gameState.AnswerInputEnabled = value;
+        await BroadcastGameState();
+    }
+
+    public async Task SetPlayerSelectionDisabled(bool value)
+    {
+        _gameState.PlayerSelectionDisabled = value;
         await BroadcastGameState();
     }
 

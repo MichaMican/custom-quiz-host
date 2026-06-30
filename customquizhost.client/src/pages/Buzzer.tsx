@@ -172,6 +172,7 @@ function Buzzer() {
           <select
             id="player-select"
             value={selectedPlayerId}
+            disabled={gameState.playerSelectionDisabled}
             onChange={(e) => {
               setSelectedPlayerId(e.target.value);
             }}

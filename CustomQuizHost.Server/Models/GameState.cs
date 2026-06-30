@@ -41,6 +41,7 @@ public class GameState
     public bool PauseOnBuzz { get; set; }
     public bool BuzzerSyncEnabled { get; set; }
     public bool AnswerInputEnabled { get; set; }
+    public bool PlayerSelectionDisabled { get; set; }
     public bool ImageFullscreen { get; set; }
     public bool MediaVisible { get; set; } = true;
     public bool QuestionTimerActive { get; set; }
@@ -56,6 +57,8 @@ public class GameState
     public bool RandomWheelActive { get; set; }
     public string? RandomWheelSelectedPlayerId { get; set; }
     public string? RandomWheelSpinId { get; set; }
+    public bool HideBoard { get; set; }
+    public bool ShowQrCode { get; set; }
 }
 
 public class Player
