@@ -91,4 +91,6 @@ export interface GameState {
   randomWheelActive: boolean;
   randomWheelSelectedPlayerId: string | null;
   randomWheelSpinId: string | null;
+  hideBoard: boolean;
+  showQrCode: boolean;
 }

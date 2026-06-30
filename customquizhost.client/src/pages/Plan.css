@@ -27,6 +27,19 @@
   color: #a5b4fc;
 }
 
+.plan-filename-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+.plan-filename-input {
+  width: 100%;
+}
+
 .plan-hint {
   margin: 8px 0 0 0;
   font-size: 0.8rem;

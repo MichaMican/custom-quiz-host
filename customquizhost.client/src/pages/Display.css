@@ -1683,3 +1683,53 @@
   60% { opacity: 1; transform: scale(1.15); }
   100% { opacity: 1; transform: scale(1); }
 }
+
+/* === QR code overlay === */
+.display-qr-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(30, 27, 75, 0.96) 0%, rgba(15, 23, 42, 0.98) 100%);
+  z-index: 300;
+  padding: 24px;
+  animation: qrOverlayFadeIn 0.4s ease-out both;
+}
+
+@keyframes qrOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.display-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding: clamp(24px, 4vw, 56px);
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  animation: qrCardPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes qrCardPop {
+  0% { opacity: 0; transform: scale(0.6); }
+  60% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.display-qr-code {
+  width: min(70vh, 70vw);
+  height: min(70vh, 70vw);
+}
+
+.display-qr-url {
+  font-size: clamp(1rem, 2.2vw, 1.8rem);
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.02em;
+  word-break: break-all;
+  text-align: center;
+}
