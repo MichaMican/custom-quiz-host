@@ -318,6 +318,9 @@ function Plan() {
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setBusy(true);
+    setBusyProgress(0);
+    setBusyMessage("Preparing import…");
     try {
       const zip = await JSZip.loadAsync(file);
       const jsonFile = zip.file("quiz-questions.json");
@@ -359,7 +362,6 @@ function Plan() {
           }
           setBusyProgress(((i + 1) / mediaEntries.length) * 100);
         }
-        setBusy(false);
       }
 
       // Normalize imported categories: ensure ids/categoryIds exist, fill defaults
@@ -392,6 +394,8 @@ function Plan() {
       void pruneOrphanedPlanMedia(normalized);
     } catch {
       alert("Failed to import questions: the ZIP file may be corrupted or contain invalid data");
+    } finally {
+      setBusy(false);
     }
     e.target.value = "";
   };
