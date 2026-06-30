@@ -432,6 +432,9 @@ function RemoteControl() {
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadMessage("Preparing import…");
     try {
       const zip = await JSZip.loadAsync(file);
       const jsonFile = zip.file("quiz-game.json");
@@ -450,6 +453,8 @@ function RemoteControl() {
       saveImportedGameFileName(file.name);
     } catch {
       alert("Failed to import game: the ZIP file may be corrupted or contain invalid data");
+    } finally {
+      setUploading(false);
     }
     e.target.value = "";
   };
@@ -457,6 +462,9 @@ function RemoteControl() {
   const handleImportQuestions = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadMessage("Preparing import…");
     try {
       const zip = await JSZip.loadAsync(file);
       const jsonFile = zip.file("quiz-questions.json");
@@ -478,6 +486,8 @@ function RemoteControl() {
       saveImportedQuestionsFileName(file.name);
     } catch {
       alert("Failed to import questions: the ZIP file may be corrupted or contain invalid data");
+    } finally {
+      setUploading(false);
     }
     e.target.value = "";
   };
