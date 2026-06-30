@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import JSZip from "jszip";
 import type { Category, Question, QuestionType } from "../types/GameState";
 import ExportProgressModal from "../components/ExportProgressModal";
+import UploadProgressModal from "../components/UploadProgressModal";
 import "./RemoteControl.css";
 import "./Plan.css";
 
@@ -38,6 +39,9 @@ function Merge() {
   const [mergeMessage, setMergeMessage] = useState("");
   const [preview, setPreview] = useState<CategoryPreview[] | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [busyProgress, setBusyProgress] = useState(0);
+  const [busyMessage, setBusyMessage] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,13 +77,20 @@ function Merge() {
       setPreview(null);
       return;
     }
+    setBusy(true);
+    setBusyProgress(0);
+    setBusyMessage("Reading ZIP files…");
     try {
       // Map of lowercased trimmed name -> { displayName, questionCount, sourceCount, sourceIds }
       const acc = new Map<
         string,
         { displayName: string; questionCount: number; sourceIds: Set<string> }
       >();
-      for (const s of currentSources) {
+      for (let i = 0; i < currentSources.length; i++) {
+        const s = currentSources[i];
+        setBusyMessage(
+          `Reading file ${i + 1} of ${currentSources.length}: ${s.file.name}`,
+        );
         const zip = await JSZip.loadAsync(s.file);
         const jsonFile = zip.file("quiz-questions.json");
         if (!jsonFile) {
@@ -109,6 +120,7 @@ function Merge() {
             });
           }
         }
+        setBusyProgress(((i + 1) / currentSources.length) * 100);
       }
       const list: CategoryPreview[] = Array.from(acc.values()).map((v) => ({
         name: v.displayName,
@@ -123,6 +135,8 @@ function Merge() {
           ? err.message
           : "Failed to read one of the selected ZIP files",
       );
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -371,6 +385,11 @@ function Merge() {
           visible={merging}
           progress={mergeProgress}
           message={mergeMessage}
+        />
+        <UploadProgressModal
+          visible={busy}
+          progress={busyProgress}
+          message={busyMessage}
         />
       </div>
     </div>
