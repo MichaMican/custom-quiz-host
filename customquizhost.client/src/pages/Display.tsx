@@ -356,17 +356,26 @@ function playQuestionTimerExpired() {
  */
 function QuestionCountdownContainer({
   active,
+  paused,
   startedAt,
   durationSeconds,
+  remainingSeconds,
 }: {
   active: boolean;
+  paused: boolean;
   startedAt: string | null;
   durationSeconds: number;
+  remainingSeconds: number;
 }) {
   type Phase = "idle" | "running" | "hold" | "exiting";
   const [phase, setPhase] = useState<Phase>("idle");
   const [snapshot, setSnapshot] = useState<
-    { startedAt: string; durationSeconds: number } | null
+    {
+      startedAt: string | null;
+      durationSeconds: number;
+      remainingSeconds: number;
+      paused: boolean;
+    } | null
   >(null);
   const expiredRef = useRef(false);
   const holdTimerRef = useRef<number | null>(null);
@@ -383,18 +392,27 @@ function QuestionCountdownContainer({
     }
   }, []);
 
-  // Start (or restart) the countdown whenever a new timer arrives. We have to
-  // capture the incoming props into local snapshot state so the countdown can
-  // outlive `active` becoming false (during the post-expiry hold/exit phases).
+  // Start (or restart) the countdown whenever a new timer arrives, or when the
+  // timer is paused/resumed (which changes `paused`, `startedAt` and
+  // `remainingSeconds`). We capture the incoming props into a local snapshot so
+  // the countdown can outlive `active` becoming false (during the post-expiry
+  // hold/exit phases).
   useEffect(() => {
-    if (active && startedAt) {
+    if (active) {
       clearPendingTimers();
       expiredRef.current = false;
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSnapshot({ startedAt, durationSeconds });
+      setSnapshot({ startedAt, durationSeconds, remainingSeconds, paused });
       setPhase("running");
     }
-  }, [active, startedAt, durationSeconds, clearPendingTimers]);
+  }, [
+    active,
+    paused,
+    startedAt,
+    durationSeconds,
+    remainingSeconds,
+    clearPendingTimers,
+  ]);
 
   // If the server clears the timer state before natural expiry (explicit
   // stop / question transition), unmount the countdown immediately so it
@@ -431,9 +449,10 @@ function QuestionCountdownContainer({
   if (phase === "idle" || !snapshot) return null;
   return (
     <QuestionCountdown
-      key={snapshot.startedAt}
-      startedAt={snapshot.startedAt}
+      key={`${snapshot.startedAt ?? "paused"}-${snapshot.paused}`}
       durationSeconds={snapshot.durationSeconds}
+      remainingSeconds={snapshot.remainingSeconds}
+      paused={snapshot.paused}
       onExpire={handleExpire}
       exiting={phase === "exiting"}
     />
@@ -441,24 +460,28 @@ function QuestionCountdownContainer({
 }
 
 function QuestionCountdown({
-  startedAt,
   durationSeconds,
+  remainingSeconds,
+  paused,
   onExpire,
   exiting,
 }: {
-  startedAt: string;
   durationSeconds: number;
+  remainingSeconds: number;
+  paused: boolean;
   onExpire: () => void;
   exiting: boolean;
 }) {
-  // Compute remaining seconds locally, ticking ~10x per second for a smooth animation.
-  // Anchor the countdown to the client's clock at the moment a new timer instance
-  // becomes visible (i.e. when the `startedAt` prop changes). Using the server's
-  // `startedAt` directly would make the countdown drift by the host↔client clock
-  // skew (e.g. start at 13 and end at 3 when the server clock is 3s ahead).
+  // Compute remaining milliseconds locally, ticking ~10x per second for a smooth
+  // animation. Anchor the countdown to the client's clock at the moment a new
+  // running segment becomes visible (this component is re-mounted via its `key`
+  // whenever the segment starts, or when it is paused/resumed). Using the
+  // server's timestamps directly would make the countdown drift by the
+  // host↔client clock skew.
   const totalMs = durationSeconds * 1000;
+  const segmentMs = Math.max(0, remainingSeconds) * 1000;
 
-  const [remainingMs, setRemainingMs] = useState(totalMs);
+  const [remainingMs, setRemainingMs] = useState(segmentMs);
   const lastBeepSecondRef = useRef<number | null>(null);
   const onExpireRef = useRef(onExpire);
   useEffect(() => {
@@ -466,35 +489,44 @@ function QuestionCountdown({
   }, [onExpire]);
 
   useEffect(() => {
+    if (paused) {
+      // Frozen while paused: show the remaining time and stop ticking.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRemainingMs(segmentMs);
+      return;
+    }
     const clientStartMs = Date.now();
-    const computeRemaining = () => Math.max(0, totalMs - (Date.now() - clientStartMs));
+    const computeRemaining = () =>
+      Math.max(0, segmentMs - (Date.now() - clientStartMs));
+    setRemainingMs(computeRemaining());
     const interval = setInterval(() => {
       setRemainingMs(computeRemaining());
     }, 100);
-    // Fire the natural-expiry callback exactly at totalMs so the hold/exit
+    // Fire the natural-expiry callback exactly at segmentMs so the hold/exit
     // animation begins precisely when the visible "0" appears, regardless of
     // when the server's clear message arrives.
     const expireTimer = window.setTimeout(() => {
       onExpireRef.current();
-    }, totalMs);
+    }, segmentMs);
     return () => {
       clearInterval(interval);
       clearTimeout(expireTimer);
     };
-  }, [startedAt, durationSeconds, totalMs]);
+  }, [paused, segmentMs]);
 
-  const remainingSeconds = Math.ceil(remainingMs / 1000);
+  const remainingSecondsDisplay = Math.ceil(remainingMs / 1000);
 
-  // Beep on each of the last 3 visible seconds (3, 2, 1).
+  // Beep on each of the last 3 visible seconds (3, 2, 1). Never beep while paused.
   useEffect(() => {
+    if (paused) return;
     if (remainingMs <= 0) return;
-    if (remainingSeconds >= 1 && remainingSeconds <= 3) {
-      if (lastBeepSecondRef.current !== remainingSeconds) {
-        lastBeepSecondRef.current = remainingSeconds;
+    if (remainingSecondsDisplay >= 1 && remainingSecondsDisplay <= 3) {
+      if (lastBeepSecondRef.current !== remainingSecondsDisplay) {
+        lastBeepSecondRef.current = remainingSecondsDisplay;
         playQuestionTimerBeep();
       }
     }
-  }, [remainingMs, remainingSeconds]);
+  }, [paused, remainingMs, remainingSecondsDisplay]);
 
   const fraction = totalMs > 0 ? Math.max(0, Math.min(1, remainingMs / totalMs)) : 0;
   // SVG circle: radius 54 -> circumference ~339.29
@@ -526,7 +558,7 @@ function QuestionCountdown({
           }}
         />
       </svg>
-      <div className="display-question-timer-value">{remainingSeconds}</div>
+      <div className="display-question-timer-value">{remainingSecondsDisplay}</div>
     </div>
   );
 }
@@ -1186,8 +1218,10 @@ function Display() {
                   {gameState.currentQuestion && (
                     <QuestionCountdownContainer
                       active={gameState.questionTimerActive}
+                      paused={gameState.questionTimerPaused}
                       startedAt={gameState.questionTimerStartedAt}
                       durationSeconds={gameState.questionTimerDurationSeconds}
+                      remainingSeconds={gameState.questionTimerRemainingSeconds}
                     />
                   )}
                 </div>

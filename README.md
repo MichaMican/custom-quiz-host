@@ -23,7 +23,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Answer Images**: Optionally attach a reveal image to any question that is shown alongside the text answer on the Display
 - **Buzzer System**: Track player buzz-in order with accurate timestamps; highlight the active buzzer; move to the next buzzer with one click
 - **Pause on Buzz**: Automatically pause audio, video, or mozaik reveal when a player buzzes in
-- **Question Timer**: Start a per-question countdown (1–999 seconds, default 10) from the Remote Control; an animated timer appears on the Display without covering the question text, and the buzzer is automatically deactivated when the countdown reaches zero
+- **Question Timer**: Start a per-question countdown (1–999 seconds, default 10) from the Remote Control; an animated timer appears on the Display without covering the question text. The countdown automatically pauses when a player buzzes in and resumes once the buzzer queue is cleared. When the countdown reaches zero the buzzer is deactivated and the *"Allow answer input"* toggle is unchecked (if it was active)
 - **Buzzer Sync** *(experimental)*: NTP-like time synchronisation across devices for fair latency-compensated buzz ordering
 - **Player Answer Input**: Optionally enable a text-answer field on the Buzzer page so players can type their answers, which the host can then reveal on the Display
 - **Disable Player Selection**: Lock the player picker on the Buzzer page so players can't change which account/team they are playing as once the game has started (auto-restoring a previously selected player on page refresh still works)

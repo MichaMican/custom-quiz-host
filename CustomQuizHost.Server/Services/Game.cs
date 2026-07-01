@@ -356,7 +356,9 @@ public class GameService
             try { cts.Cancel(); } catch (ObjectDisposedException) { }
         }
         _gameState.QuestionTimerActive = false;
+        _gameState.QuestionTimerPaused = false;
         _gameState.QuestionTimerStartedAt = null;
+        _gameState.QuestionTimerRemainingSeconds = 0;
     }
 
     public async Task StartQuestionTimer(int seconds)
@@ -376,17 +378,29 @@ public class GameService
         _questionTimerCts = cts;
 
         _gameState.QuestionTimerActive = true;
+        _gameState.QuestionTimerPaused = false;
         _gameState.QuestionTimerDurationSeconds = clamped;
+        _gameState.QuestionTimerRemainingSeconds = clamped;
         _gameState.QuestionTimerStartedAt = DateTimeOffset.UtcNow;
 
         await BroadcastGameState();
 
-        // Fire-and-forget the deactivation task; cancellation is handled silently.
+        RunQuestionTimerSegment(clamped, cts);
+    }
+
+    /// <summary>
+    /// Fire-and-forget task that waits for the remaining segment duration and,
+    /// when it elapses naturally, deactivates the buzzer, unchecks the answer
+    /// input toggle (if active) and clears the timer state. Cancellation (from a
+    /// pause, restart, stop or question transition) is handled silently.
+    /// </summary>
+    private void RunQuestionTimerSegment(double seconds, CancellationTokenSource cts)
+    {
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(clamped), cts.Token);
+                await Task.Delay(TimeSpan.FromSeconds(Math.Max(0, seconds)), cts.Token);
             }
             catch (TaskCanceledException)
             {
@@ -394,18 +408,75 @@ public class GameService
                 return;
             }
 
-            // Only act if this timer is still the active one. A newer Start or a
-            // Stop/transition may have replaced or cleared _questionTimerCts.
+            // Only act if this timer is still the active one. A newer Start, a
+            // pause/resume, or a Stop/transition may have replaced or cleared
+            // _questionTimerCts.
             if (ReferenceEquals(_questionTimerCts, cts))
             {
                 _questionTimerCts = null;
                 _gameState.BuzzerActive = false;
+                // Once the timer elapses, also uncheck the "allow input" toggle,
+                // but only when it is currently active.
+                if (_gameState.AnswerInputEnabled)
+                {
+                    _gameState.AnswerInputEnabled = false;
+                }
                 _gameState.QuestionTimerActive = false;
+                _gameState.QuestionTimerPaused = false;
                 _gameState.QuestionTimerStartedAt = null;
+                _gameState.QuestionTimerRemainingSeconds = 0;
                 await BroadcastGameState();
             }
             cts.Dispose();
         });
+    }
+
+    /// <summary>
+    /// Pauses the running question timer (e.g. because a player buzzed in),
+    /// freezing the remaining time. Does nothing if no timer is running or it is
+    /// already paused. The caller is responsible for broadcasting the state.
+    /// </summary>
+    private void PauseQuestionTimerInternal()
+    {
+        if (!_gameState.QuestionTimerActive || _gameState.QuestionTimerPaused) return;
+
+        var startedAt = _gameState.QuestionTimerStartedAt;
+        var cts = _questionTimerCts;
+        _questionTimerCts = null;
+        if (cts != null)
+        {
+            try { cts.Cancel(); } catch (ObjectDisposedException) { }
+        }
+
+        var remaining = _gameState.QuestionTimerRemainingSeconds;
+        if (startedAt.HasValue)
+        {
+            var elapsed = (DateTimeOffset.UtcNow - startedAt.Value).TotalSeconds;
+            remaining = Math.Max(0, remaining - elapsed);
+        }
+
+        _gameState.QuestionTimerPaused = true;
+        _gameState.QuestionTimerRemainingSeconds = remaining;
+        _gameState.QuestionTimerStartedAt = null;
+    }
+
+    /// <summary>
+    /// Resumes a paused question timer (e.g. because the buzzer queue was
+    /// cleared), continuing the countdown from the frozen remaining time. Does
+    /// nothing if no timer is active or it is not paused. The caller is
+    /// responsible for broadcasting the state.
+    /// </summary>
+    private void ResumeQuestionTimerInternal()
+    {
+        if (!_gameState.QuestionTimerActive || !_gameState.QuestionTimerPaused) return;
+
+        var cts = new CancellationTokenSource();
+        _questionTimerCts = cts;
+
+        _gameState.QuestionTimerPaused = false;
+        _gameState.QuestionTimerStartedAt = DateTimeOffset.UtcNow;
+
+        RunQuestionTimerSegment(_gameState.QuestionTimerRemainingSeconds, cts);
     }
 
     public async Task StopQuestionTimer()
@@ -458,6 +529,10 @@ public class GameService
                 _gameState.MediaPlaying = false;
                 _gameState.MozaikRevealing = false;
             }
+
+            // A buzz-in always pauses a running question timer so the countdown
+            // freezes while the buzz is being resolved.
+            PauseQuestionTimerInternal();
         }
 
         // Broadcast outside the lock to avoid holding it during async I/O.
@@ -471,6 +546,8 @@ public class GameService
     {
         _gameState.BuzzOrder.Clear();
         _gameState.HighlightedBuzzIndex = 0;
+        // Clearing the buzzer queue resumes a timer that was paused by a buzz-in.
+        ResumeQuestionTimerInternal();
         await BroadcastGameState();
     }
 
@@ -492,6 +569,13 @@ public class GameService
         if (_gameState.HighlightedBuzzIndex >= _gameState.BuzzOrder.Count)
         {
             _gameState.HighlightedBuzzIndex = Math.Max(0, _gameState.BuzzOrder.Count - 1);
+        }
+
+        // When advancing past the last buzz leaves the queue empty, the buzz has
+        // been fully resolved, so a timer paused by a buzz-in resumes.
+        if (_gameState.BuzzOrder.Count == 0)
+        {
+            ResumeQuestionTimerInternal();
         }
 
         await BroadcastGameState();
@@ -558,7 +642,9 @@ public class GameService
         state.EventHistory ??= new();
         state.LowScoreBoard ??= new();
         state.QuestionTimerActive = false;
+        state.QuestionTimerPaused = false;
         state.QuestionTimerStartedAt = null;
+        state.QuestionTimerRemainingSeconds = 0;
         // If the imported state doesn't reference a known player as the
         // current selector (e.g. legacy export, or removed player), fall back
         // to the first player so the highlight still has a target.

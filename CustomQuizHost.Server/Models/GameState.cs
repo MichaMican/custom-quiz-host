@@ -45,7 +45,9 @@ public class GameState
     public bool ImageFullscreen { get; set; }
     public bool MediaVisible { get; set; } = true;
     public bool QuestionTimerActive { get; set; }
+    public bool QuestionTimerPaused { get; set; }
     public int QuestionTimerDurationSeconds { get; set; }
+    public double QuestionTimerRemainingSeconds { get; set; }
     public DateTimeOffset? QuestionTimerStartedAt { get; set; }
     public bool WinnerDeclared { get; set; }
     public bool ShowHighScoreBoard { get; set; }
