@@ -84,6 +84,7 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
         navigator.maxTouchPoints > 0) ||
       (typeof window.matchMedia === "function" &&
         window.matchMedia("(pointer: coarse)").matches);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMobileLike(hasTouch);
   }, []);
 
@@ -144,6 +145,7 @@ function CameraCaptureModal({ visible, onClose, onCaptured }: CameraCaptureModal
         typeof window !== "undefined" &&
         "isSecureContext" in window &&
         !window.isSecureContext;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(
         insecure
           ? "Camera access requires a secure (HTTPS) connection. You can still upload a custom image below."
