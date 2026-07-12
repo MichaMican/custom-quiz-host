@@ -43,6 +43,7 @@ function Buzzer() {
     if (!gameState || !selectedPlayerId) return;
     const exists = gameState.players.some((p) => p.id === selectedPlayerId);
     if (!exists) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedPlayerId("");
     }
   }, [gameState, selectedPlayerId]);

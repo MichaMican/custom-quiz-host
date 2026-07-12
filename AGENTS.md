@@ -44,6 +44,10 @@ Always use `DateTimeOffset` instead of `DateTime` in C# server code. When access
 
 ## Website & README Maintenance
 
+### Website-only commits
+
+When a change affects the `website/` files only, the commit message **must** start with `docs` or `chore`.
+
 ### Feature documentation
 
 When implementing a **significant new feature** (comparable in scope to things like the image avatar feature or the highscore board), update **both** of the following:
