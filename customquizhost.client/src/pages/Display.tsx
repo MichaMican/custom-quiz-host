@@ -420,7 +420,6 @@ function QuestionCountdownContainer({
   useEffect(() => {
     if (!active && phase === "running" && !expiredRef.current) {
       clearPendingTimers();
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPhase("idle");
       setSnapshot(null);
     }
