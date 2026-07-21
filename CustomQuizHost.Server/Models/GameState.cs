@@ -40,6 +40,7 @@ public class GameState
     public int MediaVolume { get; set; } = 70;
     public bool PauseOnBuzz { get; set; }
     public bool BuzzerSyncEnabled { get; set; }
+    public bool PreserveBuzzQueue { get; set; }
     public bool AnswerInputEnabled { get; set; }
     public bool PlayerSelectionDisabled { get; set; }
     public bool ImageFullscreen { get; set; }
