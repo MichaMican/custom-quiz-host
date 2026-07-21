@@ -142,7 +142,9 @@ function Plan() {
           .find((c) => c.id === editingCategoryId)
           ?.questions.some((q) => q.id === editingQuestionId))
     ) {
-      alert("The question being edited no longer exists. The form has been reset.");
+      alert(
+        "The question you were editing was deleted or moved. Your unsaved changes will be discarded and the form reset.",
+      );
       resetQuestionForm();
       return;
     }
@@ -174,6 +176,11 @@ function Plan() {
     }
 
     setCategories((prev) => {
+      const editedQuestion = editingQuestionId && editingCategoryId
+        ? prev
+            .find((c) => c.id === editingCategoryId)
+            ?.questions.find((q) => q.id === editingQuestionId)
+        : undefined;
       const next = prev.map((c) => {
         if (
           editingQuestionId &&
@@ -193,7 +200,7 @@ function Plan() {
             text: questionText.trim(),
             answer: questionAnswer.trim(),
             points: questionPoints,
-            isAnswered: false,
+            isAnswered: editedQuestion?.isAnswered ?? false,
             categoryId: c.id,
             questionType,
             mediaFileName: questionType === "Standard" ? null : mediaFileName,
