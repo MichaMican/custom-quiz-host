@@ -1010,7 +1010,12 @@ function RemoteControl() {
                   </button>
                   <button
                     onClick={() => invoke("NextBuzzer")}
-                    disabled={gameState.buzzOrder.length === 0}
+                    disabled={
+                      gameState.buzzOrder.length === 0 ||
+                      (gameState.preserveBuzzQueue &&
+                        gameState.highlightedBuzzIndex >=
+                          gameState.buzzOrder.length - 1)
+                    }
                   >
                     Next Buzz
                   </button>

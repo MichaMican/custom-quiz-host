@@ -405,6 +405,11 @@ public class GameService
             {
                 _questionTimerCts = null;
                 _gameState.BuzzerActive = false;
+                if (_gameState.PreserveBuzzQueue)
+                {
+                    _gameState.BuzzOrder.Clear();
+                    _gameState.HighlightedBuzzIndex = 0;
+                }
                 _gameState.QuestionTimerActive = false;
                 _gameState.QuestionTimerStartedAt = null;
                 await BroadcastGameState();
