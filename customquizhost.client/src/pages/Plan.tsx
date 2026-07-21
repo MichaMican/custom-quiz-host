@@ -176,10 +176,11 @@ function Plan() {
     }
 
     setCategories((prev) => {
-      const editedQuestion = editingQuestionId && editingCategoryId
-        ? prev
-            .find((c) => c.id === editingCategoryId)
-            ?.questions.find((q) => q.id === editingQuestionId)
+      const originalCategory = editingCategoryId
+        ? prev.find((c) => c.id === editingCategoryId)
+        : undefined;
+      const editedQuestion = editingQuestionId
+        ? originalCategory?.questions.find((q) => q.id === editingQuestionId)
         : undefined;
       const next = prev.map((c) => {
         if (
