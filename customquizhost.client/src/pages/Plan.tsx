@@ -143,7 +143,7 @@ function Plan() {
           ?.questions.some((q) => q.id === editingQuestionId))
     ) {
       alert(
-        "The question you were editing was deleted or moved. Your unsaved changes will be discarded and the form reset.",
+        "The question you were editing was deleted. Your unsaved changes will be discarded and the form reset.",
       );
       resetQuestionForm();
       return;
