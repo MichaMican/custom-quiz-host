@@ -49,6 +49,7 @@ public class GameState
     public int QuestionTimerDurationSeconds { get; set; }
     public double QuestionTimerRemainingSeconds { get; set; }
     public DateTimeOffset? QuestionTimerStartedAt { get; set; }
+    public DateTimeOffset? QuestionTimerSnapshotAt { get; set; }
     public bool WinnerDeclared { get; set; }
     public bool ShowHighScoreBoard { get; set; }
     public List<HighScoreEntry> HighScoreBoard { get; set; } = new();

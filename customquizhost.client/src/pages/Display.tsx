@@ -358,12 +358,14 @@ function QuestionCountdownContainer({
   active,
   paused,
   startedAt,
+  snapshotAt,
   durationSeconds,
   remainingSeconds,
 }: {
   active: boolean;
   paused: boolean;
   startedAt: string | null;
+  snapshotAt: string | null;
   durationSeconds: number;
   remainingSeconds: number;
 }) {
@@ -380,6 +382,8 @@ function QuestionCountdownContainer({
   const expiredRef = useRef(false);
   const holdTimerRef = useRef<number | null>(null);
   const exitTimerRef = useRef<number | null>(null);
+  const snapshotAtRef = useRef(snapshotAt);
+  snapshotAtRef.current = snapshotAt;
 
   const clearPendingTimers = useCallback(() => {
     if (holdTimerRef.current !== null) {
@@ -401,8 +405,23 @@ function QuestionCountdownContainer({
     if (active) {
       clearPendingTimers();
       expiredRef.current = false;
+      const startedAtMs = startedAt ? Date.parse(startedAt) : Number.NaN;
+      const snapshotAtMs = snapshotAtRef.current
+        ? Date.parse(snapshotAtRef.current)
+        : Number.NaN;
+      const elapsedSeconds =
+        !paused &&
+        Number.isFinite(startedAtMs) &&
+        Number.isFinite(snapshotAtMs)
+          ? Math.max(0, (snapshotAtMs - startedAtMs) / 1000)
+          : 0;
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSnapshot({ startedAt, durationSeconds, remainingSeconds, paused });
+      setSnapshot({
+        startedAt,
+        durationSeconds,
+        remainingSeconds: Math.max(0, remainingSeconds - elapsedSeconds),
+        paused,
+      });
       setPhase("running");
     }
   }, [
@@ -1219,6 +1238,7 @@ function Display() {
                       active={gameState.questionTimerActive}
                       paused={gameState.questionTimerPaused}
                       startedAt={gameState.questionTimerStartedAt}
+                      snapshotAt={gameState.questionTimerSnapshotAt}
                       durationSeconds={gameState.questionTimerDurationSeconds}
                       remainingSeconds={gameState.questionTimerRemainingSeconds}
                     />

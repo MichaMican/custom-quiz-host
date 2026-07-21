@@ -38,11 +38,13 @@ public class GameService
 
     public async Task BroadcastGameState()
     {
+        _gameState.QuestionTimerSnapshotAt = DateTimeOffset.UtcNow;
         await _hubContext.Clients.All.SendAsync("ReceiveGameState", _gameState);
     }
 
     public async Task SendGameStateToClient(string connectionId)
     {
+        _gameState.QuestionTimerSnapshotAt = DateTimeOffset.UtcNow;
         await _hubContext.Clients.Client(connectionId).SendAsync("ReceiveGameState", _gameState);
     }
 
@@ -330,9 +332,13 @@ public class GameService
 
     public async Task ActivateBuzzer()
     {
-        _gameState.BuzzerActive = true;
-        _gameState.BuzzOrder.Clear();
-        _gameState.HighlightedBuzzIndex = 0;
+        lock (_buzzLock)
+        {
+            _gameState.BuzzerActive = true;
+            _gameState.BuzzOrder.Clear();
+            _gameState.HighlightedBuzzIndex = 0;
+            ResumeQuestionTimerInternal();
+        }
         await BroadcastGameState();
     }
 
@@ -544,10 +550,13 @@ public class GameService
 
     public async Task ClearBuzzOrder()
     {
-        _gameState.BuzzOrder.Clear();
-        _gameState.HighlightedBuzzIndex = 0;
-        // Clearing the buzzer queue resumes a timer that was paused by a buzz-in.
-        ResumeQuestionTimerInternal();
+        lock (_buzzLock)
+        {
+            _gameState.BuzzOrder.Clear();
+            _gameState.HighlightedBuzzIndex = 0;
+            // Clearing the buzzer queue resumes a timer that was paused by a buzz-in.
+            ResumeQuestionTimerInternal();
+        }
         await BroadcastGameState();
     }
 
@@ -560,22 +569,25 @@ public class GameService
 
     public async Task NextBuzzer()
     {
-        if (_gameState.BuzzOrder.Count == 0) return;
-        var currentIndex = _gameState.HighlightedBuzzIndex;
-        if (currentIndex < 0 || currentIndex >= _gameState.BuzzOrder.Count) return;
-
-        _gameState.BuzzOrder.RemoveAt(currentIndex);
-
-        if (_gameState.HighlightedBuzzIndex >= _gameState.BuzzOrder.Count)
+        lock (_buzzLock)
         {
-            _gameState.HighlightedBuzzIndex = Math.Max(0, _gameState.BuzzOrder.Count - 1);
-        }
+            if (_gameState.BuzzOrder.Count == 0) return;
+            var currentIndex = _gameState.HighlightedBuzzIndex;
+            if (currentIndex < 0 || currentIndex >= _gameState.BuzzOrder.Count) return;
 
-        // When advancing past the last buzz leaves the queue empty, the buzz has
-        // been fully resolved, so a timer paused by a buzz-in resumes.
-        if (_gameState.BuzzOrder.Count == 0)
-        {
-            ResumeQuestionTimerInternal();
+            _gameState.BuzzOrder.RemoveAt(currentIndex);
+
+            if (_gameState.HighlightedBuzzIndex >= _gameState.BuzzOrder.Count)
+            {
+                _gameState.HighlightedBuzzIndex = Math.Max(0, _gameState.BuzzOrder.Count - 1);
+            }
+
+            // When advancing past the last buzz leaves the queue empty, the buzz has
+            // been fully resolved, so a timer paused by a buzz-in resumes.
+            if (_gameState.BuzzOrder.Count == 0)
+            {
+                ResumeQuestionTimerInternal();
+            }
         }
 
         await BroadcastGameState();
@@ -645,6 +657,7 @@ public class GameService
         state.QuestionTimerPaused = false;
         state.QuestionTimerStartedAt = null;
         state.QuestionTimerRemainingSeconds = 0;
+        state.QuestionTimerSnapshotAt = null;
         // If the imported state doesn't reference a known player as the
         // current selector (e.g. legacy export, or removed player), fall back
         // to the first player so the highlight still has a target.

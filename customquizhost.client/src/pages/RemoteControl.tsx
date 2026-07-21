@@ -138,6 +138,7 @@ function RemoteControl() {
         questionTimerDurationSeconds: 10,
         questionTimerRemainingSeconds: 0,
         questionTimerStartedAt: null,
+        questionTimerSnapshotAt: null,
         winnerDeclared: false,
         showHighScoreBoard: false,
         highScoreBoard: [],

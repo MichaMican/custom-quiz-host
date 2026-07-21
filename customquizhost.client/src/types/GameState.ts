@@ -83,6 +83,7 @@ export interface GameState {
   questionTimerDurationSeconds: number;
   questionTimerRemainingSeconds: number;
   questionTimerStartedAt: string | null;
+  questionTimerSnapshotAt: string | null;
   winnerDeclared: boolean;
   showHighScoreBoard: boolean;
   highScoreBoard: HighScoreEntry[];
