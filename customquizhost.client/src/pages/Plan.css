@@ -56,6 +56,10 @@
   flex: 1;
 }
 
+.plan-form-actions .question-submit-tooltip {
+  flex: 1;
+}
+
 .btn-cancel-edit {
   background: rgba(148, 163, 184, 0.15);
   color: #cbd5e1;
