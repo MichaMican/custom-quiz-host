@@ -108,6 +108,14 @@
   margin-bottom: 8px;
 }
 
+.question-submit-tooltip {
+  display: block;
+}
+
+.question-submit-tooltip button {
+  width: 100%;
+}
+
 .item-list {
   list-style: none;
   padding: 0;
