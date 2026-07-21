@@ -135,6 +135,16 @@ function Plan() {
     if (!selectedCategoryId) return;
     if (questionType === "Standard" && !questionText.trim()) return;
     if (questionType !== "Standard" && !mediaFile && !existingMediaFileName) return;
+    if (
+      editingQuestionId &&
+      (!editingCategoryId ||
+        !categories
+          .find((c) => c.id === editingCategoryId)
+          ?.questions.some((q) => q.id === editingQuestionId))
+    ) {
+      resetQuestionForm();
+      return;
+    }
 
     // Persist any newly selected media files into IndexedDB
     let mediaFileName: string | null = existingMediaFileName;
@@ -163,11 +173,6 @@ function Plan() {
     }
 
     setCategories((prev) => {
-      const questionBeingEdited = editingQuestionId && editingCategoryId
-        ? prev
-            .find((c) => c.id === editingCategoryId)
-            ?.questions.find((q) => q.id === editingQuestionId)
-        : undefined;
       const next = prev.map((c) => {
         if (
           editingQuestionId &&
@@ -183,7 +188,6 @@ function Plan() {
         if (c.id !== selectedCategoryId) return c;
         if (editingQuestionId) {
           const updatedQuestion = {
-            ...questionBeingEdited,
             id: editingQuestionId,
             text: questionText.trim(),
             answer: questionAnswer.trim(),
