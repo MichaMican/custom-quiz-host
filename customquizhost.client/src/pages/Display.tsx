@@ -5,7 +5,7 @@ import DuplicateTabWarning from "../components/DuplicateTabWarning";
 import Avatar from "../components/Avatar";
 import { QRCodeSVG } from "qrcode.react";
 import type { Player, Question, HighScoreEntry } from "../types/GameState";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import "./Display.css";
 
 function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, questionTextRevealed, answerRevealed, mediaVolume, imageFullscreen, mediaVisible }: {
@@ -382,8 +382,7 @@ function QuestionCountdownContainer({
   const expiredRef = useRef(false);
   const holdTimerRef = useRef<number | null>(null);
   const exitTimerRef = useRef<number | null>(null);
-  const snapshotAtRef = useRef(snapshotAt);
-  snapshotAtRef.current = snapshotAt;
+  const getSnapshotAt = useEffectEvent(() => snapshotAt);
 
   const clearPendingTimers = useCallback(() => {
     if (holdTimerRef.current !== null) {
@@ -406,8 +405,9 @@ function QuestionCountdownContainer({
       clearPendingTimers();
       expiredRef.current = false;
       const startedAtMs = startedAt ? Date.parse(startedAt) : Number.NaN;
-      const snapshotAtMs = snapshotAtRef.current
-        ? Date.parse(snapshotAtRef.current)
+      const currentSnapshotAt = getSnapshotAt();
+      const snapshotAtMs = currentSnapshotAt
+        ? Date.parse(currentSnapshotAt)
         : Number.NaN;
       const elapsedSeconds =
         !paused &&
