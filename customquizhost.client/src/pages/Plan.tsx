@@ -142,6 +142,7 @@ function Plan() {
           .find((c) => c.id === editingCategoryId)
           ?.questions.some((q) => q.id === editingQuestionId))
     ) {
+      alert("The question being edited no longer exists. The form has been reset.");
       resetQuestionForm();
       return;
     }
