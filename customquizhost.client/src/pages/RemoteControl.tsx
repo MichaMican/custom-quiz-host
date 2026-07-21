@@ -129,6 +129,7 @@ function RemoteControl() {
         mediaVolume: 70,
         pauseOnBuzz: false,
         buzzerSyncEnabled: false,
+        preserveBuzzQueue: false,
         answerInputEnabled: false,
         playerSelectionDisabled: false,
         imageFullscreen: false,
@@ -788,6 +789,16 @@ function RemoteControl() {
                 }
               />
               Disable Player selection
+            </label>
+            <label className="pause-on-buzz-label">
+              <input
+                type="checkbox"
+                checked={gameState?.preserveBuzzQueue ?? false}
+                onChange={(e) =>
+                  invoke("SetPreserveBuzzQueue", e.target.checked)
+                }
+              />
+              Preserve buzz queue
             </label>
           </section>
 

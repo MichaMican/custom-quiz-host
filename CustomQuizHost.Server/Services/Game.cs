@@ -339,6 +339,11 @@ public class GameService
     public async Task DeactivateBuzzer()
     {
         _gameState.BuzzerActive = false;
+        if (_gameState.PreserveBuzzQueue)
+        {
+            _gameState.BuzzOrder.Clear();
+            _gameState.HighlightedBuzzIndex = 0;
+        }
         await BroadcastGameState();
     }
 
@@ -486,6 +491,16 @@ public class GameService
         if (_gameState.BuzzOrder.Count == 0) return;
         var currentIndex = _gameState.HighlightedBuzzIndex;
         if (currentIndex < 0 || currentIndex >= _gameState.BuzzOrder.Count) return;
+
+        if (_gameState.PreserveBuzzQueue)
+        {
+            if (currentIndex < _gameState.BuzzOrder.Count - 1)
+            {
+                _gameState.HighlightedBuzzIndex++;
+                await BroadcastGameState();
+            }
+            return;
+        }
 
         _gameState.BuzzOrder.RemoveAt(currentIndex);
 
@@ -710,6 +725,12 @@ public class GameService
     public async Task SetBuzzerSyncEnabled(bool value)
     {
         _gameState.BuzzerSyncEnabled = value;
+        await BroadcastGameState();
+    }
+
+    public async Task SetPreserveBuzzQueue(bool value)
+    {
+        _gameState.PreserveBuzzQueue = value;
         await BroadcastGameState();
     }
 
