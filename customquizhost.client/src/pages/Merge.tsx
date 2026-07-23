@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import type { Category, Question, QuestionType } from "../types/GameState";
 import ExportProgressModal from "../components/ExportProgressModal";
 import UploadProgressModal from "../components/UploadProgressModal";
+import { useUploadCancellation, isCancellation } from "../hooks/useUploadCancellation";
 import "./RemoteControl.css";
 import "./Plan.css";
 import "./Merge.css";
@@ -53,6 +54,11 @@ function Merge() {
   const [busy, setBusy] = useState(false);
   const [busyProgress, setBusyProgress] = useState(0);
   const [busyMessage, setBusyMessage] = useState("");
+  const upload = useUploadCancellation();
+  const handleCancelUpload = () => {
+    upload.cancel();
+    setBusy(false);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,9 +73,11 @@ function Merge() {
     setBusy(true);
     setBusyProgress(0);
     setBusyMessage("Reading ZIP files…");
+    upload.begin();
     try {
       const additions: SourceFile[] = [];
       for (let i = 0; i < files.length; i++) {
+        upload.throwIfCancelled();
         const file = files[i];
         setBusyMessage(`Reading file ${i + 1} of ${files.length}: ${file.name}`);
         additions.push(await readSourceFile(file));
@@ -77,6 +85,9 @@ function Merge() {
       }
       setSources((prev) => [...prev, ...additions]);
     } catch (err) {
+      if (isCancellation(err) || upload.isCancelled()) {
+        return;
+      }
       setPreviewError(
         err instanceof Error
           ? err.message
@@ -512,6 +523,7 @@ function Merge() {
           visible={busy}
           progress={busyProgress}
           message={busyMessage}
+          onCancel={handleCancelUpload}
         />
       </div>
     </div>

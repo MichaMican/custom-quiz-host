@@ -53,3 +53,26 @@
   color: #a5b4fc;
   font-weight: 600;
 }
+
+.upload-progress-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.upload-progress-cancel {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.upload-progress-cancel:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fecaca;
+}
