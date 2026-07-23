@@ -939,6 +939,12 @@
   color: #fff;
 }
 
+.btn-question-timer.cancel {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #cbd5e1;
+}
+
 .question-timer-input {
   width: 72px;
   padding: 8px 10px;

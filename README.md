@@ -10,6 +10,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
   - **Remote Control View** (`/remote`): Host interface for managing every aspect of the game
   - **Buzzer View** (`/buzzer`): Player interface for buzzing in and submitting answers
   - **Planner View** (`/plan`): Offline, browser-only editor for preparing quiz boards (categories, questions, media) without touching the live game session — export a ZIP and import it on the Remote Control when you're ready to play
+  - **Merge View** (`/merge`): Offline, browser-only tool for combining two or more quiz ZIPs (exported from `/plan` or as "Questions only" from `/remote`) into a single ZIP, merging categories that share the same name
 - **Player Management**: Add, remove, and track player scores in real-time; click a score to edit it directly
 - **Player Avatars**: Players can take a selfie or upload a photo from the Buzzer page — avatars appear on their buzz button and on the Display
 - **Custom Categories & Questions**: Create your own categories with customizable point values (200–1000)
@@ -23,7 +24,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Answer Images**: Optionally attach a reveal image to any question that is shown alongside the text answer on the Display
 - **Buzzer System**: Track player buzz-in order with accurate timestamps; highlight the active buzzer; move to the next buzzer with one click
 - **Pause on Buzz**: Automatically pause audio, video, or mozaik reveal when a player buzzes in
-- **Question Timer**: Start a per-question countdown (1–999 seconds, default 10) from the Remote Control; an animated timer appears on the Display without covering the question text, and the buzzer is automatically deactivated when the countdown reaches zero
+- **Question Timer**: Start a per-question countdown (1–999 seconds, default 10) from the Remote Control; an animated timer appears on the Display without covering the question text. While the timer runs the host can **pause/resume** it manually or **cancel** it outright. The countdown also pauses automatically when a player buzzes in and resumes once the buzzer queue is cleared. When the countdown reaches zero the buzzer is deactivated and the *"Allow answer input"* toggle is unchecked (if it was active)
 - **Buzzer Sync** *(experimental)*: NTP-like time synchronisation across devices for fair latency-compensated buzz ordering
 - **Player Answer Input**: Optionally enable a text-answer field on the Buzzer page so players can type their answers, which the host can then reveal on the Display
 - **Disable Player Selection**: Lock the player picker on the Buzzer page so players can't change which account/team they are playing as once the game has started (auto-restoring a previously selected player on page refresh still works)
@@ -38,6 +39,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Persistent State**: Game state is auto-saved to `localStorage` and automatically restored when the Remote Control reconnects to an empty server
 - **Import/Export**: Export questions-only or the full game state (including all media files) as a ZIP archive; import a previously exported ZIP to restore everything
 - **Offline Quiz Planner**: A dedicated `/plan` page lets you build complete quiz boards in the browser without affecting any live session. Categories, questions, and uploaded media are persisted locally (localStorage + IndexedDB) and can be exported as a `Questions only` ZIP that imports cleanly into the Remote Control's Setup tab
+- **Offline Quiz Merger**: A dedicated `/merge` page lets you combine two or more previously exported quiz ZIPs (from `/plan` or `/remote` "Questions only" exports) into a single merged ZIP. Categories with the same name are merged together and their questions are concatenated. The page runs entirely in your browser and never touches a running game
 
 ## Technology Stack
 
@@ -87,6 +89,7 @@ The easiest way to get started is with Docker Compose using the pre-built image 
    - Remote Control: `http://localhost:8080/remote`
    - Buzzer: `http://localhost:8080/buzzer`
    - Planner: `http://localhost:8080/plan`
+   - Merger: `http://localhost:8080/merge`
 
 Uploaded media files (images, audio) are persisted in the `uploads` Docker volume and survive container restarts. Highscores are stored separately in the `highscores` volume for independent persistence.
 
@@ -127,6 +130,7 @@ Uploaded media files (images, audio) are persisted in the `uploads` Docker volum
     - Remote Control: `https://localhost:5173/remote`
     - Buzzer: `https://localhost:5173/buzzer`
     - Planner: `https://localhost:5173/plan`
+    - Merger: `https://localhost:5173/merge`
     - Backend API and SignalR hub (proxied by Vite): `https://localhost:7135/` or `http://localhost:5200/`
 
 ### Docker Deployment
