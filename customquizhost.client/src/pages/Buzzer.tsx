@@ -7,6 +7,7 @@ import Avatar from "../components/Avatar";
 import CameraCaptureModal, { type CapturedImage } from "../components/CameraCaptureModal";
 import UploadProgressModal from "../components/UploadProgressModal";
 import { uploadFileWithProgress } from "../utils/uploadWithProgress";
+import { useUploadCancellation, isCancellation } from "../hooks/useUploadCancellation";
 import "./Buzzer.css";
 
 const SELECTED_PLAYER_STORAGE_KEY = "buzzer.selectedPlayerId";
@@ -55,6 +56,13 @@ function Buzzer() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessage, setUploadMessage] = useState("");
+  const upload = useUploadCancellation();
+  const handleCancelUpload = () => {
+    upload.cancel();
+    setUploading(false);
+    setUploadProgress(0);
+    setUploadMessage("");
+  };
 
   // NTP-like time synchronization for accurate buzz timestamps
   // Only active when host enables buzzer sync
@@ -113,17 +121,22 @@ function Buzzer() {
     setUploading(true);
     setUploadProgress(0);
     setUploadMessage("Uploading avatar…");
+    const signal = upload.begin();
     try {
       const result = await uploadFileWithProgress(
         image.blob,
         (percent) => setUploadProgress(percent),
         image.fileName,
+        false,
+        signal,
       );
       await invoke("SetPlayerAvatar", selectedPlayerId, result.fileName);
     } catch (err) {
-      console.error("Avatar upload failed:", err);
-      // surface a minimal error — the modal is dismissed on finally
-      alert("Avatar upload failed. Please try again.");
+      if (!isCancellation(err) && !upload.isCancelled()) {
+        console.error("Avatar upload failed:", err);
+        // surface a minimal error — the modal is dismissed on finally
+        alert("Avatar upload failed. Please try again.");
+      }
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -319,6 +332,7 @@ function Buzzer() {
         visible={uploading}
         progress={uploadProgress}
         message={uploadMessage}
+        onCancel={handleCancelUpload}
       />
     </div>
   );

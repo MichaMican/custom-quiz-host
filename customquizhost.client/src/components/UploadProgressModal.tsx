@@ -4,9 +4,10 @@ interface UploadProgressModalProps {
   visible: boolean;
   progress: number;
   message?: string;
+  onCancel?: () => void;
 }
 
-function UploadProgressModal({ visible, progress, message }: UploadProgressModalProps) {
+function UploadProgressModal({ visible, progress, message, onCancel }: UploadProgressModalProps) {
   if (!visible) return null;
 
   const clampedProgress = Math.min(100, Math.max(0, Math.round(progress)));
@@ -23,6 +24,17 @@ function UploadProgressModal({ visible, progress, message }: UploadProgressModal
           />
         </div>
         <p className="upload-progress-percent">{clampedProgress}%</p>
+        {onCancel && (
+          <div className="upload-progress-actions">
+            <button
+              type="button"
+              className="upload-progress-cancel"
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
