@@ -70,6 +70,8 @@ public class GameHub : Hub
 
     public async Task ClearBuzzOrder() => await _gameService.ClearBuzzOrder();
 
+    public async Task RemoveBuzz(string playerId) => await _gameService.RemoveBuzz(playerId);
+
     public async Task SubmitPlayerAnswer(string playerId, string answer) => await _gameService.SubmitPlayerAnswer(playerId, answer);
 
     public async Task ClearPlayerAnswers() => await _gameService.ClearPlayerAnswers();
@@ -126,6 +128,8 @@ public class GameHub : Hub
         await _gameService.SetSelectorHighlightEnabled(value);
 
     public async Task SetBuzzerSyncEnabled(bool value) => await _gameService.SetBuzzerSyncEnabled(value);
+
+    public async Task SetPreserveBuzzQueue(bool value) => await _gameService.SetPreserveBuzzQueue(value);
 
     public async Task SetAnswerInputEnabled(bool value) => await _gameService.SetAnswerInputEnabled(value);
 
