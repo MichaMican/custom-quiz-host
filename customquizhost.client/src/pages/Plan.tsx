@@ -15,6 +15,7 @@ import {
 } from "../utils/planStorage";
 import ExportProgressModal from "../components/ExportProgressModal";
 import UploadProgressModal from "../components/UploadProgressModal";
+import { useUploadCancellation, isCancellation } from "../hooks/useUploadCancellation";
 import { getQuestionFormValidationMessage } from "../utils/questionFormValidation";
 import "./RemoteControl.css";
 import "./Plan.css";
@@ -73,6 +74,11 @@ function Plan() {
   const [busy, setBusy] = useState(false);
   const [busyProgress, setBusyProgress] = useState(0);
   const [busyMessage, setBusyMessage] = useState("");
+  const upload = useUploadCancellation();
+  const handleCancelUpload = () => {
+    upload.cancel();
+    setBusy(false);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const answerImageInputRef = useRef<HTMLInputElement>(null);
@@ -367,8 +373,10 @@ function Plan() {
     setBusy(true);
     setBusyProgress(0);
     setBusyMessage("Preparing import…");
+    upload.begin();
     try {
       const zip = await JSZip.loadAsync(file);
+      upload.throwIfCancelled();
       const jsonFile = zip.file("quiz-questions.json");
       if (!jsonFile) {
         alert("The ZIP file does not contain a quiz-questions.json file");
@@ -376,6 +384,7 @@ function Plan() {
         return;
       }
       const jsonText = await jsonFile.async("string");
+      upload.throwIfCancelled();
       const data = JSON.parse(jsonText);
       const importedCategories: unknown = data.categories ?? data.Categories;
       if (!Array.isArray(importedCategories) || importedCategories.length === 0) {
@@ -398,6 +407,7 @@ function Plan() {
         setBusyProgress(0);
         setBusyMessage("Importing media…");
         for (let i = 0; i < mediaEntries.length; i++) {
+          upload.throwIfCancelled();
           const { name, file: mediaFileEntry } = mediaEntries[i];
           setBusyMessage(`Importing file ${i + 1} of ${mediaEntries.length}: ${name}`);
           try {
@@ -409,6 +419,8 @@ function Plan() {
           setBusyProgress(((i + 1) / mediaEntries.length) * 100);
         }
       }
+
+      upload.throwIfCancelled();
 
       // Normalize imported categories: ensure ids/categoryIds exist, fill defaults
       const normalized: Category[] = (importedCategories as Category[]).map((c) => {
@@ -438,8 +450,10 @@ function Plan() {
       savePlanImportedFileName(file.name);
       // Prune any pre-existing blobs that aren't referenced by the new import
       void pruneOrphanedPlanMedia(normalized);
-    } catch {
-      alert("Failed to import questions: the ZIP file may be corrupted or contain invalid data");
+    } catch (err) {
+      if (!isCancellation(err) && !upload.isCancelled()) {
+        alert("Failed to import questions: the ZIP file may be corrupted or contain invalid data");
+      }
     } finally {
       setBusy(false);
     }
@@ -740,6 +754,7 @@ function Plan() {
           visible={busy}
           progress={busyProgress}
           message={busyMessage}
+          onCancel={handleCancelUpload}
         />
       </div>
     </div>

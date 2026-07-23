@@ -9,6 +9,7 @@ export async function uploadFileWithProgress(
   onProgress: (percent: number) => void,
   fileName?: string,
   preserveFileName = false,
+  signal?: AbortSignal,
 ): Promise<UploadResult> {
   const formData = new FormData();
   if (fileName) {
@@ -22,6 +23,7 @@ export async function uploadFileWithProgress(
     : "/api/upload";
 
   const response = await axios.post<UploadResult>(url, formData, {
+    signal,
     onUploadProgress(progressEvent) {
       if (progressEvent.total) {
         const percent = (progressEvent.loaded / progressEvent.total) * 100;
