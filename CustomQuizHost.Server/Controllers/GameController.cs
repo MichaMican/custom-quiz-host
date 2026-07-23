@@ -14,6 +14,7 @@ public class GameController : ControllerBase
     private const long MaxJsonSize = 20_000_000;
     private readonly GameService _gameService;
     private readonly IWebHostEnvironment _env;
+    private readonly ILogger<GameController> _logger;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNameCaseInsensitive = true
@@ -25,10 +26,14 @@ public class GameController : ControllerBase
         ".mp4", ".webm", ".ogv", ".mov", ".wmv"
     };
 
-    public GameController(GameService gameService, IWebHostEnvironment env)
+    public GameController(
+        GameService gameService,
+        IWebHostEnvironment env,
+        ILogger<GameController> logger)
     {
         _gameService = gameService;
         _env = env;
+        _logger = logger;
     }
 
     [HttpGet("export")]
@@ -46,7 +51,7 @@ public class GameController : ControllerBase
         var json = questionsOnly
             ? JsonSerializer.SerializeToUtf8Bytes(new { categories = state.Categories }, JsonOptions)
             : JsonSerializer.SerializeToUtf8Bytes(state, JsonOptions);
-        var tempPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.zip");
+        var tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
         try
         {
@@ -89,13 +94,13 @@ public class GameController : ControllerBase
         }
         catch
         {
-            System.IO.File.Delete(tempPath);
+            TryDeleteTemporaryFile(tempPath);
             throw;
         }
 
         Response.OnCompleted(() =>
         {
-            System.IO.File.Delete(tempPath);
+            TryDeleteTemporaryFile(tempPath);
             return Task.CompletedTask;
         });
         return PhysicalFile(tempPath, "application/zip", downloadName, enableRangeProcessing: true);
@@ -206,11 +211,7 @@ public class GameController : ControllerBase
         foreach (var entry in entries)
         {
             var originalName = entry.FullName["media/".Length..];
-            var extension = Path.GetExtension(originalName);
-            var nameWithoutExtension = Path.GetFileNameWithoutExtension(originalName);
-            var storedName = Guid.TryParse(nameWithoutExtension, out _)
-                ? originalName
-                : $"{Guid.NewGuid()}{extension}";
+            var storedName = GetStoredMediaFileName(originalName);
             var destinationPath = Path.Combine(uploadsPath, storedName);
 
             await using var source = entry.Open();
@@ -226,6 +227,26 @@ public class GameController : ControllerBase
         }
 
         return fileNameMap;
+    }
+
+    private static string GetStoredMediaFileName(string originalName)
+    {
+        var nameWithoutExtension = Path.GetFileNameWithoutExtension(originalName);
+        return Guid.TryParse(nameWithoutExtension, out _)
+            ? originalName
+            : $"{Guid.NewGuid()}{Path.GetExtension(originalName)}";
+    }
+
+    private void TryDeleteTemporaryFile(string path)
+    {
+        try
+        {
+            System.IO.File.Delete(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(exception, "Failed to delete temporary game archive {ArchivePath}", path);
+        }
     }
 
     private static void RemapMediaFileNames(

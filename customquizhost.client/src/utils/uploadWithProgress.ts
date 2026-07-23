@@ -19,9 +19,10 @@ export async function uploadFileWithProgress<TResult = UploadResult>(
     formData.append("file", file);
   }
 
-  const url = endpoint ?? (preserveFileName
+  const defaultUrl = preserveFileName
     ? "/api/upload?preserveFileName=true"
-    : "/api/upload");
+    : "/api/upload";
+  const url = endpoint ?? defaultUrl;
 
   const response = await axios.post<TResult>(url, formData, {
     signal,
