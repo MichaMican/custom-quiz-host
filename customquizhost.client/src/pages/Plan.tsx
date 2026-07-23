@@ -15,6 +15,7 @@ import {
 } from "../utils/planStorage";
 import ExportProgressModal from "../components/ExportProgressModal";
 import UploadProgressModal from "../components/UploadProgressModal";
+import { getQuestionFormValidationMessage } from "../utils/questionFormValidation";
 import "./RemoteControl.css";
 import "./Plan.css";
 
@@ -55,6 +56,7 @@ function Plan() {
   const [categoryName, setCategoryName] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [questionText, setQuestionText] = useState("");
   const [questionAnswer, setQuestionAnswer] = useState("");
   const [questionPoints, setQuestionPoints] = useState(200);
@@ -77,6 +79,12 @@ function Plan() {
 
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
   const selectedCategoryQuestions = selectedCategory?.questions;
+  const questionValidationMessage = getQuestionFormValidationMessage(
+    selectedCategoryId,
+    questionType,
+    questionText,
+    Boolean(mediaFile || existingMediaFileName),
+  );
 
   // Persist categories on every change
   useEffect(() => {
@@ -85,6 +93,7 @@ function Plan() {
 
   const resetQuestionForm = () => {
     setEditingQuestionId(null);
+    setEditingCategoryId(null);
     setQuestionText("");
     setQuestionAnswer("");
     setQuestionPoints(200);
@@ -126,6 +135,19 @@ function Plan() {
     if (!selectedCategoryId) return;
     if (questionType === "Standard" && !questionText.trim()) return;
     if (questionType !== "Standard" && !mediaFile && !existingMediaFileName) return;
+    if (
+      editingQuestionId &&
+      (!editingCategoryId ||
+        !categories
+          .find((c) => c.id === editingCategoryId)
+          ?.questions.some((q) => q.id === editingQuestionId))
+    ) {
+      alert(
+        "The question you were editing was deleted. Your unsaved changes will be discarded and the form reset.",
+      );
+      resetQuestionForm();
+      return;
+    }
 
     // Persist any newly selected media files into IndexedDB
     let mediaFileName: string | null = existingMediaFileName;
@@ -154,22 +176,45 @@ function Plan() {
     }
 
     setCategories((prev) => {
+      const originalCategory = editingCategoryId
+        ? prev.find((c) => c.id === editingCategoryId)
+        : undefined;
+      const editedQuestion = editingQuestionId
+        ? originalCategory?.questions.find((q) => q.id === editingQuestionId)
+        : undefined;
       const next = prev.map((c) => {
+        if (
+          editingQuestionId &&
+          editingCategoryId &&
+          editingCategoryId !== selectedCategoryId &&
+          c.id === editingCategoryId
+        ) {
+          return {
+            ...c,
+            questions: c.questions.filter((q) => q.id !== editingQuestionId),
+          };
+        }
         if (c.id !== selectedCategoryId) return c;
         if (editingQuestionId) {
+          const updatedQuestion = {
+            id: editingQuestionId,
+            text: questionText.trim(),
+            answer: questionAnswer.trim(),
+            points: questionPoints,
+            isAnswered: editedQuestion?.isAnswered ?? false,
+            categoryId: c.id,
+            questionType,
+            mediaFileName: questionType === "Standard" ? null : mediaFileName,
+            answerImageFileName,
+          } satisfies Question;
+          if (editingCategoryId !== selectedCategoryId) {
+            return { ...c, questions: [...c.questions, updatedQuestion] };
+          }
           return {
             ...c,
             questions: c.questions.map((q) =>
               q.id === editingQuestionId
-                ? {
-                    ...q,
-                    text: questionText.trim(),
-                    answer: questionAnswer.trim(),
-                    points: questionPoints,
-                    questionType,
-                    mediaFileName: questionType === "Standard" ? null : mediaFileName,
-                    answerImageFileName,
-                  }
+                ? updatedQuestion
                 : q,
             ),
           };
@@ -198,6 +243,7 @@ function Plan() {
     const q = selectedCategoryQuestions?.find((x) => x.id === questionId);
     if (!q) return;
     setEditingQuestionId(q.id);
+    setEditingCategoryId(selectedCategoryId);
     setQuestionText(q.text);
     setQuestionAnswer(q.answer);
     setQuestionPoints(q.points);
@@ -447,10 +493,7 @@ function Plan() {
             <div className="input-column">
               <select
                 value={selectedCategoryId}
-                onChange={(e) => {
-                  setSelectedCategoryId(e.target.value);
-                  resetQuestionForm();
-                }}
+                onChange={(e) => setSelectedCategoryId(e.target.value)}
               >
                 <option value="">Select category</option>
                 {categories.map((c) => (
@@ -558,9 +601,17 @@ function Plan() {
                 ))}
               </select>
               <div className="plan-form-actions">
-                <button onClick={handleAddOrUpdateQuestion} disabled={!selectedCategoryId}>
-                  {editingQuestionId ? "Save Changes" : "Add Question"}
-                </button>
+                <span
+                  className="question-submit-tooltip"
+                  title={questionValidationMessage ?? undefined}
+                >
+                  <button
+                    onClick={handleAddOrUpdateQuestion}
+                    disabled={Boolean(questionValidationMessage)}
+                  >
+                    {editingQuestionId ? "Save Changes" : "Add Question"}
+                  </button>
+                </span>
                 {editingQuestionId && (
                   <button className="btn-cancel-edit" onClick={resetQuestionForm}>
                     Cancel Edit

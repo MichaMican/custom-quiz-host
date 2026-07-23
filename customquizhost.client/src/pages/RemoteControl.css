@@ -108,6 +108,14 @@
   margin-bottom: 8px;
 }
 
+.question-submit-tooltip {
+  display: block;
+}
+
+.question-submit-tooltip button {
+  width: 100%;
+}
+
 .item-list {
   list-style: none;
   padding: 0;
@@ -929,6 +937,12 @@
   background: linear-gradient(135deg, #ef4444, #b91c1c);
   border-color: transparent;
   color: #fff;
+}
+
+.btn-question-timer.cancel {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #cbd5e1;
 }
 
 .question-timer-input {
