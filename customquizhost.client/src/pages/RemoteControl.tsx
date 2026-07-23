@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import JSZip from "jszip";
+import {
+  buildQuizArchive,
+  getArchiveText,
+  listArchiveMedia,
+  readQuizArchive,
+} from "../utils/quizArchive";
+import type { QuizArchive } from "../utils/quizArchive";
 import { useSignalR } from "../hooks/useSignalR";
 import { useWakeLock } from "../hooks/useWakeLock";
 import type { GameState, QuestionType, Category } from "../types/GameState";
@@ -319,10 +325,8 @@ function RemoteControl() {
     categories: Category[],
     onProgress?: (percent: number, message: string) => void,
   ): Promise<Blob> => {
-    const zip = new JSZip();
-    zip.file(jsonFileName, JSON.stringify(jsonData, null, 2));
+    const zippedMedia = new Map<string, Blob>();
     const mediaFileNames = collectMediaFileNames(categories);
-    const mediaFolder = zip.folder("media")!;
     for (let i = 0; i < mediaFileNames.length; i++) {
       const fileName = mediaFileNames[i];
       onProgress?.(
@@ -333,28 +337,21 @@ function RemoteControl() {
         const response = await fetch(`/uploads/${fileName}`);
         if (response.ok) {
           const blob = await response.blob();
-          mediaFolder.file(fileName, blob);
+          zippedMedia.set(fileName, blob);
         }
       } catch {
         console.warn(`Failed to fetch media file: ${fileName}`);
       }
     }
     onProgress?.(90, "Generating ZIP file…");
-    const blob = await zip.generateAsync({ type: "blob" });
+    const blob = await buildQuizArchive(jsonFileName, jsonData, zippedMedia);
     onProgress?.(100, "Download ready");
     return blob;
   };
 
-  const importMediaFromZip = async (zip: JSZip): Promise<Map<string, string>> => {
+  const importMediaFromArchive = async (archive: QuizArchive): Promise<Map<string, string>> => {
     const fileNameMap = new Map<string, string>();
-    const mediaFolder = zip.folder("media");
-    if (!mediaFolder) return fileNameMap;
-    const mediaFiles: { name: string; file: JSZip.JSZipObject }[] = [];
-    mediaFolder.forEach((relativePath, file) => {
-      if (!file.dir) {
-        mediaFiles.push({ name: relativePath, file });
-      }
-    });
+    const mediaFiles = listArchiveMedia(archive);
     if (mediaFiles.length === 0) return fileNameMap;
 
     setUploading(true);
@@ -362,11 +359,11 @@ function RemoteControl() {
 
     for (let i = 0; i < mediaFiles.length; i++) {
       upload.throwIfCancelled();
-      const { name, file } = mediaFiles[i];
+      const { name, data } = mediaFiles[i];
       setUploadMessage(`Uploading file ${i + 1} of ${mediaFiles.length}: ${name}`);
       try {
-        const blob = await file.async("blob");
-        const data = await uploadFileWithProgress(
+        const blob = new Blob([data as BlobPart]);
+        const result = await uploadFileWithProgress(
           blob,
           (percent) => {
             const overallProgress = ((i + percent / 100) / mediaFiles.length) * 100;
@@ -376,7 +373,7 @@ function RemoteControl() {
           true,
           upload.getSignal(),
         );
-        fileNameMap.set(name, data.fileName);
+        fileNameMap.set(name, result.fileName);
       } catch (err) {
         if (isCancellation(err) || upload.isCancelled()) throw err;
         console.warn(`Failed to upload media file: ${name}`);
@@ -469,17 +466,16 @@ function RemoteControl() {
     setUploadMessage("Preparing import…");
     upload.begin();
     try {
-      const zip = await JSZip.loadAsync(file);
+      const archive = await readQuizArchive(file);
       upload.throwIfCancelled();
-      const jsonFile = zip.file("quiz-game.json");
-      if (!jsonFile) {
+      const jsonText = getArchiveText(archive, "quiz-game.json");
+      if (jsonText === null) {
         alert("The ZIP file does not contain a quiz-game.json file");
         return;
       }
-      const jsonText = await jsonFile.async("string");
       upload.throwIfCancelled();
       const state = JSON.parse(jsonText) as GameState;
-      const fileNameMap = await importMediaFromZip(zip);
+      const fileNameMap = await importMediaFromArchive(archive);
       upload.throwIfCancelled();
       if (fileNameMap.size > 0) {
         state.categories = remapMediaFileNames(state.categories, fileNameMap);
@@ -505,14 +501,13 @@ function RemoteControl() {
     setUploadMessage("Preparing import…");
     upload.begin();
     try {
-      const zip = await JSZip.loadAsync(file);
+      const archive = await readQuizArchive(file);
       upload.throwIfCancelled();
-      const jsonFile = zip.file("quiz-questions.json");
-      if (!jsonFile) {
+      const jsonText = getArchiveText(archive, "quiz-questions.json");
+      if (jsonText === null) {
         alert("The ZIP file does not contain a quiz-questions.json file");
         return;
       }
-      const jsonText = await jsonFile.async("string");
       upload.throwIfCancelled();
       const data = JSON.parse(jsonText);
       const categories = data.categories ?? data.Categories;
@@ -520,7 +515,7 @@ function RemoteControl() {
         alert("The selected file does not contain any questions");
         return;
       }
-      const fileNameMap = await importMediaFromZip(zip);
+      const fileNameMap = await importMediaFromArchive(archive);
       upload.throwIfCancelled();
       const remapped = fileNameMap.size > 0 ? remapMediaFileNames(categories, fileNameMap) : categories;
       await invoke("ImportQuestions", remapped);

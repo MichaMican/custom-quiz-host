@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import JSZip from "jszip";
+import {
+  buildQuizArchive,
+  getArchiveText,
+  listArchiveMedia,
+  readQuizArchive,
+} from "../utils/quizArchive";
 import type { Category, Question, QuestionType } from "../types/GameState";
 import {
   savePlanCategories,
@@ -328,12 +333,7 @@ function Plan() {
     setExportProgress(0);
     setExportMessage("Preparing export…");
     try {
-      const zip = new JSZip();
-      zip.file(
-        "quiz-questions.json",
-        JSON.stringify({ categories }, null, 2),
-      );
-      const mediaFolder = zip.folder("media")!;
+      const media = new Map<string, Blob>();
       const mediaFileNames = collectReferencedMediaFileNames(categories);
       for (let i = 0; i < mediaFileNames.length; i++) {
         const name = mediaFileNames[i];
@@ -341,14 +341,14 @@ function Plan() {
         setExportMessage(`Reading file ${i + 1} of ${mediaFileNames.length}: ${name}`);
         const blob = await loadPlanMedia(name);
         if (blob) {
-          mediaFolder.file(name, blob);
+          media.set(name, blob);
         } else {
           console.warn(`Media file missing from local storage: ${name}`);
         }
       }
       setExportProgress(90);
       setExportMessage("Generating ZIP file…");
-      const blob = await zip.generateAsync({ type: "blob" });
+      const blob = await buildQuizArchive("quiz-questions.json", { categories }, media);
       setExportProgress(100);
       setExportMessage("Download ready");
       const url = URL.createObjectURL(blob);
@@ -375,15 +375,14 @@ function Plan() {
     setBusyMessage("Preparing import…");
     upload.begin();
     try {
-      const zip = await JSZip.loadAsync(file);
+      const archive = await readQuizArchive(file);
       upload.throwIfCancelled();
-      const jsonFile = zip.file("quiz-questions.json");
-      if (!jsonFile) {
+      const jsonText = getArchiveText(archive, "quiz-questions.json");
+      if (jsonText === null) {
         alert("The ZIP file does not contain a quiz-questions.json file");
         e.target.value = "";
         return;
       }
-      const jsonText = await jsonFile.async("string");
       upload.throwIfCancelled();
       const data = JSON.parse(jsonText);
       const importedCategories: unknown = data.categories ?? data.Categories;
@@ -394,13 +393,7 @@ function Plan() {
       }
 
       // Store all media files from the zip into IndexedDB under their original names
-      const mediaFolder = zip.folder("media");
-      const mediaEntries: { name: string; file: JSZip.JSZipObject }[] = [];
-      if (mediaFolder) {
-        mediaFolder.forEach((relativePath, f) => {
-          if (!f.dir) mediaEntries.push({ name: relativePath, file: f });
-        });
-      }
+      const mediaEntries = listArchiveMedia(archive);
 
       if (mediaEntries.length > 0) {
         setBusy(true);
@@ -408,10 +401,10 @@ function Plan() {
         setBusyMessage("Importing media…");
         for (let i = 0; i < mediaEntries.length; i++) {
           upload.throwIfCancelled();
-          const { name, file: mediaFileEntry } = mediaEntries[i];
+          const { name, data: mediaData } = mediaEntries[i];
           setBusyMessage(`Importing file ${i + 1} of ${mediaEntries.length}: ${name}`);
           try {
-            const blob = await mediaFileEntry.async("blob");
+            const blob = new Blob([mediaData as BlobPart]);
             await savePlanMedia(name, blob);
           } catch {
             console.warn(`Failed to store media file: ${name}`);
