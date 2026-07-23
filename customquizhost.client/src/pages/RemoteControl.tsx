@@ -1015,17 +1015,33 @@ function RemoteControl() {
             <section className="remote-section">
               <h2>Current Question</h2>
               <div className="question-timer-controls">
-                <button
-                  className={`btn-question-timer${gameState.questionTimerActive ? " active" : ""}`}
-                  onClick={() =>
-                    invoke(
-                      gameState.questionTimerActive ? "StopQuestionTimer" : "StartQuestionTimer",
-                      questionTimerSeconds,
-                    )
-                  }
-                >
-                  {gameState.questionTimerActive ? "Stop timer" : "Start timer"}
-                </button>
+                {gameState.questionTimerActive ? (
+                  <>
+                    <button
+                      className="btn-question-timer cancel"
+                      onClick={() => invoke("StopQuestionTimer")}
+                    >
+                      Cancel timer
+                    </button>
+                    <button
+                      className="btn-question-timer active"
+                      onClick={() =>
+                        invoke(
+                          gameState.questionTimerPaused ? "ResumeQuestionTimer" : "PauseQuestionTimer",
+                        )
+                      }
+                    >
+                      {gameState.questionTimerPaused ? "Resume timer" : "Pause timer"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="btn-question-timer"
+                    onClick={() => invoke("StartQuestionTimer", questionTimerSeconds)}
+                  >
+                    Start timer
+                  </button>
+                )}
                 <input
                   type="number"
                   className="question-timer-input"

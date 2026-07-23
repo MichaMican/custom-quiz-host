@@ -491,6 +491,31 @@ public class GameService
         await BroadcastGameState();
     }
 
+    /// <summary>
+    /// Pauses the running question timer on host request, freezing the remaining
+    /// time. Does nothing if no timer is running or it is already paused.
+    /// </summary>
+    public async Task PauseQuestionTimer()
+    {
+        if (!_gameState.QuestionTimerActive || _gameState.QuestionTimerPaused) return;
+
+        PauseQuestionTimerInternal();
+        await BroadcastGameState();
+    }
+
+    /// <summary>
+    /// Resumes a paused question timer on host request, continuing the countdown
+    /// from the frozen remaining time. Does nothing if no timer is active or it
+    /// is not paused.
+    /// </summary>
+    public async Task ResumeQuestionTimer()
+    {
+        if (!_gameState.QuestionTimerActive || !_gameState.QuestionTimerPaused) return;
+
+        ResumeQuestionTimerInternal();
+        await BroadcastGameState();
+    }
+
     public async Task BuzzIn(string playerId)
     {
         await BuzzIn(playerId, null);
