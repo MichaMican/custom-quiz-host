@@ -1031,8 +1031,7 @@ function RemoteControl() {
                     disabled={
                       gameState.buzzOrder.length === 0 ||
                       (gameState.preserveBuzzQueue &&
-                        gameState.highlightedBuzzIndex >=
-                          gameState.buzzOrder.length - 1)
+                        gameState.highlightedBuzzIndex < 0)
                     }
                   >
                     Next Buzz

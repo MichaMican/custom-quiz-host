@@ -560,10 +560,25 @@ public class GameService
             // Insert in sorted order by timestamp so that latency-compensated
             // buzzes are correctly ordered even if they arrive out of order.
             var insertIndex = _gameState.BuzzOrder.FindIndex(b => b.Timestamp > buzzTimestamp);
+            int newEntryIndex;
             if (insertIndex < 0)
+            {
                 _gameState.BuzzOrder.Add(entry);
+                newEntryIndex = _gameState.BuzzOrder.Count - 1;
+            }
             else
+            {
                 _gameState.BuzzOrder.Insert(insertIndex, entry);
+                newEntryIndex = insertIndex;
+            }
+
+            // When no player is currently highlighted (the previous buzz was fully
+            // resolved via "Next Buzz" on the last player), highlight this new buzz
+            // directly so the host sees the next player immediately.
+            if (_gameState.HighlightedBuzzIndex < 0)
+            {
+                _gameState.HighlightedBuzzIndex = newEntryIndex;
+            }
 
             if (_gameState.PauseOnBuzz)
             {
@@ -612,8 +627,19 @@ public class GameService
 
             if (_gameState.PreserveBuzzQueue)
             {
-                if (currentIndex >= _gameState.BuzzOrder.Count - 1) return;
-                _gameState.HighlightedBuzzIndex++;
+                if (currentIndex >= _gameState.BuzzOrder.Count - 1)
+                {
+                    // The last player was highlighted. Advance to a state where no
+                    // player is highlighted (-1) so a subsequent buzz-in gets
+                    // highlighted directly, and resume a timer paused by a buzz-in
+                    // just like Clear Buzz Order would.
+                    _gameState.HighlightedBuzzIndex = -1;
+                    ResumeQuestionTimerInternal();
+                }
+                else
+                {
+                    _gameState.HighlightedBuzzIndex++;
+                }
             }
             else
             {
