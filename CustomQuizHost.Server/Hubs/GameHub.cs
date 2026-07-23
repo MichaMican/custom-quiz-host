@@ -70,6 +70,8 @@ public class GameHub : Hub
 
     public async Task ClearBuzzOrder() => await _gameService.ClearBuzzOrder();
 
+    public async Task RemoveBuzz(string playerId) => await _gameService.RemoveBuzz(playerId);
+
     public async Task SubmitPlayerAnswer(string playerId, string answer) => await _gameService.SubmitPlayerAnswer(playerId, answer);
 
     public async Task ClearPlayerAnswers() => await _gameService.ClearPlayerAnswers();

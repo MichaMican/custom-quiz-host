@@ -1019,7 +1019,17 @@ function RemoteControl() {
                         key={b.playerId}
                         className={`buzz-entry ${i === gameState.highlightedBuzzIndex ? "highlighted" : ""}`}
                       >
-                        {i + 1}. {b.playerName}
+                        <span className="buzz-entry-label">
+                          {i + 1}. {b.playerName}
+                        </span>
+                        <button
+                          className="buzz-entry-remove"
+                          title="Remove from buzz queue"
+                          aria-label={`Remove ${b.playerName} from buzz queue`}
+                          onClick={() => invoke("RemoveBuzz", b.playerId)}
+                        >
+                          ×
+                        </button>
                       </div>
                     ))}
                   </div>

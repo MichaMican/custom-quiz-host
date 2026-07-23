@@ -617,6 +617,50 @@ public class GameService
         await BroadcastGameState();
     }
 
+    /// <summary>
+    /// Removes a single player's buzz from the queue. Adjusts the highlighted
+    /// index so it keeps pointing at the same logical entry where possible. If
+    /// the removal empties the queue or removes the highlighted last entry, a
+    /// timer paused by a buzz-in resumes.
+    /// </summary>
+    public async Task RemoveBuzz(string playerId)
+    {
+        lock (_buzzLock)
+        {
+            var index = _gameState.BuzzOrder.FindIndex(b => b.PlayerId == playerId);
+            if (index < 0) return;
+
+            _gameState.BuzzOrder.RemoveAt(index);
+
+            if (_gameState.BuzzOrder.Count == 0)
+            {
+                // Queue is now empty: nothing highlighted and any timer paused by a
+                // buzz-in resumes, matching Clear Buzz Order behaviour.
+                _gameState.HighlightedBuzzIndex = 0;
+                ResumeQuestionTimerInternal();
+            }
+            else if (_gameState.HighlightedBuzzIndex < 0)
+            {
+                // No player was highlighted; leave it that way.
+            }
+            else if (index < _gameState.HighlightedBuzzIndex)
+            {
+                // Removed an entry before the highlighted one: shift the highlight
+                // back so it keeps pointing at the same player.
+                _gameState.HighlightedBuzzIndex--;
+            }
+            else if (index == _gameState.HighlightedBuzzIndex &&
+                     _gameState.HighlightedBuzzIndex >= _gameState.BuzzOrder.Count)
+            {
+                // Removed the highlighted last entry: no player is highlighted now
+                // and a timer paused by a buzz-in resumes.
+                _gameState.HighlightedBuzzIndex = -1;
+                ResumeQuestionTimerInternal();
+            }
+        }
+        await BroadcastGameState();
+    }
+
     public async Task NextBuzzer()
     {
         lock (_buzzLock)
