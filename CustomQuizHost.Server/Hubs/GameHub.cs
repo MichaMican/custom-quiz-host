@@ -62,6 +62,10 @@ public class GameHub : Hub
 
     public async Task StopQuestionTimer() => await _gameService.StopQuestionTimer();
 
+    public async Task PauseQuestionTimer() => await _gameService.PauseQuestionTimer();
+
+    public async Task ResumeQuestionTimer() => await _gameService.ResumeQuestionTimer();
+
     public async Task BuzzIn(string playerId) => await _gameService.BuzzIn(playerId);
 
     public async Task ClearBuzzOrder() => await _gameService.ClearBuzzOrder();

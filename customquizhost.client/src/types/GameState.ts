@@ -80,8 +80,11 @@ export interface GameState {
   imageFullscreen: boolean;
   mediaVisible: boolean;
   questionTimerActive: boolean;
+  questionTimerPaused: boolean;
   questionTimerDurationSeconds: number;
+  questionTimerRemainingSeconds: number;
   questionTimerStartedAt: string | null;
+  questionTimerSnapshotAt: string | null;
   winnerDeclared: boolean;
   showHighScoreBoard: boolean;
   highScoreBoard: HighScoreEntry[];

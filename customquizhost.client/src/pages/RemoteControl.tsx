@@ -19,6 +19,7 @@ import { uploadFileWithProgress } from "../utils/uploadWithProgress";
 import UploadProgressModal from "../components/UploadProgressModal";
 import ExportProgressModal from "../components/ExportProgressModal";
 import EventHistory from "../components/EventHistory";
+import { getQuestionFormValidationMessage } from "../utils/questionFormValidation";
 import "./RemoteControl.css";
 
 const POINT_LEVELS = [200, 400, 600, 800, 1000];
@@ -58,6 +59,12 @@ function RemoteControl() {
   const selectedCategoryQuestions = gameState?.categories
     .find((c) => c.id === selectedCategoryId)
     ?.questions;
+  const questionValidationMessage = getQuestionFormValidationMessage(
+    selectedCategoryId,
+    questionType,
+    questionText,
+    Boolean(mediaFile || existingMediaFileName),
+  );
 
   const markDirty = () => { hasUnsavedChanges.current = true; };
   const markClean = () => { hasUnsavedChanges.current = false; };
@@ -135,8 +142,11 @@ function RemoteControl() {
         imageFullscreen: false,
         mediaVisible: true,
         questionTimerActive: false,
+        questionTimerPaused: false,
         questionTimerDurationSeconds: 10,
+        questionTimerRemainingSeconds: 0,
         questionTimerStartedAt: null,
+        questionTimerSnapshotAt: null,
         winnerDeclared: false,
         showHighScoreBoard: false,
         highScoreBoard: [],
@@ -697,9 +707,17 @@ function RemoteControl() {
                   </option>
                 ))}
               </select>
-              <button onClick={handleAddQuestion} disabled={uploading}>
-                {uploading ? "Uploading..." : "Add Question"}
-              </button>
+              <span
+                className="question-submit-tooltip"
+                title={questionValidationMessage ?? (uploading ? "Upload in progress." : undefined)}
+              >
+                <button
+                  onClick={handleAddQuestion}
+                  disabled={uploading || Boolean(questionValidationMessage)}
+                >
+                  {uploading ? "Uploading..." : "Add Question"}
+                </button>
+              </span>
             </div>
             {selectedCategoryId && selectedCategoryQuestions && selectedCategoryQuestions.length > 0 && (
               <>
@@ -1028,17 +1046,33 @@ function RemoteControl() {
             <section className="remote-section">
               <h2>Current Question</h2>
               <div className="question-timer-controls">
-                <button
-                  className={`btn-question-timer${gameState.questionTimerActive ? " active" : ""}`}
-                  onClick={() =>
-                    invoke(
-                      gameState.questionTimerActive ? "StopQuestionTimer" : "StartQuestionTimer",
-                      questionTimerSeconds,
-                    )
-                  }
-                >
-                  {gameState.questionTimerActive ? "Stop timer" : "Start timer"}
-                </button>
+                {gameState.questionTimerActive ? (
+                  <>
+                    <button
+                      className="btn-question-timer cancel"
+                      onClick={() => invoke("StopQuestionTimer")}
+                    >
+                      Cancel timer
+                    </button>
+                    <button
+                      className="btn-question-timer active"
+                      onClick={() =>
+                        invoke(
+                          gameState.questionTimerPaused ? "ResumeQuestionTimer" : "PauseQuestionTimer",
+                        )
+                      }
+                    >
+                      {gameState.questionTimerPaused ? "Resume timer" : "Pause timer"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="btn-question-timer"
+                    onClick={() => invoke("StartQuestionTimer", questionTimerSeconds)}
+                  >
+                    Start timer
+                  </button>
+                )}
                 <input
                   type="number"
                   className="question-timer-input"
