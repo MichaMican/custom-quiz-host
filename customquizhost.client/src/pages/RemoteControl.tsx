@@ -136,6 +136,7 @@ function RemoteControl() {
         mediaVolume: 70,
         pauseOnBuzz: false,
         buzzerSyncEnabled: false,
+        preserveBuzzQueue: false,
         answerInputEnabled: false,
         playerSelectionDisabled: false,
         imageFullscreen: false,
@@ -1000,6 +1001,16 @@ function RemoteControl() {
                 />
                 Enable answer input for players
               </label>
+              <label className="pause-on-buzz-label">
+                <input
+                  type="checkbox"
+                  checked={gameState.preserveBuzzQueue}
+                  onChange={(e) =>
+                    invoke("SetPreserveBuzzQueue", e.target.checked)
+                  }
+                />
+                Preserve buzz queue
+              </label>
               {gameState.buzzOrder.length > 0 && (
                 <>
                   <div className="buzz-order-list">
@@ -1017,7 +1028,11 @@ function RemoteControl() {
                   </button>
                   <button
                     onClick={() => invoke("NextBuzzer")}
-                    disabled={gameState.buzzOrder.length === 0}
+                    disabled={
+                      gameState.buzzOrder.length === 0 ||
+                      (gameState.preserveBuzzQueue &&
+                        gameState.highlightedBuzzIndex < 0)
+                    }
                   >
                     Next Buzz
                   </button>

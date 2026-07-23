@@ -345,6 +345,11 @@ public class GameService
     public async Task DeactivateBuzzer()
     {
         _gameState.BuzzerActive = false;
+        if (_gameState.PreserveBuzzQueue)
+        {
+            _gameState.BuzzOrder.Clear();
+            _gameState.HighlightedBuzzIndex = 0;
+        }
         await BroadcastGameState();
     }
 
@@ -421,6 +426,11 @@ public class GameService
             {
                 _questionTimerCts = null;
                 _gameState.BuzzerActive = false;
+                if (_gameState.PreserveBuzzQueue)
+                {
+                    _gameState.BuzzOrder.Clear();
+                    _gameState.HighlightedBuzzIndex = 0;
+                }
                 // Once the timer elapses, also uncheck the "allow input" toggle,
                 // but only when it is currently active.
                 if (_gameState.AnswerInputEnabled)
@@ -550,10 +560,25 @@ public class GameService
             // Insert in sorted order by timestamp so that latency-compensated
             // buzzes are correctly ordered even if they arrive out of order.
             var insertIndex = _gameState.BuzzOrder.FindIndex(b => b.Timestamp > buzzTimestamp);
+            int newEntryIndex;
             if (insertIndex < 0)
+            {
                 _gameState.BuzzOrder.Add(entry);
+                newEntryIndex = _gameState.BuzzOrder.Count - 1;
+            }
             else
+            {
                 _gameState.BuzzOrder.Insert(insertIndex, entry);
+                newEntryIndex = insertIndex;
+            }
+
+            // When no player is currently highlighted (the previous buzz was fully
+            // resolved via "Next Buzz" on the last player), highlight this new buzz
+            // directly so the host sees the next player immediately.
+            if (_gameState.HighlightedBuzzIndex < 0)
+            {
+                _gameState.HighlightedBuzzIndex = newEntryIndex;
+            }
 
             if (_gameState.PauseOnBuzz)
             {
@@ -600,18 +625,37 @@ public class GameService
             var currentIndex = _gameState.HighlightedBuzzIndex;
             if (currentIndex < 0 || currentIndex >= _gameState.BuzzOrder.Count) return;
 
-            _gameState.BuzzOrder.RemoveAt(currentIndex);
-
-            if (_gameState.HighlightedBuzzIndex >= _gameState.BuzzOrder.Count)
+            if (_gameState.PreserveBuzzQueue)
             {
-                _gameState.HighlightedBuzzIndex = Math.Max(0, _gameState.BuzzOrder.Count - 1);
+                if (currentIndex >= _gameState.BuzzOrder.Count - 1)
+                {
+                    // The last player was highlighted. Advance to a state where no
+                    // player is highlighted (-1) so a subsequent buzz-in gets
+                    // highlighted directly, and resume a timer paused by a buzz-in
+                    // just like Clear Buzz Order would.
+                    _gameState.HighlightedBuzzIndex = -1;
+                    ResumeQuestionTimerInternal();
+                }
+                else
+                {
+                    _gameState.HighlightedBuzzIndex++;
+                }
             }
-
-            // When advancing past the last buzz leaves the queue empty, the buzz has
-            // been fully resolved, so a timer paused by a buzz-in resumes.
-            if (_gameState.BuzzOrder.Count == 0)
+            else
             {
-                ResumeQuestionTimerInternal();
+                _gameState.BuzzOrder.RemoveAt(currentIndex);
+
+                if (_gameState.HighlightedBuzzIndex >= _gameState.BuzzOrder.Count)
+                {
+                    _gameState.HighlightedBuzzIndex = Math.Max(0, _gameState.BuzzOrder.Count - 1);
+                }
+
+                // When advancing past the last buzz leaves the queue empty, the buzz has
+                // been fully resolved, so a timer paused by a buzz-in resumes.
+                if (_gameState.BuzzOrder.Count == 0)
+                {
+                    ResumeQuestionTimerInternal();
+                }
             }
         }
 
@@ -834,6 +878,12 @@ public class GameService
     public async Task SetBuzzerSyncEnabled(bool value)
     {
         _gameState.BuzzerSyncEnabled = value;
+        await BroadcastGameState();
+    }
+
+    public async Task SetPreserveBuzzQueue(bool value)
+    {
+        _gameState.PreserveBuzzQueue = value;
         await BroadcastGameState();
     }
 
