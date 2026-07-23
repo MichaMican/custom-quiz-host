@@ -808,16 +808,6 @@ function RemoteControl() {
               />
               Disable Player selection
             </label>
-            <label className="pause-on-buzz-label">
-              <input
-                type="checkbox"
-                checked={gameState?.preserveBuzzQueue ?? false}
-                onChange={(e) =>
-                  invoke("SetPreserveBuzzQueue", e.target.checked)
-                }
-              />
-              Preserve buzz queue
-            </label>
           </section>
 
           <section className="remote-section">
@@ -1010,6 +1000,16 @@ function RemoteControl() {
                   onChange={(e) => invoke("SetAnswerInputEnabled", e.target.checked)}
                 />
                 Enable answer input for players
+              </label>
+              <label className="pause-on-buzz-label">
+                <input
+                  type="checkbox"
+                  checked={gameState.preserveBuzzQueue}
+                  onChange={(e) =>
+                    invoke("SetPreserveBuzzQueue", e.target.checked)
+                  }
+                />
+                Preserve buzz queue
               </label>
               {gameState.buzzOrder.length > 0 && (
                 <>
