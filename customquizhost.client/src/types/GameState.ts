@@ -74,6 +74,7 @@ export interface GameState {
   mediaVolume: number;
   pauseOnBuzz: boolean;
   buzzerSyncEnabled: boolean;
+  preserveBuzzQueue: boolean;
   answerInputEnabled: boolean;
   playerSelectionDisabled: boolean;
   imageFullscreen: boolean;
