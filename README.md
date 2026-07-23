@@ -10,7 +10,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
   - **Remote Control View** (`/remote`): Host interface for managing every aspect of the game
   - **Buzzer View** (`/buzzer`): Player interface for buzzing in and submitting answers
   - **Planner View** (`/plan`): Offline, browser-only editor for preparing quiz boards (categories, questions, media) without touching the live game session — export a ZIP and import it on the Remote Control when you're ready to play
-  - **Merge View** (`/merge`): Offline, browser-only tool for combining two or more quiz ZIPs (exported from `/plan` or as "Questions only" from `/remote`) into a single ZIP, merging categories that share the same name
+  - **Merge View** (`/merge`): Offline, browser-only tool for combining two or more quiz ZIPs (exported from `/plan` or as "Questions only" from `/remote`) into a single ZIP, letting you pick exactly which categories to take from each uploaded file and merging categories that share the same name
 - **Player Management**: Add, remove, and track player scores in real-time; click a score to edit it directly
 - **Player Avatars**: Players can take a selfie or upload a photo from the Buzzer page — avatars appear on their buzz button and on the Display
 - **Custom Categories & Questions**: Create your own categories with customizable point values (200–1000)
@@ -39,7 +39,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Persistent State**: Game state is auto-saved to `localStorage` and automatically restored when the Remote Control reconnects to an empty server
 - **Import/Export**: Export questions-only or the full game state (including all media files) as a ZIP archive; import a previously exported ZIP to restore everything
 - **Offline Quiz Planner**: A dedicated `/plan` page lets you build complete quiz boards in the browser without affecting any live session. Categories, questions, and uploaded media are persisted locally (localStorage + IndexedDB) and can be exported as a `Questions only` ZIP that imports cleanly into the Remote Control's Setup tab
-- **Offline Quiz Merger**: A dedicated `/merge` page lets you combine two or more previously exported quiz ZIPs (from `/plan` or `/remote` "Questions only" exports) into a single merged ZIP. Categories with the same name are merged together and their questions are concatenated. The page runs entirely in your browser and never touches a running game
+- **Offline Quiz Merger**: A dedicated `/merge` page lets you combine two or more previously exported quiz ZIPs (from `/plan` or `/remote` "Questions only" exports) into a single merged ZIP. You can select exactly which categories to include from each uploaded file. Categories with the same name are merged together and their questions are concatenated. The page runs entirely in your browser and never touches a running game
 
 ## Technology Stack
 

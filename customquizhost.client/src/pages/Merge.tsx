@@ -5,6 +5,7 @@ import ExportProgressModal from "../components/ExportProgressModal";
 import UploadProgressModal from "../components/UploadProgressModal";
 import "./RemoteControl.css";
 import "./Plan.css";
+import "./Merge.css";
 
 const VALID_QUESTION_TYPES: ReadonlySet<QuestionType> = new Set<QuestionType>([
   "Standard", "Image", "ImageMozaik", "Audio", "Video",
@@ -21,9 +22,20 @@ function getExtension(name: string): string {
   return idx >= 0 ? name.slice(idx) : "";
 }
 
+interface SourceCategory {
+  // Lowercased, trimmed category name used as the merge/selection key.
+  key: string;
+  // Display name as it should appear to the user.
+  name: string;
+  questionCount: number;
+  // Whether this category is included in the merge.
+  selected: boolean;
+}
+
 interface SourceFile {
   id: string;
   file: File;
+  categories: SourceCategory[];
 }
 
 interface CategoryPreview {
@@ -37,7 +49,6 @@ function Merge() {
   const [merging, setMerging] = useState(false);
   const [mergeProgress, setMergeProgress] = useState(0);
   const [mergeMessage, setMergeMessage] = useState("");
-  const [preview, setPreview] = useState<CategoryPreview[] | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyProgress, setBusyProgress] = useState(0);
@@ -48,88 +59,24 @@ function Merge() {
   const handleAddFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
-    const additions: SourceFile[] = [];
-    for (let i = 0; i < fileList.length; i++) {
-      additions.push({ id: crypto.randomUUID(), file: fileList[i] });
-    }
-    const next = [...sources, ...additions];
-    setSources(next);
+    const files = Array.from(fileList);
     // Reset the input so the same file can be re-selected if it was removed
     if (fileInputRef.current) fileInputRef.current.value = "";
-    await refreshPreview(next);
-  };
 
-  const handleRemoveSource = async (id: string) => {
-    const next = sources.filter((s) => s.id !== id);
-    setSources(next);
-    await refreshPreview(next);
-  };
-
-  const handleClearSources = () => {
-    setSources([]);
-    setPreview(null);
     setPreviewError(null);
-  };
-
-  const refreshPreview = async (currentSources: SourceFile[]) => {
-    setPreviewError(null);
-    if (currentSources.length === 0) {
-      setPreview(null);
-      return;
-    }
     setBusy(true);
     setBusyProgress(0);
     setBusyMessage("Reading ZIP files…");
     try {
-      // Map of lowercased trimmed name -> { displayName, questionCount, sourceCount, sourceIds }
-      const acc = new Map<
-        string,
-        { displayName: string; questionCount: number; sourceIds: Set<string> }
-      >();
-      for (let i = 0; i < currentSources.length; i++) {
-        const s = currentSources[i];
-        setBusyMessage(
-          `Reading file ${i + 1} of ${currentSources.length}: ${s.file.name}`,
-        );
-        const zip = await JSZip.loadAsync(s.file);
-        const jsonFile = zip.file("quiz-questions.json");
-        if (!jsonFile) {
-          throw new Error(
-            `"${s.file.name}" does not contain a quiz-questions.json file`,
-          );
-        }
-        const jsonText = await jsonFile.async("string");
-        const data = JSON.parse(jsonText);
-        const cats: unknown = data.categories ?? data.Categories;
-        if (!Array.isArray(cats)) {
-          throw new Error(`"${s.file.name}" has no categories`);
-        }
-        for (const c of cats as Category[]) {
-          const display = (c.name ?? "").trim();
-          const key = display.toLowerCase();
-          const existing = acc.get(key);
-          const qCount = Array.isArray(c.questions) ? c.questions.length : 0;
-          if (existing) {
-            existing.questionCount += qCount;
-            existing.sourceIds.add(s.id);
-          } else {
-            acc.set(key, {
-              displayName: display || "(unnamed)",
-              questionCount: qCount,
-              sourceIds: new Set([s.id]),
-            });
-          }
-        }
-        setBusyProgress(((i + 1) / currentSources.length) * 100);
+      const additions: SourceFile[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setBusyMessage(`Reading file ${i + 1} of ${files.length}: ${file.name}`);
+        additions.push(await readSourceFile(file));
+        setBusyProgress(((i + 1) / files.length) * 100);
       }
-      const list: CategoryPreview[] = Array.from(acc.values()).map((v) => ({
-        name: v.displayName,
-        questionCount: v.questionCount,
-        sourceCount: v.sourceIds.size,
-      }));
-      setPreview(list);
+      setSources((prev) => [...prev, ...additions]);
     } catch (err) {
-      setPreview(null);
       setPreviewError(
         err instanceof Error
           ? err.message
@@ -140,9 +87,117 @@ function Merge() {
     }
   };
 
+  const readSourceFile = async (file: File): Promise<SourceFile> => {
+    const zip = await JSZip.loadAsync(file);
+    const jsonFile = zip.file("quiz-questions.json");
+    if (!jsonFile) {
+      throw new Error(
+        `"${file.name}" does not contain a quiz-questions.json file`,
+      );
+    }
+    const jsonText = await jsonFile.async("string");
+    const data = JSON.parse(jsonText);
+    const cats: unknown = data.categories ?? data.Categories;
+    if (!Array.isArray(cats)) {
+      throw new Error(`"${file.name}" has no categories`);
+    }
+    // Merge categories that share a name within the same file, preserving order.
+    const byKey = new Map<string, SourceCategory>();
+    for (const c of cats as Category[]) {
+      const display = (c.name ?? "").trim();
+      const key = display.toLowerCase();
+      const qCount = Array.isArray(c.questions) ? c.questions.length : 0;
+      const existing = byKey.get(key);
+      if (existing) {
+        existing.questionCount += qCount;
+      } else {
+        byKey.set(key, {
+          key,
+          name: display || "(unnamed)",
+          questionCount: qCount,
+          selected: true,
+        });
+      }
+    }
+    return { id: crypto.randomUUID(), file, categories: Array.from(byKey.values()) };
+  };
+
+  const handleRemoveSource = (id: string) => {
+    setSources((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const handleClearSources = () => {
+    setSources([]);
+    setPreviewError(null);
+  };
+
+  const toggleCategory = (sourceId: string, key: string) => {
+    setSources((prev) =>
+      prev.map((s) =>
+        s.id !== sourceId
+          ? s
+          : {
+              ...s,
+              categories: s.categories.map((c) =>
+                c.key === key ? { ...c, selected: !c.selected } : c,
+              ),
+            },
+      ),
+    );
+  };
+
+  const setAllCategoriesSelected = (sourceId: string, selected: boolean) => {
+    setSources((prev) =>
+      prev.map((s) =>
+        s.id !== sourceId
+          ? s
+          : { ...s, categories: s.categories.map((c) => ({ ...c, selected })) },
+      ),
+    );
+  };
+
+  // Derived preview of the categories that will be produced from the current
+  // selection, merging same-named categories across every source file.
+  const preview: CategoryPreview[] = (() => {
+    const acc = new Map<
+      string,
+      { displayName: string; questionCount: number; sourceIds: Set<string> }
+    >();
+    for (const s of sources) {
+      for (const c of s.categories) {
+        if (!c.selected) continue;
+        const existing = acc.get(c.key);
+        if (existing) {
+          existing.questionCount += c.questionCount;
+          existing.sourceIds.add(s.id);
+        } else {
+          acc.set(c.key, {
+            displayName: c.name,
+            questionCount: c.questionCount,
+            sourceIds: new Set([s.id]),
+          });
+        }
+      }
+    }
+    return Array.from(acc.values()).map((v) => ({
+      name: v.displayName,
+      questionCount: v.questionCount,
+      sourceCount: v.sourceIds.size,
+    }));
+  })();
+
+  const selectedCategoryCount = sources.reduce(
+    (sum, s) => sum + s.categories.filter((c) => c.selected).length,
+    0,
+  );
+
   const handleMerge = async () => {
     if (sources.length < 2) {
       alert("Please add at least two ZIP files to merge.");
+      return;
+    }
+    if (selectedCategoryCount === 0) {
+      alert("Please select at least one category to merge.");
       return;
     }
     setMerging(true);
@@ -177,13 +232,34 @@ function Merge() {
           throw new Error(`"${src.file.name}" has no categories`);
         }
 
-        // Pull media files out of the zip and remap names that collide
+        // Only merge the categories the user selected for this source file.
+        const selectedKeys = new Set(
+          src.categories.filter((c) => c.selected).map((c) => c.key),
+        );
+        const selectedCats = (cats as Category[]).filter((cat) =>
+          selectedKeys.has((cat.name ?? "").trim().toLowerCase()),
+        );
+
+        // Collect the media referenced by the selected categories so unused
+        // media from deselected categories is not carried into the output.
+        const referencedMedia = new Set<string>();
+        for (const cat of selectedCats) {
+          const qs = Array.isArray(cat.questions) ? cat.questions : [];
+          for (const q of qs as Question[]) {
+            if (q.mediaFileName) referencedMedia.add(q.mediaFileName);
+            if (q.answerImageFileName) referencedMedia.add(q.answerImageFileName);
+          }
+        }
+
+        // Pull referenced media files out of the zip and remap names that collide
         const localMediaMap = new Map<string, string>(); // originalName -> finalName
         const mediaFolder = zip.folder("media");
         if (mediaFolder) {
           const entries: { name: string; obj: JSZip.JSZipObject }[] = [];
           mediaFolder.forEach((relativePath, f) => {
-            if (!f.dir) entries.push({ name: relativePath, obj: f });
+            if (!f.dir && referencedMedia.has(relativePath)) {
+              entries.push({ name: relativePath, obj: f });
+            }
           });
           for (let j = 0; j < entries.length; j++) {
             const { name, obj } = entries[j];
@@ -201,8 +277,8 @@ function Merge() {
           }
         }
 
-        // Merge categories by trimmed, case-insensitive name
-        for (const cat of cats as Category[]) {
+        // Merge selected categories by trimmed, case-insensitive name
+        for (const cat of selectedCats) {
           const displayName = (cat.name ?? "").trim();
           const key = displayName.toLowerCase();
           let target = mergedByName.get(key);
@@ -280,10 +356,11 @@ function Merge() {
           <p className="plan-subtitle">
             Combine two or more quiz ZIPs (exported from the Planner or as
             "Questions only" from the Remote Control) into a single merged
-            ZIP. Categories that share the same name are merged into one,
-            keeping all of their questions. Everything runs in your browser –
-            nothing is sent to the server and the running game is not
-            touched.
+            ZIP. Pick exactly which categories to take from each uploaded
+            file. Categories that share the same name are merged into one,
+            keeping all of their selected questions. Everything runs in your
+            browser – nothing is sent to the server and the running game is
+            not touched.
           </p>
         </div>
 
@@ -314,21 +391,65 @@ function Merge() {
                 files one at a time or select several at once.
               </p>
             )}
-            {sources.length > 0 && (
-              <ul className="item-list">
-                {sources.map((s) => (
-                  <li key={s.id}>
-                    <span>{s.file.name}</span>
+            {sources.map((s) => {
+              const selectedCount = s.categories.filter((c) => c.selected).length;
+              return (
+                <div key={s.id} className="merge-source">
+                  <div className="merge-source-header">
+                    <span className="merge-source-name">{s.file.name}</span>
                     <button
                       className="btn-remove"
                       onClick={() => handleRemoveSource(s.id)}
                     >
                       ✕
                     </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+                  </div>
+                  {s.categories.length === 0 ? (
+                    <p className="plan-hint">This file has no categories.</p>
+                  ) : (
+                    <>
+                      <div className="merge-source-actions">
+                        <span className="plan-hint">
+                          {selectedCount} of {s.categories.length} categor
+                          {s.categories.length === 1 ? "y" : "ies"} selected
+                        </span>
+                        <button
+                          className="btn-sort merge-select-btn"
+                          onClick={() => setAllCategoriesSelected(s.id, true)}
+                          disabled={selectedCount === s.categories.length}
+                        >
+                          Select all
+                        </button>
+                        <button
+                          className="btn-sort merge-select-btn"
+                          onClick={() => setAllCategoriesSelected(s.id, false)}
+                          disabled={selectedCount === 0}
+                        >
+                          Select none
+                        </button>
+                      </div>
+                      <ul className="item-list">
+                        {s.categories.map((c) => (
+                          <li key={c.key}>
+                            <label className="checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={c.selected}
+                                onChange={() => toggleCategory(s.id, c.key)}
+                              />
+                              <span>
+                                {c.name} ({c.questionCount} question
+                                {c.questionCount === 1 ? "" : "s"})
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </section>
 
           {previewError && (
@@ -340,13 +461,14 @@ function Merge() {
             </section>
           )}
 
-          {preview && preview.length > 0 && (
+          {preview.length > 0 && (
             <section className="remote-section">
               <h2>Merged Preview</h2>
               <p className="plan-hint">
                 {preview.length} categor{preview.length === 1 ? "y" : "ies"}{" "}
-                will be produced from {sources.length} file
-                {sources.length === 1 ? "" : "s"}.
+                will be produced from {selectedCategoryCount} selected
+                categor{selectedCategoryCount === 1 ? "y" : "ies"} across{" "}
+                {sources.length} file{sources.length === 1 ? "" : "s"}.
               </p>
               <ul className="item-list">
                 {preview.map((p) => (
@@ -368,7 +490,7 @@ function Merge() {
             <div className="input-row">
               <button
                 onClick={handleMerge}
-                disabled={sources.length < 2 || merging}
+                disabled={sources.length < 2 || selectedCategoryCount === 0 || merging}
               >
                 🔀 Merge & Download ZIP
               </button>
