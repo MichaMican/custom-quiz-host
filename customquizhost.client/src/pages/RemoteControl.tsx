@@ -19,6 +19,7 @@ import { uploadFileWithProgress } from "../utils/uploadWithProgress";
 import UploadProgressModal from "../components/UploadProgressModal";
 import ExportProgressModal from "../components/ExportProgressModal";
 import EventHistory from "../components/EventHistory";
+import { getQuestionFormValidationMessage } from "../utils/questionFormValidation";
 import "./RemoteControl.css";
 
 const POINT_LEVELS = [200, 400, 600, 800, 1000];
@@ -58,6 +59,12 @@ function RemoteControl() {
   const selectedCategoryQuestions = gameState?.categories
     .find((c) => c.id === selectedCategoryId)
     ?.questions;
+  const questionValidationMessage = getQuestionFormValidationMessage(
+    selectedCategoryId,
+    questionType,
+    questionText,
+    Boolean(mediaFile || existingMediaFileName),
+  );
 
   const markDirty = () => { hasUnsavedChanges.current = true; };
   const markClean = () => { hasUnsavedChanges.current = false; };
@@ -699,9 +706,17 @@ function RemoteControl() {
                   </option>
                 ))}
               </select>
-              <button onClick={handleAddQuestion} disabled={uploading}>
-                {uploading ? "Uploading..." : "Add Question"}
-              </button>
+              <span
+                className="question-submit-tooltip"
+                title={questionValidationMessage ?? (uploading ? "Upload in progress." : undefined)}
+              >
+                <button
+                  onClick={handleAddQuestion}
+                  disabled={uploading || Boolean(questionValidationMessage)}
+                >
+                  {uploading ? "Uploading..." : "Add Question"}
+                </button>
+              </span>
             </div>
             {selectedCategoryId && selectedCategoryQuestions && selectedCategoryQuestions.length > 0 && (
               <>
