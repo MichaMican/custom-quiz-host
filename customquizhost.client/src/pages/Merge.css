@@ -1,0 +1,44 @@
+.merge-source {
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: rgba(30, 41, 59, 0.35);
+}
+
+.merge-source:last-child {
+  margin-bottom: 0;
+}
+
+.merge-source-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.merge-source-name {
+  font-weight: 600;
+  color: #e0e7ff;
+  word-break: break-all;
+}
+
+.merge-source-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.merge-source-actions .plan-hint {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.merge-select-btn {
+  width: auto;
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
