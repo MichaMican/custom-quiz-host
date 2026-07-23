@@ -37,7 +37,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **High Score & Low Score Boards**: Persistent halls of fame/shame across game sessions and server restarts, shown alongside the winner screen; can be shown/hidden or cleared independently
 - **Event History**: Full log of points awarded/deducted and questions asked, viewable from the Remote Control (History tab) and from the Buzzer page
 - **Persistent State**: Game state is auto-saved to `localStorage` and automatically restored when the Remote Control reconnects to an empty server
-- **Import/Export**: Export questions-only or the full game state (including all media files) as a ZIP archive; import a previously exported ZIP to restore everything
+- **Import/Export**: Export questions-only or the full game state (including all media files) as a ZIP archive; live-game archives are generated and imported on the server without recompressing media or uploading each media file separately
 - **Offline Quiz Planner**: A dedicated `/plan` page lets you build complete quiz boards in the browser without affecting any live session. Categories, questions, and uploaded media are persisted locally (localStorage + IndexedDB) and can be exported as a `Questions only` ZIP that imports cleanly into the Remote Control's Setup tab
 - **Offline Quiz Merger**: A dedicated `/merge` page lets you combine two or more previously exported quiz ZIPs (from `/plan` or `/remote` "Questions only" exports) into a single merged ZIP. You can select exactly which categories to include from each uploaded file. Categories with the same name are merged together and their questions are concatenated. The page runs entirely in your browser and never touches a running game
 
@@ -207,8 +207,8 @@ Switch to the **Host** tab on the Remote Control.
 In the **Setup** tab, under **Import / Export**:
 
 - Choose *Questions only* or *Full Game State* from the dropdown.
-- **📤 Export** – Downloads a `.zip` file containing the JSON data and all referenced media files.
-- **📥 Import** – Uploads a previously exported `.zip` and restores it (media files are re-uploaded automatically).
+- **📤 Export** – Downloads a `.zip` file containing the JSON data and all referenced media files. The server packages media without recompressing it for fast downloads.
+- **📥 Import** – Uploads a previously exported `.zip` in one request and restores its data and media on the server.
 
 ### Keyboard Shortcuts (Remote Control)
 
