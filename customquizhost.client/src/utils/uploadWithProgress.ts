@@ -4,13 +4,14 @@ interface UploadResult {
   fileName: string;
 }
 
-export async function uploadFileWithProgress(
+export async function uploadFileWithProgress<TResult = UploadResult>(
   file: File | Blob,
   onProgress: (percent: number) => void,
   fileName?: string,
   preserveFileName = false,
   signal?: AbortSignal,
-): Promise<UploadResult> {
+  endpoint?: string,
+): Promise<TResult> {
   const formData = new FormData();
   if (fileName) {
     formData.append("file", file, fileName);
@@ -18,11 +19,11 @@ export async function uploadFileWithProgress(
     formData.append("file", file);
   }
 
-  const url = preserveFileName
+  const url = endpoint ?? (preserveFileName
     ? "/api/upload?preserveFileName=true"
-    : "/api/upload";
+    : "/api/upload");
 
-  const response = await axios.post<UploadResult>(url, formData, {
+  const response = await axios.post<TResult>(url, formData, {
     signal,
     onUploadProgress(progressEvent) {
       if (progressEvent.total) {
