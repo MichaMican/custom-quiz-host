@@ -16,6 +16,7 @@ import {
   loadQuestionTimerDuration,
 } from "../utils/localStorage";
 import { uploadFileWithProgress } from "../utils/uploadWithProgress";
+import { useUploadCancellation, isCancellation } from "../hooks/useUploadCancellation";
 import UploadProgressModal from "../components/UploadProgressModal";
 import ExportProgressModal from "../components/ExportProgressModal";
 import EventHistory from "../components/EventHistory";
@@ -41,6 +42,11 @@ function RemoteControl() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessage, setUploadMessage] = useState("");
+  const upload = useUploadCancellation();
+  const handleCancelUpload = () => {
+    upload.cancel();
+    setUploading(false);
+  };
   const [tab, setTab] = useState<"setup" | "host" | "history">("setup");
   const [showResetModal, setShowResetModal] = useState(false);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
@@ -192,15 +198,21 @@ function RemoteControl() {
       setUploading(true);
       setUploadProgress(0);
       setUploadMessage("Uploading file…");
+      const signal = upload.begin();
       try {
         const data = await uploadFileWithProgress(
           mediaFile,
           (percent) => setUploadProgress(percent),
+          undefined,
+          false,
+          signal,
         );
         mediaFileName = data.fileName;
-      } catch {
-        alert("Failed to upload file.");
+      } catch (err) {
         setUploading(false);
+        if (!isCancellation(err) && !upload.isCancelled()) {
+          alert("Failed to upload file.");
+        }
         return;
       }
       setUploading(false);
@@ -214,15 +226,21 @@ function RemoteControl() {
       setUploading(true);
       setUploadProgress(0);
       setUploadMessage("Uploading answer image…");
+      const signal = upload.begin();
       try {
         const data = await uploadFileWithProgress(
           answerImageFile,
           (percent) => setUploadProgress(percent),
+          undefined,
+          false,
+          signal,
         );
         answerImageFileName = data.fileName;
-      } catch {
-        alert("Failed to upload answer image.");
+      } catch (err) {
         setUploading(false);
+        if (!isCancellation(err) && !upload.isCancelled()) {
+          alert("Failed to upload answer image.");
+        }
         return;
       }
       setUploading(false);
@@ -343,6 +361,7 @@ function RemoteControl() {
     setUploadProgress(0);
 
     for (let i = 0; i < mediaFiles.length; i++) {
+      upload.throwIfCancelled();
       const { name, file } = mediaFiles[i];
       setUploadMessage(`Uploading file ${i + 1} of ${mediaFiles.length}: ${name}`);
       try {
@@ -355,9 +374,11 @@ function RemoteControl() {
           },
           name,
           true,
+          upload.getSignal(),
         );
         fileNameMap.set(name, data.fileName);
-      } catch {
+      } catch (err) {
+        if (isCancellation(err) || upload.isCancelled()) throw err;
         console.warn(`Failed to upload media file: ${name}`);
       }
     }
@@ -446,24 +467,30 @@ function RemoteControl() {
     setUploading(true);
     setUploadProgress(0);
     setUploadMessage("Preparing import…");
+    upload.begin();
     try {
       const zip = await JSZip.loadAsync(file);
+      upload.throwIfCancelled();
       const jsonFile = zip.file("quiz-game.json");
       if (!jsonFile) {
         alert("The ZIP file does not contain a quiz-game.json file");
         return;
       }
       const jsonText = await jsonFile.async("string");
+      upload.throwIfCancelled();
       const state = JSON.parse(jsonText) as GameState;
       const fileNameMap = await importMediaFromZip(zip);
+      upload.throwIfCancelled();
       if (fileNameMap.size > 0) {
         state.categories = remapMediaFileNames(state.categories, fileNameMap);
       }
       await invoke("ImportGameSettings", state);
       setImportedGameFileName(file.name);
       saveImportedGameFileName(file.name);
-    } catch {
-      alert("Failed to import game: the ZIP file may be corrupted or contain invalid data");
+    } catch (err) {
+      if (!isCancellation(err) && !upload.isCancelled()) {
+        alert("Failed to import game: the ZIP file may be corrupted or contain invalid data");
+      }
     } finally {
       setUploading(false);
     }
@@ -476,14 +503,17 @@ function RemoteControl() {
     setUploading(true);
     setUploadProgress(0);
     setUploadMessage("Preparing import…");
+    upload.begin();
     try {
       const zip = await JSZip.loadAsync(file);
+      upload.throwIfCancelled();
       const jsonFile = zip.file("quiz-questions.json");
       if (!jsonFile) {
         alert("The ZIP file does not contain a quiz-questions.json file");
         return;
       }
       const jsonText = await jsonFile.async("string");
+      upload.throwIfCancelled();
       const data = JSON.parse(jsonText);
       const categories = data.categories ?? data.Categories;
       if (!Array.isArray(categories) || categories.length === 0) {
@@ -491,12 +521,15 @@ function RemoteControl() {
         return;
       }
       const fileNameMap = await importMediaFromZip(zip);
+      upload.throwIfCancelled();
       const remapped = fileNameMap.size > 0 ? remapMediaFileNames(categories, fileNameMap) : categories;
       await invoke("ImportQuestions", remapped);
       setImportedQuestionsFileName(file.name);
       saveImportedQuestionsFileName(file.name);
-    } catch {
-      alert("Failed to import questions: the ZIP file may be corrupted or contain invalid data");
+    } catch (err) {
+      if (!isCancellation(err) && !upload.isCancelled()) {
+        alert("Failed to import questions: the ZIP file may be corrupted or contain invalid data");
+      }
     } finally {
       setUploading(false);
     }
@@ -1416,6 +1449,7 @@ function RemoteControl() {
         visible={uploading}
         progress={uploadProgress}
         message={uploadMessage}
+        onCancel={handleCancelUpload}
       />
       <ExportProgressModal
         visible={exporting}
