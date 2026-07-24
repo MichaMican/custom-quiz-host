@@ -1,5 +1,10 @@
 import { useRef, useState } from "react";
-import JSZip from "jszip";
+import {
+  buildQuizArchive,
+  getArchiveText,
+  listArchiveMedia,
+  readQuizArchive,
+} from "../utils/quizArchive";
 import type { Category, Question, QuestionType } from "../types/GameState";
 import ExportProgressModal from "../components/ExportProgressModal";
 import UploadProgressModal from "../components/UploadProgressModal";
@@ -99,14 +104,13 @@ function Merge() {
   };
 
   const readSourceFile = async (file: File): Promise<SourceFile> => {
-    const zip = await JSZip.loadAsync(file);
-    const jsonFile = zip.file("quiz-questions.json");
-    if (!jsonFile) {
+    const archive = await readQuizArchive(file);
+    const jsonText = getArchiveText(archive, "quiz-questions.json");
+    if (jsonText === null) {
       throw new Error(
         `"${file.name}" does not contain a quiz-questions.json file`,
       );
     }
-    const jsonText = await jsonFile.async("string");
     const data = JSON.parse(jsonText);
     const cats: unknown = data.categories ?? data.Categories;
     if (!Array.isArray(cats)) {
@@ -229,14 +233,13 @@ function Merge() {
           `Processing file ${i + 1} of ${totalFiles}: ${src.file.name}`,
         );
 
-        const zip = await JSZip.loadAsync(src.file);
-        const jsonFile = zip.file("quiz-questions.json");
-        if (!jsonFile) {
+        const archive = await readQuizArchive(src.file);
+        const jsonText = getArchiveText(archive, "quiz-questions.json");
+        if (jsonText === null) {
           throw new Error(
             `"${src.file.name}" does not contain a quiz-questions.json file`,
           );
         }
-        const jsonText = await jsonFile.async("string");
         const data = JSON.parse(jsonText);
         const cats: unknown = data.categories ?? data.Categories;
         if (!Array.isArray(cats)) {
@@ -264,28 +267,22 @@ function Merge() {
 
         // Pull referenced media files out of the zip and remap names that collide
         const localMediaMap = new Map<string, string>(); // originalName -> finalName
-        const mediaFolder = zip.folder("media");
-        if (mediaFolder) {
-          const entries: { name: string; obj: JSZip.JSZipObject }[] = [];
-          mediaFolder.forEach((relativePath, f) => {
-            if (!f.dir && referencedMedia.has(relativePath)) {
-              entries.push({ name: relativePath, obj: f });
-            }
-          });
-          for (let j = 0; j < entries.length; j++) {
-            const { name, obj } = entries[j];
-            setMergeMessage(
-              `Reading media from ${src.file.name} (${j + 1}/${entries.length}): ${name}`,
-            );
-            const blob = await obj.async("blob");
-            let finalName = name;
-            if (mergedMedia.has(finalName)) {
-              // Collision: keep a new uuid-based filename so both files survive
-              finalName = `${crypto.randomUUID()}${getExtension(name)}`;
-            }
-            mergedMedia.set(finalName, blob);
-            localMediaMap.set(name, finalName);
+        const entries = listArchiveMedia(archive).filter(({ name }) =>
+          referencedMedia.has(name),
+        );
+        for (let j = 0; j < entries.length; j++) {
+          const { name, data: mediaData } = entries[j];
+          setMergeMessage(
+            `Reading media from ${src.file.name} (${j + 1}/${entries.length}): ${name}`,
+          );
+          const blob = new Blob([mediaData as BlobPart]);
+          let finalName = name;
+          if (mergedMedia.has(finalName)) {
+            // Collision: keep a new uuid-based filename so both files survive
+            finalName = `${crypto.randomUUID()}${getExtension(name)}`;
           }
+          mergedMedia.set(finalName, blob);
+          localMediaMap.set(name, finalName);
         }
 
         // Merge selected categories by trimmed, case-insensitive name
@@ -328,17 +325,11 @@ function Merge() {
       setMergeMessage("Generating merged ZIP file…");
 
       const mergedCategories = Array.from(mergedByName.values());
-      const out = new JSZip();
-      out.file(
+      const blob = await buildQuizArchive(
         "quiz-questions.json",
-        JSON.stringify({ categories: mergedCategories }, null, 2),
+        { categories: mergedCategories },
+        mergedMedia,
       );
-      const mediaFolder = out.folder("media")!;
-      for (const [name, blob] of mergedMedia) {
-        mediaFolder.file(name, blob);
-      }
-
-      const blob = await out.generateAsync({ type: "blob" });
       setMergeProgress(100);
       setMergeMessage("Download ready");
 
