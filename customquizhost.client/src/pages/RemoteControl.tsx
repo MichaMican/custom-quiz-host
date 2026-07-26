@@ -32,7 +32,7 @@ import "./RemoteControl.css";
 const POINT_LEVELS = [200, 400, 600, 800, 1000];
 
 function RemoteControl() {
-  const { gameState, connectionStatus, invoke } = useSignalR();
+  const { gameState, connectionStatus, invoke, on } = useSignalR();
   useWakeLock();
   const [playerName, setPlayerName] = useState("");
   const [categoryName, setCategoryName] = useState("");
@@ -55,6 +55,8 @@ function RemoteControl() {
   };
   const [tab, setTab] = useState<"setup" | "host" | "history">("setup");
   const [showResetModal, setShowResetModal] = useState(false);
+  const [remoteClientCount, setRemoteClientCount] = useState(1);
+  const [multiRemoteWarningDismissed, setMultiRemoteWarningDismissed] = useState(false);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
   const [editingScoreValue, setEditingScoreValue] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -90,6 +92,25 @@ function RemoteControl() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
+
+  // Track how many devices currently have the remote page open
+  useEffect(
+    () =>
+      on("ReceiveRemoteClientCount", (count: number) => {
+        setRemoteClientCount(count);
+        if (count <= 1) {
+          setMultiRemoteWarningDismissed(false);
+        }
+      }),
+    [on],
+  );
+
+  // Register this device as a remote client (re-registers after reconnects)
+  useEffect(() => {
+    if (connectionStatus === "Connected") {
+      invoke("RegisterRemoteClient").catch(() => {});
+    }
+  }, [connectionStatus, invoke]);
 
   // Auto-save game state to localStorage whenever it changes
   useEffect(() => {
@@ -1434,6 +1455,30 @@ function RemoteControl() {
               </button>
               <button className="btn-confirm-reset" onClick={handleReset}>
                 Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {remoteClientCount > 1 && !multiRemoteWarningDismissed && (
+        <div
+          className="modal-overlay"
+          onClick={() => setMultiRemoteWarningDismissed(true)}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>⚠️ Multiple Remotes Connected</h2>
+            <p>
+              {remoteClientCount} devices currently have the remote control
+              page open. Changes made on one device affect the game for
+              everyone, which can lead to conflicting actions.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setMultiRemoteWarningDismissed(true)}
+              >
+                Got it
               </button>
             </div>
           </div>

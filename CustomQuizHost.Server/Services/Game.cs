@@ -9,6 +9,8 @@ public class GameService
     private readonly IHubContext<GameHub> _hubContext;
     private readonly HighScoreService _highScoreService;
     private readonly Lock _buzzLock = new();
+    private readonly Lock _remoteClientsLock = new();
+    private readonly HashSet<string> _remoteClientConnectionIds = new();
     private GameState _gameState = new();
     private string? _lastAddedHighScoreId;
     private string? _lastAddedLowScoreId;
@@ -46,6 +48,37 @@ public class GameService
     {
         _gameState.QuestionTimerSnapshotAt = DateTimeOffset.UtcNow;
         await _hubContext.Clients.Client(connectionId).SendAsync("ReceiveGameState", _gameState);
+    }
+
+    public async Task RegisterRemoteClient(string connectionId)
+    {
+        int count;
+        lock (_remoteClientsLock)
+        {
+            _remoteClientConnectionIds.Add(connectionId);
+            count = _remoteClientConnectionIds.Count;
+        }
+        await BroadcastRemoteClientCount(count);
+    }
+
+    public async Task UnregisterRemoteClient(string connectionId)
+    {
+        bool removed;
+        int count;
+        lock (_remoteClientsLock)
+        {
+            removed = _remoteClientConnectionIds.Remove(connectionId);
+            count = _remoteClientConnectionIds.Count;
+        }
+        if (removed)
+        {
+            await BroadcastRemoteClientCount(count);
+        }
+    }
+
+    private async Task BroadcastRemoteClientCount(int count)
+    {
+        await _hubContext.Clients.All.SendAsync("ReceiveRemoteClientCount", count);
     }
 
     public async Task<Player> AddPlayer(string name)
