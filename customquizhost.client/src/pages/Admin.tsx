@@ -10,8 +10,6 @@ interface MediaFile {
   referenced: boolean;
 }
 
-const ADMIN_PASSWORD_STORAGE_KEY = "adminPagePassword";
-
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -43,10 +41,8 @@ function Admin() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  // Kept in memory only (never persisted) to avoid storing the password in clear text
   const [password, setPassword] = useState<string | null>(null);
-  const [checkingAuth, setCheckingAuth] = useState(
-    () => sessionStorage.getItem(ADMIN_PASSWORD_STORAGE_KEY) !== null
-  );
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
@@ -64,38 +60,7 @@ function Admin() {
     };
   }, []);
 
-  useEffect(() => {
-    let ignore = false;
-    const stored = sessionStorage.getItem(ADMIN_PASSWORD_STORAGE_KEY);
-    if (!stored) {
-      return;
-    }
-    fetch("/api/admin/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: stored }),
-    })
-      .then((res) => {
-        if (ignore) return;
-        if (res.ok) {
-          setPassword(stored);
-        } else {
-          sessionStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
-        }
-      })
-      .catch(() => {
-        if (!ignore) sessionStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
-      })
-      .finally(() => {
-        if (!ignore) setCheckingAuth(false);
-      });
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
   const handleUnauthorized = () => {
-    sessionStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
     setPassword(null);
     setAuthError("Session expired. Please enter the password again.");
   };
@@ -115,7 +80,6 @@ function Admin() {
         return;
       }
       if (!res.ok) throw new Error(`Verification failed (${res.status})`);
-      sessionStorage.setItem(ADMIN_PASSWORD_STORAGE_KEY, passwordInput);
       setPassword(passwordInput);
       setPasswordInput("");
       setLoading(true);
@@ -132,11 +96,7 @@ function Admin() {
     fetch("/api/media", { headers: { "X-Admin-Password": password } })
       .then(async (res) => {
         if (res.status === 401) {
-          if (!ignore) {
-            sessionStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
-            setPassword(null);
-            setAuthError("Session expired. Please enter the password again.");
-          }
+          if (!ignore) handleUnauthorized();
           return;
         }
         if (!res.ok) throw new Error(`Failed to load media (${res.status})`);
@@ -262,16 +222,6 @@ function Admin() {
       setBusy(false);
     }
   };
-
-  if (checkingAuth) {
-    return (
-      <div className="remote-page">
-        <div className="remote-container plan-container">
-          <p className="plan-hint">Checking access…</p>
-        </div>
-      </div>
-    );
-  }
 
   if (!password) {
     return (
