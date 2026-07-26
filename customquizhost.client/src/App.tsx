@@ -4,6 +4,7 @@ import RemoteControl from './pages/RemoteControl'
 import Buzzer from './pages/Buzzer'
 import Plan from './pages/Plan'
 import Merge from './pages/Merge'
+import Admin from './pages/Admin'
 import VersionBadge from './components/VersionBadge'
 import './App.css'
 
@@ -17,6 +18,7 @@ function App() {
         <Route path="/buzzer" element={<Buzzer />} />
         <Route path="/plan" element={<Plan />} />
         <Route path="/merge" element={<Merge />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
       <VersionBadge />
     </BrowserRouter>
