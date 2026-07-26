@@ -48,7 +48,7 @@ namespace CustomQuizHost.Server.Controllers
                 {
                     fileName = f.Name,
                     size = f.Length,
-                    lastModified = new DateTimeOffset(f.LastWriteTimeUtc, TimeSpan.Zero)
+                    lastModified = new DateTimeOffset(f.LastWriteTimeUtc)
                 });
 
             return Ok(files);
