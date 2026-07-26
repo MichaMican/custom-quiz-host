@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using CustomQuizHost.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CustomQuizHost.Server.Controllers
@@ -13,13 +14,37 @@ namespace CustomQuizHost.Server.Controllers
     public class MediaController : ControllerBase
     {
         private readonly IWebHostEnvironment _env;
+        private readonly GameService _gameService;
 
-        public MediaController(IWebHostEnvironment env)
+        public MediaController(IWebHostEnvironment env, GameService gameService)
         {
             _env = env;
+            _gameService = gameService;
         }
 
         private string UploadsPath => Path.Combine(_env.ContentRootPath, "uploads");
+
+        private HashSet<string> GetReferencedFileNames()
+        {
+            var gameState = _gameService.GameState;
+            var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var player in gameState.Players)
+            {
+                if (!string.IsNullOrWhiteSpace(player.AvatarFileName))
+                    referenced.Add(player.AvatarFileName);
+            }
+
+            foreach (var question in gameState.Categories.SelectMany(c => c.Questions))
+            {
+                if (!string.IsNullOrWhiteSpace(question.MediaFileName))
+                    referenced.Add(question.MediaFileName);
+                if (!string.IsNullOrWhiteSpace(question.AnswerImageFileName))
+                    referenced.Add(question.AnswerImageFileName);
+            }
+
+            return referenced;
+        }
 
         private string? ResolveSafePath(string fileName)
         {
@@ -41,6 +66,7 @@ namespace CustomQuizHost.Server.Controllers
             if (!Directory.Exists(uploadsPath))
                 return Ok(Array.Empty<object>());
 
+            var referenced = GetReferencedFileNames();
             var files = new DirectoryInfo(uploadsPath)
                 .GetFiles()
                 .OrderByDescending(f => f.LastWriteTimeUtc)
@@ -48,7 +74,8 @@ namespace CustomQuizHost.Server.Controllers
                 {
                     fileName = f.Name,
                     size = f.Length,
-                    lastModified = new DateTimeOffset(f.LastWriteTimeUtc)
+                    lastModified = new DateTimeOffset(f.LastWriteTimeUtc),
+                    referenced = referenced.Contains(f.Name)
                 });
 
             return Ok(files);
@@ -92,7 +119,9 @@ namespace CustomQuizHost.Server.Controllers
             if (request?.FileNames == null || request.FileNames.Count == 0)
                 return BadRequest("No files selected.");
 
+            var referenced = GetReferencedFileNames();
             var deleted = new List<string>();
+            var skippedReferenced = new List<string>();
             var errors = new List<string>();
             foreach (var name in request.FileNames.Distinct(StringComparer.OrdinalIgnoreCase))
             {
@@ -100,6 +129,12 @@ namespace CustomQuizHost.Server.Controllers
                 if (fullPath == null)
                 {
                     errors.Add($"Invalid file name: {name}");
+                    continue;
+                }
+
+                if (referenced.Contains(Path.GetFileName(fullPath)))
+                {
+                    skippedReferenced.Add(name);
                     continue;
                 }
 
@@ -121,7 +156,7 @@ namespace CustomQuizHost.Server.Controllers
                 }
             }
 
-            return Ok(new { deleted, errors });
+            return Ok(new { deleted, skippedReferenced, errors });
         }
     }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./RemoteControl.css";
 import "./Plan.css";
 import "./Admin.css";
@@ -7,6 +7,7 @@ interface MediaFile {
   fileName: string;
   size: number;
   lastModified: string;
+  referenced: boolean;
 }
 
 function formatSize(bytes: number): string {
@@ -38,7 +39,21 @@ function Admin() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (message: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(message);
+    toastTimerRef.current = setTimeout(() => setToast(null), 6000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     let ignore = false;
@@ -134,9 +149,15 @@ function Admin() {
         body: JSON.stringify({ fileNames: [...selected] }),
       });
       if (!res.ok) throw new Error(await res.text() || `Delete failed (${res.status})`);
-      const result: { deleted: string[]; errors: string[] } = await res.json();
+      const result: { deleted: string[]; skippedReferenced: string[]; errors: string[] } =
+        await res.json();
       if (result.errors.length > 0) {
         setError(result.errors.join(" "));
+      }
+      if (result.skippedReferenced.length > 0) {
+        showToast(
+          `${result.skippedReferenced.length} file${result.skippedReferenced.length === 1 ? " is" : "s are"} still referenced by the current game and ${result.skippedReferenced.length === 1 ? "was" : "were"} not deleted.`
+        );
       }
       setSelected(new Set());
       loadFiles();
@@ -232,7 +253,17 @@ function Admin() {
                               aria-label={`Select ${f.fileName}`}
                             />
                           </td>
-                          <td className="admin-file-name">{f.fileName}</td>
+                          <td className="admin-file-name">
+                            {f.fileName}
+                            {f.referenced && (
+                              <span
+                                className="admin-referenced-badge"
+                                title="Referenced by the current game on /remote — cannot be deleted"
+                              >
+                                In use
+                              </span>
+                            )}
+                          </td>
                           <td className="admin-col-size">{formatSize(f.size)}</td>
                           <td className="admin-col-date">{formatDate(f.lastModified)}</td>
                           <td className="admin-col-actions">
@@ -254,6 +285,11 @@ function Admin() {
           </section>
         </div>
       </div>
+      {toast && (
+        <div className="admin-toast" role="alert">
+          ⚠️ {toast}
+        </div>
+      )}
     </div>
   );
 }
