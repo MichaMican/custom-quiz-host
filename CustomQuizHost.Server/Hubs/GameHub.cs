@@ -27,8 +27,6 @@ public class GameHub : Hub
 
     public async Task RegisterRemoteClient() => await _gameService.RegisterRemoteClient(Context.ConnectionId);
 
-    public async Task UnregisterRemoteClient() => await _gameService.UnregisterRemoteClient(Context.ConnectionId);
-
     public async Task AddPlayer(string name) => await _gameService.AddPlayer(name);
 
     public async Task RemovePlayer(string playerId) => await _gameService.RemovePlayer(playerId);
