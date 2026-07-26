@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using CustomQuizHost.Server.Middleware;
 using CustomQuizHost.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,6 +12,7 @@ namespace CustomQuizHost.Server.Controllers
 
     [ApiController]
     [Route("api/[controller]")]
+    [RequireAdminPassword]
     public class MediaController : ControllerBase
     {
         private readonly IWebHostEnvironment _env;

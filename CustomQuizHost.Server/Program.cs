@@ -14,6 +14,7 @@ Directory.CreateDirectory(highScoresPath);
 builder.Services.AddSingleton(new HighScoreService(highScoresPath));
 
 builder.Services.AddSingleton<GameService>();
+builder.Services.AddSingleton<AdminAuthService>();
 
 var app = builder.Build();
 

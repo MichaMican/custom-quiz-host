@@ -16,6 +16,35 @@
   color: #fca5a5;
 }
 
+.admin-login-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-login-form button {
+  width: auto;
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+
+.admin-password-input {
+  flex: 1 1 200px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: rgba(30, 41, 59, 0.6);
+  color: #e0e7ff;
+  font-size: 0.95rem;
+}
+
+.admin-password-input:focus {
+  outline: none;
+  border-color: #818cf8;
+}
+
 .admin-table-wrapper {
   overflow-x: auto;
   border: 1px solid rgba(99, 102, 241, 0.15);

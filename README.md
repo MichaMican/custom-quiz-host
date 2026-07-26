@@ -40,7 +40,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Import/Export**: Export questions-only or the full game state (including all media files) as a ZIP archive; import a previously exported ZIP to restore everything
 - **Offline Quiz Planner**: A dedicated `/plan` page lets you build complete quiz boards in the browser without affecting any live session. Categories, questions, and uploaded media are persisted locally (localStorage + IndexedDB) and can be exported as a `Questions only` ZIP that imports cleanly into the Remote Control's Setup tab
 - **Offline Quiz Merger**: A dedicated `/merge` page lets you combine two or more previously exported quiz ZIPs (from `/plan` or `/remote` "Questions only" exports) into a single merged ZIP. You can select exactly which categories to include from each uploaded file. Categories with the same name are merged together and their questions are concatenated. The page runs entirely in your browser and never touches a running game
-- **Media Admin**: A dedicated `/admin` page lists every media file stored on the server with its size and last-modified date. Download files individually, or select multiple files (with select all) to download them as a ZIP archive or delete them from the server. Files referenced by the current live game (question media, answer images, player avatars) are marked "In use" and protected from deletion — they can still be downloaded
+- **Media Admin**: A dedicated `/admin` page lists every media file stored on the server with its size and last-modified date. Download files individually, or select multiple files (with select all) to download them as a ZIP archive or delete them from the server. Files referenced by the current live game (question media, answer images, player avatars) are marked "In use" and protected from deletion — they can still be downloaded. The page and its API endpoints are password protected; configure the password via the `ADMIN_PAGE_PASSWORD` environment variable (an unsafe built-in default is used if unset, so always set your own)
 
 ## Technology Stack
 
@@ -70,6 +70,8 @@ The easiest way to get started is with Docker Compose using the pre-built image 
        image: ghcr.io/michamican/custom-quiz-host:latest
        ports:
          - "8080:8080"
+       environment:
+         - ADMIN_PAGE_PASSWORD=changeMe # password for the /admin page
        volumes:
          - uploads:/app/uploads
          - highscores:/app/highscores
@@ -93,6 +95,8 @@ The easiest way to get started is with Docker Compose using the pre-built image 
    - Merger: `http://localhost:8080/merge`
 
 Uploaded media files (images, audio) are persisted in the `uploads` Docker volume and survive container restarts. Highscores are stored separately in the `highscores` volume for independent persistence.
+
+The `/admin` media management page is password protected. Set the `ADMIN_PAGE_PASSWORD` environment variable to configure the password; if it is not set, an unsafe built-in default password is used, so you should always configure your own.
 
 ## Prerequisites
 

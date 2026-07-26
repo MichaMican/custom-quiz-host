@@ -3,6 +3,8 @@ services:
     image: ghcr.io/michamican/custom-quiz-host:latest
     ports:
       - "8080:8080"
+    environment:
+      - ADMIN_PAGE_PASSWORD=changeMe # password for the /admin page
     volumes:
       - uploads:/app/uploads
       - highscores:/app/highscores

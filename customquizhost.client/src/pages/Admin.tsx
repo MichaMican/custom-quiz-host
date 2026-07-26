@@ -10,6 +10,8 @@ interface MediaFile {
   referenced: boolean;
 }
 
+const ADMIN_PASSWORD_STORAGE_KEY = "adminPagePassword";
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -41,6 +43,13 @@ function Admin() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [password, setPassword] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(
+    () => sessionStorage.getItem(ADMIN_PASSWORD_STORAGE_KEY) !== null
+  );
+  const [passwordInput, setPasswordInput] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authBusy, setAuthBusy] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (message: string) => {
@@ -57,8 +66,79 @@ function Admin() {
 
   useEffect(() => {
     let ignore = false;
-    fetch("/api/media")
+    const stored = sessionStorage.getItem(ADMIN_PASSWORD_STORAGE_KEY);
+    if (!stored) {
+      return;
+    }
+    fetch("/api/admin/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: stored }),
+    })
+      .then((res) => {
+        if (ignore) return;
+        if (res.ok) {
+          setPassword(stored);
+        } else {
+          sessionStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
+        }
+      })
+      .catch(() => {
+        if (!ignore) sessionStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
+      })
+      .finally(() => {
+        if (!ignore) setCheckingAuth(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const handleUnauthorized = () => {
+    sessionStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
+    setPassword(null);
+    setAuthError("Session expired. Please enter the password again.");
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthBusy(true);
+    setAuthError(null);
+    try {
+      const res = await fetch("/api/admin/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: passwordInput }),
+      });
+      if (res.status === 401) {
+        setAuthError("Incorrect password.");
+        return;
+      }
+      if (!res.ok) throw new Error(`Verification failed (${res.status})`);
+      sessionStorage.setItem(ADMIN_PASSWORD_STORAGE_KEY, passwordInput);
+      setPassword(passwordInput);
+      setPasswordInput("");
+      setLoading(true);
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : "Verification failed.");
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!password) return;
+    let ignore = false;
+    fetch("/api/media", { headers: { "X-Admin-Password": password } })
       .then(async (res) => {
+        if (res.status === 401) {
+          if (!ignore) {
+            sessionStorage.removeItem(ADMIN_PASSWORD_STORAGE_KEY);
+            setPassword(null);
+            setAuthError("Session expired. Please enter the password again.");
+          }
+          return;
+        }
         if (!res.ok) throw new Error(`Failed to load media (${res.status})`);
         const data: MediaFile[] = await res.json();
         if (ignore) return;
@@ -79,7 +159,7 @@ function Admin() {
     return () => {
       ignore = true;
     };
-  }, [reloadToken]);
+  }, [reloadToken, password]);
 
   const loadFiles = () => setReloadToken((t) => t + 1);
 
@@ -116,9 +196,16 @@ function Admin() {
     try {
       const res = await fetch("/api/media/download", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Password": password ?? "",
+        },
         body: JSON.stringify({ fileNames: [...selected] }),
       });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       if (!res.ok) throw new Error(await res.text() || `Download failed (${res.status})`);
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
@@ -145,9 +232,16 @@ function Admin() {
     try {
       const res = await fetch("/api/media/delete", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Password": password ?? "",
+        },
         body: JSON.stringify({ fileNames: [...selected] }),
       });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       if (!res.ok) throw new Error(await res.text() || `Delete failed (${res.status})`);
       const result: { deleted: string[]; skippedReferenced: string[]; errors: string[] } =
         await res.json();
@@ -168,6 +262,54 @@ function Admin() {
       setBusy(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="remote-page">
+        <div className="remote-container plan-container">
+          <p className="plan-hint">Checking access…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!password) {
+    return (
+      <div className="remote-page">
+        <div className="remote-container plan-container">
+          <div className="plan-header">
+            <h1 className="plan-title">Media Admin</h1>
+            <p className="plan-subtitle">This page is password protected.</p>
+          </div>
+          <div className="remote-panel">
+            <section className="remote-section">
+              <h2>Enter Password</h2>
+              <form className="admin-login-form" onSubmit={handleLogin}>
+                <input
+                  type="password"
+                  className="admin-password-input"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Admin password"
+                  autoFocus
+                  disabled={authBusy}
+                  aria-label="Admin password"
+                />
+                <button
+                  type="submit"
+                  className="btn-sort"
+                  disabled={authBusy || passwordInput.length === 0}
+                >
+                  {authBusy ? "Checking…" : "Unlock"}
+                </button>
+              </form>
+              {authError && <p className="plan-hint admin-error">{authError}</p>}
+            </section>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="remote-page">
