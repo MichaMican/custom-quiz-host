@@ -35,12 +35,17 @@ type AccessStatus = "unknown" | "approved" | "pending" | "denied";
 
 interface AccessStatusMessage {
   status: AccessStatus;
-  expiresAt: string | null;
+  secondsRemaining: number | null;
+}
+
+interface AccessRequestMessage {
+  connectionId: string;
+  secondsRemaining: number;
 }
 
 interface AccessRequest {
   connectionId: string;
-  expiresAt: string;
+  deadline: number;
 }
 
 function secondsLeft(deadline: number) {
@@ -72,7 +77,7 @@ function RemoteControl() {
   const [tab, setTab] = useState<"setup" | "host" | "history">("setup");
   const [showResetModal, setShowResetModal] = useState(false);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>("unknown");
-  const [accessExpiresAt, setAccessExpiresAt] = useState<number | null>(null);
+  const [accessDeadline, setAccessDeadline] = useState<number | null>(null);
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
   const [, setCountdownTick] = useState(0);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
@@ -116,8 +121,10 @@ function RemoteControl() {
     () =>
       on("ReceiveRemoteAccessStatus", (payload: AccessStatusMessage) => {
         setAccessStatus(payload.status);
-        setAccessExpiresAt(
-          payload.expiresAt ? new Date(payload.expiresAt).getTime() : null,
+        setAccessDeadline(
+          payload.secondsRemaining !== null
+            ? Date.now() + payload.secondsRemaining * 1000
+            : null,
         );
       }),
     [on],
@@ -126,15 +133,25 @@ function RemoteControl() {
   // Devices asking for access while this device is in control
   useEffect(
     () =>
-      on("ReceiveRemoteAccessRequests", (requests: AccessRequest[]) => {
-        setAccessRequests(requests ?? []);
+      on("ReceiveRemoteAccessRequests", (requests: AccessRequestMessage[]) => {
+        const received = requests ?? [];
+        setAccessRequests((previous) =>
+          received.map((request) => ({
+            connectionId: request.connectionId,
+            // Keep the deadline of already known requests so repeated
+            // broadcasts don't make the countdown jump around.
+            deadline:
+              previous.find((p) => p.connectionId === request.connectionId)
+                ?.deadline ?? Date.now() + request.secondsRemaining * 1000,
+          })),
+        );
       }),
     [on],
   );
 
   // Keep countdowns ticking while a decision is outstanding
   const countdownActive =
-    accessRequests.length > 0 || (accessStatus === "pending" && accessExpiresAt !== null);
+    accessRequests.length > 0 || (accessStatus === "pending" && accessDeadline !== null);
   useEffect(() => {
     if (!countdownActive) return;
     const id = window.setInterval(() => setCountdownTick((t) => t + 1), 250);
@@ -142,10 +159,10 @@ function RemoteControl() {
   }, [countdownActive]);
 
   const accessSecondsLeft =
-    accessExpiresAt !== null ? secondsLeft(accessExpiresAt) : null;
+    accessDeadline !== null ? secondsLeft(accessDeadline) : null;
   const pendingRequest = accessRequests[0] ?? null;
   const requestSecondsLeft = pendingRequest
-    ? secondsLeft(new Date(pendingRequest.expiresAt).getTime())
+    ? secondsLeft(pendingRequest.deadline)
     : null;
 
   // Register this device as a remote client (re-registers after reconnects)
@@ -654,7 +671,7 @@ function RemoteControl() {
               className="btn-cancel"
               onClick={() => {
                 setAccessStatus("unknown");
-                setAccessExpiresAt(null);
+                setAccessDeadline(null);
                 invoke("RegisterRemoteClient").catch(() => {});
               }}
             >

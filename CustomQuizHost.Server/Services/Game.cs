@@ -222,8 +222,14 @@ public class GameService
     private async Task SendRemoteAccessStatus(string connectionId, string status, DateTimeOffset? expiresAt)
     {
         await _hubContext.Clients.Client(connectionId)
-            .SendAsync("ReceiveRemoteAccessStatus", new { status, expiresAt });
+            .SendAsync("ReceiveRemoteAccessStatus", new { status, secondsRemaining = ToSecondsRemaining(expiresAt) });
     }
+
+    // Countdowns are sent as a remaining duration instead of an absolute
+    // timestamp so that a device with a skewed system clock still shows the
+    // same countdown as the server.
+    private static double? ToSecondsRemaining(DateTimeOffset? expiresAt) =>
+        expiresAt is null ? null : Math.Max(0, (expiresAt.Value - DateTimeOffset.UtcNow).TotalSeconds);
 
     private async Task BroadcastRemoteAccessRequests()
     {
@@ -233,7 +239,11 @@ public class GameService
         {
             targets = _approvedRemoteClients.ToList();
             requests = _pendingRemoteClients
-                .Select(entry => (object)new { connectionId = entry.Key, expiresAt = entry.Value.ExpiresAt })
+                .Select(entry => (object)new
+                {
+                    connectionId = entry.Key,
+                    secondsRemaining = ToSecondsRemaining(entry.Value.ExpiresAt),
+                })
                 .ToArray();
         }
 
