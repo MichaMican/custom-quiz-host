@@ -43,8 +43,8 @@ interface AccessRequest {
   expiresAt: string;
 }
 
-function secondsLeft(deadline: number, now: number) {
-  return Math.max(0, Math.ceil((deadline - now) / 1000));
+function secondsLeft(deadline: number) {
+  return Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
 }
 
 function RemoteControl() {
@@ -74,7 +74,7 @@ function RemoteControl() {
   const [accessStatus, setAccessStatus] = useState<AccessStatus>("unknown");
   const [accessExpiresAt, setAccessExpiresAt] = useState<number | null>(null);
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
-  const [now, setNow] = useState(() => Date.now());
+  const [, setCountdownTick] = useState(0);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
   const [editingScoreValue, setEditingScoreValue] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -137,15 +137,15 @@ function RemoteControl() {
     accessRequests.length > 0 || (accessStatus === "pending" && accessExpiresAt !== null);
   useEffect(() => {
     if (!countdownActive) return;
-    const id = window.setInterval(() => setNow(Date.now()), 250);
+    const id = window.setInterval(() => setCountdownTick((t) => t + 1), 250);
     return () => window.clearInterval(id);
   }, [countdownActive]);
 
   const accessSecondsLeft =
-    accessExpiresAt !== null ? secondsLeft(accessExpiresAt, now) : null;
+    accessExpiresAt !== null ? secondsLeft(accessExpiresAt) : null;
   const pendingRequest = accessRequests[0] ?? null;
   const requestSecondsLeft = pendingRequest
-    ? secondsLeft(new Date(pendingRequest.expiresAt).getTime(), now)
+    ? secondsLeft(new Date(pendingRequest.expiresAt).getTime())
     : null;
 
   // Register this device as a remote client (re-registers after reconnects)
