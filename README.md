@@ -35,6 +35,7 @@ A web-based Quiz game hosting application built with ASP.NET Core and React. Thi
 - **Random Player Wheel**: Spin a fortune-style wheel of all players (with names and avatars) from the Board section of the Remote to randomly pick a player on the Display. The wheel decelerates and reveals the chosen player; dismiss the overlay with a single click.
 - **Winner Declaration**: Declare the winner at the end of the game to show a winner screen on the Display
 - **High Score & Low Score Boards**: Persistent halls of fame/shame across game sessions and server restarts, shown alongside the winner screen; can be shown/hidden or cleared independently
+- **Remote Access Guard (Anti-Cheating)**: Only one device can host at a time. If a second device opens `/remote` it lands on a waiting screen while the device already in control gets a *"Potential cheating detected"* prompt and 30 seconds to let the other device in or block it. If nobody decides within 30 seconds the second device is let in automatically, so a stale or crashed host device can never lock you out
 - **Event History**: Full log of points awarded/deducted and questions asked, viewable from the Remote Control (History tab) and from the Buzzer page
 - **Persistent State**: Game state is auto-saved to `localStorage` and automatically restored when the Remote Control reconnects to an empty server
 - **Import/Export**: Export questions-only or the full game state (including all media files) as a ZIP archive; import a previously exported ZIP to restore everything

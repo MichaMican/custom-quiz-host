@@ -61,5 +61,17 @@ export function useSignalR() {
     [],
   );
 
-  return { gameState, connectionStatus, invoke };
+  const on = useCallback(
+    (method: string, handler: (...args: never[]) => void) => {
+      const connection = connectionRef.current;
+      const boundHandler = handler as (...args: unknown[]) => void;
+      connection?.on(method, boundHandler);
+      return () => {
+        connection?.off(method, boundHandler);
+      };
+    },
+    [],
+  );
+
+  return { gameState, connectionStatus, invoke, on };
 }

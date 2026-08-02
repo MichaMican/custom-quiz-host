@@ -31,8 +31,24 @@ import "./RemoteControl.css";
 
 const POINT_LEVELS = [200, 400, 600, 800, 1000];
 
+type AccessStatus = "unknown" | "approved" | "pending" | "denied";
+
+interface AccessStatusMessage {
+  status: AccessStatus;
+  expiresAt: string | null;
+}
+
+interface AccessRequest {
+  connectionId: string;
+  expiresAt: string;
+}
+
+function secondsLeft(deadline: number) {
+  return Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+}
+
 function RemoteControl() {
-  const { gameState, connectionStatus, invoke } = useSignalR();
+  const { gameState, connectionStatus, invoke, on } = useSignalR();
   useWakeLock();
   const [playerName, setPlayerName] = useState("");
   const [categoryName, setCategoryName] = useState("");
@@ -55,6 +71,10 @@ function RemoteControl() {
   };
   const [tab, setTab] = useState<"setup" | "host" | "history">("setup");
   const [showResetModal, setShowResetModal] = useState(false);
+  const [accessStatus, setAccessStatus] = useState<AccessStatus>("unknown");
+  const [accessExpiresAt, setAccessExpiresAt] = useState<number | null>(null);
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [, setCountdownTick] = useState(0);
   const [editingScorePlayerId, setEditingScorePlayerId] = useState<string | null>(null);
   const [editingScoreValue, setEditingScoreValue] = useState("");
   const [exporting, setExporting] = useState(false);
@@ -90,6 +110,51 @@ function RemoteControl() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
+
+  // Access decisions for this device (approved, waiting or blocked)
+  useEffect(
+    () =>
+      on("ReceiveRemoteAccessStatus", (payload: AccessStatusMessage) => {
+        setAccessStatus(payload.status);
+        setAccessExpiresAt(
+          payload.expiresAt ? new Date(payload.expiresAt).getTime() : null,
+        );
+      }),
+    [on],
+  );
+
+  // Devices asking for access while this device is in control
+  useEffect(
+    () =>
+      on("ReceiveRemoteAccessRequests", (requests: AccessRequest[]) => {
+        setAccessRequests(requests ?? []);
+      }),
+    [on],
+  );
+
+  // Keep countdowns ticking while a decision is outstanding
+  const countdownActive =
+    accessRequests.length > 0 || (accessStatus === "pending" && accessExpiresAt !== null);
+  useEffect(() => {
+    if (!countdownActive) return;
+    const id = window.setInterval(() => setCountdownTick((t) => t + 1), 250);
+    return () => window.clearInterval(id);
+  }, [countdownActive]);
+
+  const accessSecondsLeft =
+    accessExpiresAt !== null ? secondsLeft(accessExpiresAt) : null;
+  const pendingRequest = accessRequests[0] ?? null;
+  const requestSecondsLeft = pendingRequest
+    ? secondsLeft(new Date(pendingRequest.expiresAt).getTime())
+    : null;
+
+  // Register this device as a remote client (re-registers after reconnects)
+  useEffect(() => {
+    if (connectionStatus === "Connected") {
+      // On failure fall back to full access so a hiccup cannot lock out the host
+      invoke("RegisterRemoteClient").catch(() => setAccessStatus("approved"));
+    }
+  }, [connectionStatus, invoke]);
 
   // Auto-save game state to localStorage whenever it changes
   useEffect(() => {
@@ -536,6 +601,66 @@ function RemoteControl() {
       <div className="remote-page">
         <div className="remote-container">
           <div className="remote-status">Connecting... ({connectionStatus})</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessStatus === "unknown") {
+    return (
+      <div className="remote-page">
+        <div className="remote-container">
+          <div className="remote-status">Checking remote access...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessStatus === "pending") {
+    return (
+      <div className="remote-page">
+        <div className="remote-container">
+          <div className="remote-access-gate">
+            <div className="remote-access-gate-icon">🔒</div>
+            <h2>Waiting for approval</h2>
+            <p>
+              The host remote is already in use on another device. To prevent
+              cheating, that device has to confirm that you are allowed to take
+              control as well.
+            </p>
+            <p className="remote-access-gate-timer">
+              {accessSecondsLeft !== null
+                ? `Access is granted automatically in ${accessSecondsLeft}s if nobody decides.`
+                : "Waiting for a decision…"}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessStatus === "denied") {
+    return (
+      <div className="remote-page">
+        <div className="remote-container">
+          <div className="remote-access-gate denied">
+            <div className="remote-access-gate-icon">⛔</div>
+            <h2>Access blocked</h2>
+            <p>
+              The device currently hosting the quiz did not grant you access to
+              the remote control.
+            </p>
+            <button
+              className="btn-cancel"
+              onClick={() => {
+                setAccessStatus("unknown");
+                setAccessExpiresAt(null);
+                invoke("RegisterRemoteClient").catch(() => {});
+              }}
+            >
+              Ask again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1434,6 +1559,51 @@ function RemoteControl() {
               </button>
               <button className="btn-confirm-reset" onClick={handleReset}>
                 Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingRequest && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>⚠️ Potential Cheating Detected</h2>
+            <p>
+              Another device just opened the host remote control page. Whoever
+              is on that device can see every question and answer and could
+              change scores — if you did not hand out the remote link yourself,
+              this is very likely a cheating attempt.
+            </p>
+            <p>
+              It is waiting for your decision. If you do not decide, it is let
+              in automatically in{" "}
+              <strong>{requestSecondsLeft ?? 0}s</strong>.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() =>
+                  invoke(
+                    "RespondToRemoteAccessRequest",
+                    pendingRequest.connectionId,
+                    true,
+                  ).catch(() => {})
+                }
+              >
+                Let device in
+              </button>
+              <button
+                className="btn-confirm-reset"
+                onClick={() =>
+                  invoke(
+                    "RespondToRemoteAccessRequest",
+                    pendingRequest.connectionId,
+                    false,
+                  ).catch(() => {})
+                }
+              >
+                Block device
               </button>
             </div>
           </div>
