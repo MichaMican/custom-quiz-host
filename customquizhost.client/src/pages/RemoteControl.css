@@ -1001,3 +1001,40 @@
   color: #94a3b8;
   font-size: 0.95rem;
 }
+
+.remote-access-gate {
+  margin: 40px auto;
+  max-width: 460px;
+  padding: 28px 24px;
+  text-align: center;
+  border-radius: 14px;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.remote-access-gate.denied {
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.remote-access-gate-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.remote-access-gate h2 {
+  margin: 0 0 12px 0;
+  font-size: 1.3rem;
+  color: #e2e8f0;
+}
+
+.remote-access-gate p {
+  margin: 0 0 16px 0;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.remote-access-gate-timer {
+  color: #fbbf24;
+  font-weight: 600;
+}

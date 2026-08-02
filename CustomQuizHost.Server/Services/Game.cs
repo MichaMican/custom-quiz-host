@@ -10,7 +10,9 @@ public class GameService
     private readonly HighScoreService _highScoreService;
     private readonly Lock _buzzLock = new();
     private readonly Lock _remoteClientsLock = new();
-    private readonly HashSet<string> _remoteClientConnectionIds = new();
+    private readonly HashSet<string> _approvedRemoteClients = new();
+    private readonly Dictionary<string, PendingRemoteClient> _pendingRemoteClients = new();
+    private const int RemoteAccessDecisionSeconds = 30;
     private GameState _gameState = new();
     private string? _lastAddedHighScoreId;
     private string? _lastAddedLowScoreId;
@@ -52,33 +54,195 @@ public class GameService
 
     public async Task RegisterRemoteClient(string connectionId)
     {
-        int count;
+        string status;
+        DateTimeOffset? expiresAt = null;
+        CancellationTokenSource? decisionCts = null;
+
         lock (_remoteClientsLock)
         {
-            _remoteClientConnectionIds.Add(connectionId);
-            count = _remoteClientConnectionIds.Count;
+            if (_approvedRemoteClients.Contains(connectionId))
+            {
+                status = "approved";
+            }
+            else if (_pendingRemoteClients.TryGetValue(connectionId, out var existing))
+            {
+                status = "pending";
+                expiresAt = existing.ExpiresAt;
+            }
+            else if (_approvedRemoteClients.Count == 0)
+            {
+                // First device to open the remote page becomes the host device.
+                _approvedRemoteClients.Add(connectionId);
+                status = "approved";
+            }
+            else
+            {
+                decisionCts = new CancellationTokenSource();
+                expiresAt = DateTimeOffset.UtcNow.AddSeconds(RemoteAccessDecisionSeconds);
+                _pendingRemoteClients[connectionId] = new PendingRemoteClient(expiresAt.Value, decisionCts);
+                status = "pending";
+            }
         }
-        await BroadcastRemoteClientCount(count);
+
+        await SendRemoteAccessStatus(connectionId, status, expiresAt);
+
+        if (decisionCts != null)
+        {
+            StartRemoteAccessAutoApproval(connectionId, decisionCts);
+            await BroadcastRemoteAccessRequests();
+        }
     }
 
     public async Task UnregisterRemoteClient(string connectionId)
     {
-        bool removed;
-        int count;
+        var changed = false;
+        List<string> promoted = new();
+
         lock (_remoteClientsLock)
         {
-            removed = _remoteClientConnectionIds.Remove(connectionId);
-            count = _remoteClientConnectionIds.Count;
+            if (_approvedRemoteClients.Remove(connectionId))
+            {
+                changed = true;
+                // Without any approved device left nobody could grant access,
+                // so every waiting device is let in instead of being locked out.
+                if (_approvedRemoteClients.Count == 0)
+                {
+                    promoted = _pendingRemoteClients.Keys.ToList();
+                }
+            }
+
+            if (_pendingRemoteClients.Remove(connectionId, out var pending))
+            {
+                pending.Dispose();
+                changed = true;
+            }
         }
-        if (removed)
+
+        foreach (var pendingConnectionId in promoted)
         {
-            await BroadcastRemoteClientCount(count);
+            await ApproveRemoteClient(pendingConnectionId);
+        }
+
+        if (changed)
+        {
+            await BroadcastRemoteAccessRequests();
         }
     }
 
-    private async Task BroadcastRemoteClientCount(int count)
+    public async Task RespondToRemoteAccessRequest(string responderConnectionId, string targetConnectionId, bool allow)
     {
-        await _hubContext.Clients.All.SendAsync("ReceiveRemoteClientCount", count);
+        lock (_remoteClientsLock)
+        {
+            // Only devices that already have access may decide.
+            if (!_approvedRemoteClients.Contains(responderConnectionId))
+            {
+                return;
+            }
+        }
+
+        if (allow)
+        {
+            await ApproveRemoteClient(targetConnectionId);
+        }
+        else
+        {
+            await DenyRemoteClient(targetConnectionId);
+        }
+    }
+
+    private void StartRemoteAccessAutoApproval(string connectionId, CancellationTokenSource cts)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(RemoteAccessDecisionSeconds), cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            // Nobody decided in time: let the device in to avoid a lockout.
+            await ApproveRemoteClient(connectionId);
+        });
+    }
+
+    private async Task ApproveRemoteClient(string connectionId)
+    {
+        bool approved;
+        lock (_remoteClientsLock)
+        {
+            if (_pendingRemoteClients.Remove(connectionId, out var pending))
+            {
+                pending.Dispose();
+                _approvedRemoteClients.Add(connectionId);
+                approved = true;
+            }
+            else
+            {
+                approved = false;
+            }
+        }
+
+        if (!approved)
+        {
+            return;
+        }
+
+        await SendRemoteAccessStatus(connectionId, "approved", null);
+        await BroadcastRemoteAccessRequests();
+    }
+
+    private async Task DenyRemoteClient(string connectionId)
+    {
+        bool denied;
+        lock (_remoteClientsLock)
+        {
+            if (_pendingRemoteClients.Remove(connectionId, out var pending))
+            {
+                pending.Dispose();
+                denied = true;
+            }
+            else
+            {
+                denied = false;
+            }
+        }
+
+        if (!denied)
+        {
+            return;
+        }
+
+        await SendRemoteAccessStatus(connectionId, "denied", null);
+        await BroadcastRemoteAccessRequests();
+    }
+
+    private async Task SendRemoteAccessStatus(string connectionId, string status, DateTimeOffset? expiresAt)
+    {
+        await _hubContext.Clients.Client(connectionId)
+            .SendAsync("ReceiveRemoteAccessStatus", new { status, expiresAt });
+    }
+
+    private async Task BroadcastRemoteAccessRequests()
+    {
+        List<string> targets;
+        object[] requests;
+        lock (_remoteClientsLock)
+        {
+            targets = _approvedRemoteClients.ToList();
+            requests = _pendingRemoteClients
+                .Select(entry => (object)new { connectionId = entry.Key, expiresAt = entry.Value.ExpiresAt })
+                .ToArray();
+        }
+
+        if (targets.Count == 0)
+        {
+            return;
+        }
+
+        await _hubContext.Clients.Clients(targets).SendAsync("ReceiveRemoteAccessRequests", requests);
     }
 
     public async Task<Player> AddPlayer(string name)
@@ -1168,5 +1332,24 @@ public class GameService
         var nextId = _gameState.Players[nextIndex].Id;
         _gameState.CurrentSelectorPlayerId = nextId;
         _lastNoPointsSelectorId = nextId;
+    }
+
+    private sealed class PendingRemoteClient
+    {
+        public PendingRemoteClient(DateTimeOffset expiresAt, CancellationTokenSource cts)
+        {
+            ExpiresAt = expiresAt;
+            Cts = cts;
+        }
+
+        public DateTimeOffset ExpiresAt { get; }
+
+        public CancellationTokenSource Cts { get; }
+
+        public void Dispose()
+        {
+            Cts.Cancel();
+            Cts.Dispose();
+        }
     }
 }
