@@ -19,6 +19,17 @@ public class GameHub : Hub
         await base.OnConnectedAsync();
     }
 
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        await _gameService.UnregisterRemoteClient(Context.ConnectionId);
+        await base.OnDisconnectedAsync(exception);
+    }
+
+    public async Task RegisterRemoteClient() => await _gameService.RegisterRemoteClient(Context.ConnectionId);
+
+    public async Task RespondToRemoteAccessRequest(string targetConnectionId, bool allow) =>
+        await _gameService.RespondToRemoteAccessRequest(Context.ConnectionId, targetConnectionId, allow);
+
     public async Task AddPlayer(string name) => await _gameService.AddPlayer(name);
 
     public async Task RemovePlayer(string playerId) => await _gameService.RemovePlayer(playerId);
