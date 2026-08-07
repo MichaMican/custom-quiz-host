@@ -63,6 +63,24 @@ public class GameState
     public string? RandomWheelSpinId { get; set; }
     public bool HideBoard { get; set; }
     public bool ShowQrCode { get; set; }
+    public List<SoundboardSound> Soundboard { get; set; } = new();
+    public List<PlayingSound> PlayingSounds { get; set; } = new();
+}
+
+public class SoundboardSound
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string Name { get; set; } = "";
+    public string FileName { get; set; } = "";
+}
+
+public class PlayingSound
+{
+    public string InstanceId { get; set; } = Guid.NewGuid().ToString();
+    public string SoundId { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string FileName { get; set; } = "";
+    public DateTimeOffset StartedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
 public class Player

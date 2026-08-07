@@ -8,6 +8,8 @@ public class GameService
 {
     private readonly IHubContext<GameHub> _hubContext;
     private readonly HighScoreService _highScoreService;
+    private readonly SoundboardService _soundboardService;
+    private readonly Lock _soundLock = new();
     private readonly Lock _buzzLock = new();
     private readonly Lock _remoteClientsLock = new();
     private readonly HashSet<string> _approvedRemoteClients = new();
@@ -29,13 +31,15 @@ public class GameService
     // called, so the highlight does not move while points are being awarded.
     private string? _pendingSelectorPlayerId;
 
-    public GameService(IHubContext<GameHub> hubContext, HighScoreService highScoreService)
+    public GameService(IHubContext<GameHub> hubContext, HighScoreService highScoreService, SoundboardService soundboardService)
     {
         _hubContext = hubContext;
         _highScoreService = highScoreService;
+        _soundboardService = soundboardService;
         var scoreBoardData = _highScoreService.LoadAll();
         _gameState.HighScoreBoard = scoreBoardData.HighScores;
         _gameState.LowScoreBoard = scoreBoardData.LowScores;
+        _gameState.Soundboard = _soundboardService.LoadAll();
     }
 
     public GameState GameState => _gameState;
@@ -992,6 +996,8 @@ public class GameService
         {
             state.CurrentSelectorPlayerId = state.Players.FirstOrDefault()?.Id;
         }
+        state.Soundboard = _soundboardService.LoadAll();
+        state.PlayingSounds = new();
         _gameState = state;
         _pointsAwardedThisRound = false;
         _pendingSelectorPlayerId = null;
@@ -1015,6 +1021,66 @@ public class GameService
         _gameState.QuestionTextRevealed = false;
         _gameState.ImageFullscreen = false;
         await BroadcastGameState();
+    }
+
+    /// <summary>
+    /// Refreshes the soundboard definition from disk (after the /admin page
+    /// added or removed a sound) and drops playing instances of sounds that no
+    /// longer exist.
+    /// </summary>
+    public async Task ReloadSoundboard()
+    {
+        var sounds = _soundboardService.LoadAll();
+        lock (_soundLock)
+        {
+            _gameState.Soundboard = sounds;
+            var knownIds = sounds.Select(s => s.Id).ToHashSet();
+            _gameState.PlayingSounds.RemoveAll(p => !knownIds.Contains(p.SoundId));
+        }
+        await BroadcastGameState();
+    }
+
+    public async Task PlaySound(string soundId)
+    {
+        lock (_soundLock)
+        {
+            var sound = _gameState.Soundboard.FirstOrDefault(s => s.Id == soundId);
+            if (sound == null) return;
+
+            // Every click starts an independent instance so the same sound can
+            // be layered on top of itself.
+            _gameState.PlayingSounds.Add(new PlayingSound
+            {
+                SoundId = sound.Id,
+                Name = sound.Name,
+                FileName = sound.FileName,
+                StartedAt = DateTimeOffset.UtcNow
+            });
+        }
+        await BroadcastGameState();
+    }
+
+    public async Task StopSound(string instanceId)
+    {
+        bool removed;
+        lock (_soundLock)
+        {
+            removed = _gameState.PlayingSounds.RemoveAll(p => p.InstanceId == instanceId) > 0;
+        }
+        if (removed)
+            await BroadcastGameState();
+    }
+
+    public async Task StopAllSounds()
+    {
+        bool removed;
+        lock (_soundLock)
+        {
+            removed = _gameState.PlayingSounds.Count > 0;
+            _gameState.PlayingSounds.Clear();
+        }
+        if (removed)
+            await BroadcastGameState();
     }
 
     public async Task StartMedia()

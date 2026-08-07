@@ -1016,7 +1016,7 @@ function QrCodeOverlay() {
 }
 
 function Display() {
-  const { gameState, connectionStatus, on } = useSignalR();
+  const { gameState, connectionStatus, invoke, on } = useSignalR();
   useWakeLock();
   const { isDuplicate: isDuplicateTab, dismissed: duplicateDismissed, dismiss: dismissDuplicate } = useDuplicateDisplayDetection();
   const prevBuzzCountRef = useRef(0);
@@ -1190,6 +1190,65 @@ function Display() {
     }
     prevBuzzCountRef.current = buzzCount;
   }, [buzzCount]);
+
+  // === Soundboard playback ===
+  // Every entry in playingSounds is an independent instance, so the same sound
+  // can be layered on top of itself. Instances that disappear from the state
+  // (host stopped them) are stopped locally; instances that reach their end
+  // report back so the server removes them from the list.
+  const soundboardAudioRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const playingSounds = gameState?.playingSounds;
+  const soundboardVolume = gameState?.mediaVolume ?? 70;
+
+  useEffect(() => {
+    const audioMap = soundboardAudioRef.current;
+    const activeIds = new Set((playingSounds ?? []).map((s) => s.instanceId));
+
+    for (const sound of playingSounds ?? []) {
+      if (audioMap.has(sound.instanceId)) continue;
+      const audio = new Audio(`/uploads/${encodeURIComponent(sound.fileName)}`);
+      audio.volume = Math.max(0, Math.min(1, soundboardVolume / 100));
+      audioMap.set(sound.instanceId, audio);
+      audio.addEventListener("ended", () => {
+        audioMap.delete(sound.instanceId);
+        audio.removeAttribute("src");
+        audio.load();
+        invoke("SoundFinished", sound.instanceId).catch(() => {});
+      });
+      audio.play().catch((err) => {
+        console.error(`Soundboard playback failed (${sound.fileName}):`, err);
+      });
+    }
+
+    for (const [instanceId, audio] of [...audioMap]) {
+      if (activeIds.has(instanceId)) continue;
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      audioMap.delete(instanceId);
+    }
+  }, [playingSounds, soundboardVolume, invoke]);
+
+  // Keep already playing soundboard instances in sync with the volume slider
+  useEffect(() => {
+    const volume = Math.max(0, Math.min(1, soundboardVolume / 100));
+    for (const audio of soundboardAudioRef.current.values()) {
+      audio.volume = volume;
+    }
+  }, [soundboardVolume]);
+
+  // Stop every soundboard instance when the Display unmounts
+  useEffect(() => {
+    const audioMap = soundboardAudioRef.current;
+    return () => {
+      for (const audio of audioMap.values()) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }
+      audioMap.clear();
+    };
+  }, []);
 
   if (connectionStatus !== "Connected") {
     return (

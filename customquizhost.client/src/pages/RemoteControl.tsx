@@ -74,7 +74,7 @@ function RemoteControl() {
     upload.cancel();
     setUploading(false);
   };
-  const [tab, setTab] = useState<"setup" | "host" | "history">("setup");
+  const [tab, setTab] = useState<"setup" | "host" | "sounds" | "history">("setup");
   const [showResetModal, setShowResetModal] = useState(false);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>("unknown");
   const [accessDeadline, setAccessDeadline] = useState<number | null>(null);
@@ -253,6 +253,10 @@ function RemoteControl() {
         randomWheelSpinId: null,
         hideBoard: false,
         showQrCode: false,
+        // Server-owned: the soundboard is persisted on the server and is
+        // restored from disk on import, playing instances are cleared.
+        soundboard: [],
+        playingSounds: [],
       };
       await invoke("ImportGameSettings", emptyState);
       markClean();
@@ -698,6 +702,12 @@ function RemoteControl() {
           onClick={() => setTab("host")}
         >
           Host
+        </button>
+        <button
+          className={`tab-btn ${tab === "sounds" ? "active" : ""}`}
+          onClick={() => setTab("sounds")}
+        >
+          Sounds
         </button>
         <button
           className={`tab-btn ${tab === "history" ? "active" : ""}`}
@@ -1548,6 +1558,60 @@ function RemoteControl() {
               >
                 🏆 Declare Winner
               </button>
+            )}
+          </section>
+        </div>
+      )}
+
+      {tab === "sounds" && gameState && (
+        <div className="remote-panel">
+          <section className="remote-section">
+            <h2>Soundboard</h2>
+            {gameState.soundboard.length === 0 ? (
+              <p className="soundboard-hint">
+                No sounds available. Upload sounds on the /admin page.
+              </p>
+            ) : (
+              <div className="soundboard-grid">
+                {gameState.soundboard.map((sound) => (
+                  <button
+                    key={sound.id}
+                    className="btn-sound"
+                    onClick={() => invoke("PlaySound", sound.id)}
+                  >
+                    🔊 {sound.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="remote-section">
+            <h2>Currently Playing</h2>
+            {gameState.playingSounds.length === 0 ? (
+              <p className="soundboard-hint">No sound is playing right now.</p>
+            ) : (
+              <>
+                <ul className="item-list">
+                  {gameState.playingSounds.map((playing) => (
+                    <li key={playing.instanceId}>
+                      <span>🎵 {playing.name}</span>
+                      <button
+                        className="btn-remove"
+                        onClick={() => invoke("StopSound", playing.instanceId)}
+                      >
+                        Stop
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  className="btn-sort"
+                  onClick={() => invoke("StopAllSounds")}
+                >
+                  Stop All
+                </button>
+              </>
             )}
           </section>
         </div>

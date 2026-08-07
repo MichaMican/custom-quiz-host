@@ -1038,3 +1038,37 @@
   color: #fbbf24;
   font-weight: 600;
 }
+
+.soundboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.btn-sound {
+  padding: 14px 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: rgba(99, 102, 241, 0.15);
+  color: #e0e7ff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  word-break: break-word;
+}
+
+.btn-sound:hover {
+  background: rgba(99, 102, 241, 0.3);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.btn-sound:active {
+  transform: scale(0.97);
+}
+
+.soundboard-hint {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0;
+}
