@@ -361,6 +361,7 @@ function QuestionCountdownContainer({
   snapshotAt,
   durationSeconds,
   remainingSeconds,
+  expirySignal,
 }: {
   active: boolean;
   paused: boolean;
@@ -368,6 +369,7 @@ function QuestionCountdownContainer({
   snapshotAt: string | null;
   durationSeconds: number;
   remainingSeconds: number;
+  expirySignal: number;
 }) {
   type Phase = "idle" | "running" | "hold" | "exiting";
   const [phase, setPhase] = useState<Phase>("idle");
@@ -433,20 +435,10 @@ function QuestionCountdownContainer({
     clearPendingTimers,
   ]);
 
-  // If the server clears the timer state before natural expiry (explicit
-  // stop / question transition), unmount the countdown immediately so it
-  // doesn't linger over a different view.
-  useEffect(() => {
-    if (!active && phase === "running" && !expiredRef.current) {
-      clearPendingTimers();
-      setPhase("idle");
-      setSnapshot(null);
-    }
-  }, [active, phase, clearPendingTimers]);
-
-  useEffect(() => () => clearPendingTimers(), [clearPendingTimers]);
-
-  // Called by the child when its local countdown reaches 0.
+  // Called when the countdown reaches 0, either from the child's local timer
+  // or from the server's explicit "QuestionTimerExpired" signal (whichever
+  // arrives first). Plays the times-up sound, holds the 0 for 3 seconds, then
+  // plays the exit animation before unmounting.
   const handleExpire = useCallback(() => {
     if (expiredRef.current) return;
     expiredRef.current = true;
@@ -463,6 +455,33 @@ function QuestionCountdownContainer({
       }, 600);
     }, 3000);
   }, []);
+
+  // The server sends a dedicated expiry signal when the timer runs out
+  // naturally. Its clear-state broadcast can arrive before the local countdown
+  // reaches 0 (clock skew / latency), which previously unmounted the timer
+  // immediately without the sound or hold. This effect must run *before* the
+  // "server cleared" effect below so the expiry is registered first.
+  const lastExpirySignalRef = useRef(expirySignal);
+  useEffect(() => {
+    if (expirySignal === lastExpirySignalRef.current) return;
+    lastExpirySignalRef.current = expirySignal;
+    if (phase === "running") {
+      handleExpire();
+    }
+  }, [expirySignal, phase, handleExpire]);
+
+  // If the server clears the timer state before natural expiry (explicit
+  // stop / question transition), unmount the countdown immediately so it
+  // doesn't linger over a different view.
+  useEffect(() => {
+    if (!active && phase === "running" && !expiredRef.current) {
+      clearPendingTimers();
+      setPhase("idle");
+      setSnapshot(null);
+    }
+  }, [active, phase, clearPendingTimers]);
+
+  useEffect(() => () => clearPendingTimers(), [clearPendingTimers]);
 
   if (phase === "idle" || !snapshot) return null;
   return (
@@ -997,11 +1016,20 @@ function QrCodeOverlay() {
 }
 
 function Display() {
-  const { gameState, connectionStatus } = useSignalR();
+  const { gameState, connectionStatus, on } = useSignalR();
   useWakeLock();
   const { isDuplicate: isDuplicateTab, dismissed: duplicateDismissed, dismiss: dismissDuplicate } = useDuplicateDisplayDetection();
   const prevBuzzCountRef = useRef(0);
   const preloadedBuzzerRef = useRef<HTMLAudioElement | null>(null);
+
+  // Incremented whenever the server signals the question timer ran out
+  // naturally, so the countdown always plays the times-up sound and holds
+  // the 0, even when the clear-state broadcast beats the local countdown.
+  const [timerExpirySignal, setTimerExpirySignal] = useState(0);
+  useEffect(
+    () => on("QuestionTimerExpired", () => setTimerExpirySignal((s) => s + 1)),
+    [on],
+  );
 
   // === View transition management ===
   const [activeView, setActiveView] = useState<"board" | "question">("board");
@@ -1241,6 +1269,7 @@ function Display() {
                       snapshotAt={gameState.questionTimerSnapshotAt}
                       durationSeconds={gameState.questionTimerDurationSeconds}
                       remainingSeconds={gameState.questionTimerRemainingSeconds}
+                      expirySignal={timerExpirySignal}
                     />
                   )}
                 </div>
