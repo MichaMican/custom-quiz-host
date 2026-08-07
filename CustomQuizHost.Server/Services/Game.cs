@@ -648,6 +648,12 @@ public class GameService
                 _gameState.QuestionTimerPaused = false;
                 _gameState.QuestionTimerStartedAt = null;
                 _gameState.QuestionTimerRemainingSeconds = 0;
+                // Signal natural expiry explicitly (before the state broadcast,
+                // so ordered delivery guarantees clients see it first). This lets
+                // displays distinguish "timer ran out" (play the times-up sound
+                // and hold the 0 on screen) from an explicit stop/transition
+                // (hide the timer immediately).
+                await _hubContext.Clients.All.SendAsync("QuestionTimerExpired");
                 await BroadcastGameState();
             }
             cts.Dispose();
