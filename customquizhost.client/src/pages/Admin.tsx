@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import UploadProgressModal from "../components/UploadProgressModal";
+import { uploadFileWithProgress } from "../utils/uploadWithProgress";
 import "./RemoteControl.css";
 import "./Plan.css";
 import "./Admin.css";
+
+interface SoundboardSound {
+  id: string;
+  name: string;
+  fileName: string;
+}
 
 interface MediaFile {
   fileName: string;
@@ -47,6 +55,16 @@ function Admin() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sounds, setSounds] = useState<SoundboardSound[]>([]);
+  const [soundName, setSoundName] = useState("");
+  const [soundFile, setSoundFile] = useState<File | null>(null);
+  const [soundError, setSoundError] = useState<string | null>(null);
+  const [soundBusy, setSoundBusy] = useState(false);
+  const [selectedSoundId, setSelectedSoundId] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const soundFileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = (message: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -115,6 +133,33 @@ function Admin() {
       })
       .finally(() => {
         if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [reloadToken, password]);
+
+  useEffect(() => {
+    if (!password) return;
+    let ignore = false;
+    fetch("/api/soundboard", { headers: { "X-Admin-Password": password } })
+      .then(async (res) => {
+        if (res.status === 401) {
+          if (!ignore) handleUnauthorized();
+          return;
+        }
+        if (!res.ok) throw new Error(`Failed to load sounds (${res.status})`);
+        const data: SoundboardSound[] = await res.json();
+        if (ignore) return;
+        setSoundError(null);
+        setSounds(data);
+        setSelectedSoundId((prev) =>
+          data.some((s) => s.id === prev) ? prev : ""
+        );
+      })
+      .catch((e: unknown) => {
+        if (ignore) return;
+        setSoundError(e instanceof Error ? e.message : "Failed to load sounds.");
       });
     return () => {
       ignore = true;
@@ -220,6 +265,77 @@ function Admin() {
       loadFiles();
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleAddSound = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!soundFile || soundName.trim().length === 0) return;
+    setSoundBusy(true);
+    setSoundError(null);
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadMessage(`Uploading ${soundFile.name}…`);
+    try {
+      const { fileName } = await uploadFileWithProgress(soundFile, (percent) =>
+        setUploadProgress(percent)
+      );
+      setUploading(false);
+      const res = await fetch("/api/soundboard", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Password": password ?? "",
+        },
+        body: JSON.stringify({ name: soundName.trim(), fileName }),
+      });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (!res.ok) throw new Error((await res.text()) || `Upload failed (${res.status})`);
+      setSounds(await res.json());
+      setSoundName("");
+      setSoundFile(null);
+      if (soundFileInputRef.current) soundFileInputRef.current.value = "";
+      loadFiles();
+    } catch (err) {
+      setSoundError(err instanceof Error ? err.message : "Adding the sound failed.");
+    } finally {
+      setUploading(false);
+      setSoundBusy(false);
+    }
+  };
+
+  const handleDeleteSound = async () => {
+    if (!selectedSoundId) return;
+    const sound = sounds.find((s) => s.id === selectedSoundId);
+    if (!window.confirm(`Delete the sound "${sound?.name ?? ""}"? This cannot be undone.`)) {
+      return;
+    }
+    setSoundBusy(true);
+    setSoundError(null);
+    try {
+      const res = await fetch("/api/soundboard/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Password": password ?? "",
+        },
+        body: JSON.stringify({ id: selectedSoundId }),
+      });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (!res.ok) throw new Error((await res.text()) || `Delete failed (${res.status})`);
+      setSounds(await res.json());
+      setSelectedSoundId("");
+      loadFiles();
+    } catch (err) {
+      setSoundError(err instanceof Error ? err.message : "Deleting the sound failed.");
+    } finally {
+      setSoundBusy(false);
     }
   };
 
@@ -376,7 +492,80 @@ function Admin() {
             )}
           </section>
         </div>
+
+        <div className="remote-panel">
+          <section className="remote-section">
+            <h2>Soundboard</h2>
+            <p className="plan-hint">
+              Sounds added here appear as buttons on the Remote Control's Sounds
+              tab and are played on the Display.
+            </p>
+            <form className="admin-sound-form" onSubmit={handleAddSound}>
+              <input
+                type="text"
+                className="admin-password-input"
+                value={soundName}
+                onChange={(e) => setSoundName(e.target.value)}
+                placeholder="Sound name"
+                aria-label="Sound name"
+                disabled={soundBusy}
+              />
+              <input
+                type="file"
+                accept="audio/*"
+                ref={soundFileInputRef}
+                onChange={(e) => setSoundFile(e.target.files?.[0] ?? null)}
+                aria-label="Sound file"
+                disabled={soundBusy}
+              />
+              <button
+                type="submit"
+                className="btn-sort"
+                disabled={soundBusy || !soundFile || soundName.trim().length === 0}
+              >
+                {soundBusy ? "Uploading…" : "Add Sound"}
+              </button>
+            </form>
+
+            {soundError && <p className="plan-hint admin-error">{soundError}</p>}
+
+            <h3 className="admin-subheading">Delete Sound</h3>
+            {sounds.length === 0 ? (
+              <p className="plan-hint">No sounds on the soundboard yet.</p>
+            ) : (
+              <div className="admin-sound-form">
+                <select
+                  className="admin-password-input"
+                  value={selectedSoundId}
+                  onChange={(e) => setSelectedSoundId(e.target.value)}
+                  aria-label="Sound to delete"
+                  disabled={soundBusy}
+                >
+                  <option value="">Select a sound…</option>
+                  {sounds.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn-remove"
+                  onClick={handleDeleteSound}
+                  disabled={soundBusy || !selectedSoundId}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
       </div>
+      <UploadProgressModal
+        visible={uploading}
+        progress={uploadProgress}
+        message={uploadMessage}
+      />
       {toast && (
         <div className="admin-toast" role="alert">
           ⚠️ {toast}

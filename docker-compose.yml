@@ -8,8 +8,10 @@ services:
     volumes:
       - uploads:/app/uploads
       - highscores:/app/highscores
+      - soundboard:/app/soundboard
     restart: unless-stopped
 
 volumes:
   uploads:
   highscores:
+  soundboard:
