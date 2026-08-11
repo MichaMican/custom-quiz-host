@@ -65,6 +65,7 @@ function Admin() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessage, setUploadMessage] = useState("");
   const soundFileInputRef = useRef<HTMLInputElement>(null);
+  const [tab, setTab] = useState<"media" | "soundboard">("media");
 
   const showToast = (message: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -387,6 +388,22 @@ function Admin() {
           </p>
         </div>
 
+        <div className="remote-tabs">
+          <button
+            className={`tab-btn ${tab === "media" ? "active" : ""}`}
+            onClick={() => setTab("media")}
+          >
+            Media Files
+          </button>
+          <button
+            className={`tab-btn ${tab === "soundboard" ? "active" : ""}`}
+            onClick={() => setTab("soundboard")}
+          >
+            Soundboard
+          </button>
+        </div>
+
+        {tab === "media" && (
         <div className="remote-panel">
           <section className="remote-section">
             <h2>Media Files</h2>
@@ -492,7 +509,9 @@ function Admin() {
             )}
           </section>
         </div>
+        )}
 
+        {tab === "soundboard" && (
         <div className="remote-panel">
           <section className="remote-section">
             <h2>Soundboard</h2>
@@ -560,6 +579,7 @@ function Admin() {
             )}
           </section>
         </div>
+        )}
       </div>
       <UploadProgressModal
         visible={uploading}
