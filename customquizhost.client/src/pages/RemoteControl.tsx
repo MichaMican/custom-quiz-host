@@ -52,6 +52,13 @@ function secondsLeft(deadline: number) {
   return Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
 }
 
+function formatDuration(seconds: number) {
+  const total = Math.round(seconds);
+  const minutes = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
+
 function RemoteControl() {
   const { gameState, connectionStatus, invoke, on } = useSignalR();
   useWakeLock();
@@ -75,6 +82,7 @@ function RemoteControl() {
     setUploading(false);
   };
   const [tab, setTab] = useState<"setup" | "host" | "sounds" | "history">("setup");
+  const [soundDurations, setSoundDurations] = useState<Record<string, number>>({});
   const [showResetModal, setShowResetModal] = useState(false);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>("unknown");
   const [accessDeadline, setAccessDeadline] = useState<number | null>(null);
@@ -179,6 +187,28 @@ function RemoteControl() {
       saveGameState(gameState);
     }
   }, [gameState]);
+
+  // Load sound durations so the soundboard buttons can show the length
+  useEffect(() => {
+    const sounds = gameState?.soundboard;
+    if (!sounds || sounds.length === 0) return;
+    let cancelled = false;
+    sounds.forEach((sound) => {
+      if (soundDurations[sound.id] !== undefined) return;
+      const audio = new Audio();
+      audio.preload = "metadata";
+      audio.src = `/uploads/${encodeURIComponent(sound.fileName)}`;
+      audio.addEventListener("loadedmetadata", () => {
+        if (cancelled || !isFinite(audio.duration)) return;
+        setSoundDurations((prev) =>
+          prev[sound.id] !== undefined ? prev : { ...prev, [sound.id]: audio.duration }
+        );
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [gameState?.soundboard, soundDurations]);
 
   // Auto-restore from localStorage when server state is empty
   useEffect(() => {
@@ -1580,6 +1610,12 @@ function RemoteControl() {
                     onClick={() => invoke("PlaySound", sound.id)}
                   >
                     🔊 {sound.name}
+                    {soundDurations[sound.id] !== undefined && (
+                      <span className="btn-sound-duration">
+                        {" "}
+                        ({formatDuration(soundDurations[sound.id])})
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>

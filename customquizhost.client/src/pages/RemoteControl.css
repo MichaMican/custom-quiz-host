@@ -1067,6 +1067,12 @@
   transform: scale(0.97);
 }
 
+.btn-sound-duration {
+  color: #a5b4fc;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .soundboard-hint {
   color: #94a3b8;
   font-size: 0.85rem;
