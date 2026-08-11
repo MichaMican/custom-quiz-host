@@ -103,6 +103,16 @@ public class GameHub : Hub
 
     public async Task ImportQuestions(List<Category> categories) => await _gameService.ImportQuestions(categories);
 
+    public async Task PlaySound(string soundId) => await _gameService.PlaySound(soundId);
+
+    public async Task StopSound(string instanceId) => await _gameService.StopSound(instanceId);
+
+    public async Task StopAllSounds() => await _gameService.StopAllSounds();
+
+    // Reported by the Display when a sound reached its end so it disappears
+    // from the "currently playing" list automatically.
+    public async Task SoundFinished(string instanceId) => await _gameService.StopSound(instanceId);
+
     public async Task StartMedia() => await _gameService.StartMedia();
 
     public async Task StopMedia() => await _gameService.StopMedia();

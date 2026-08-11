@@ -56,6 +56,20 @@ export interface HighScoreEntry {
   achievedAt: string;
 }
 
+export interface SoundboardSound {
+  id: string;
+  name: string;
+  fileName: string;
+}
+
+export interface PlayingSound {
+  instanceId: string;
+  soundId: string;
+  name: string;
+  fileName: string;
+  startedAt: string;
+}
+
 export interface GameState {
   players: Player[];
   categories: Category[];
@@ -97,4 +111,6 @@ export interface GameState {
   randomWheelSpinId: string | null;
   hideBoard: boolean;
   showQrCode: boolean;
+  soundboard: SoundboardSound[];
+  playingSounds: PlayingSound[];
 }
