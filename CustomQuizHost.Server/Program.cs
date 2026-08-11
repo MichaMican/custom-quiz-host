@@ -13,6 +13,11 @@ var highScoresPath = Path.Combine(builder.Environment.ContentRootPath, "highscor
 Directory.CreateDirectory(highScoresPath);
 builder.Services.AddSingleton(new HighScoreService(highScoresPath));
 
+// Register SoundboardService with a separate storage path for Docker volume mounting
+var soundboardPath = Path.Combine(builder.Environment.ContentRootPath, "soundboard");
+Directory.CreateDirectory(soundboardPath);
+builder.Services.AddSingleton(new SoundboardService(soundboardPath));
+
 builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<AdminAuthService>();
 

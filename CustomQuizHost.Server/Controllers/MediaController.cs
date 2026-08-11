@@ -45,6 +45,12 @@ namespace CustomQuizHost.Server.Controllers
                     referenced.Add(question.AnswerImageFileName);
             }
 
+            foreach (var sound in gameState.Soundboard)
+            {
+                if (!string.IsNullOrWhiteSpace(sound.FileName))
+                    referenced.Add(sound.FileName);
+            }
+
             return referenced;
         }
 
