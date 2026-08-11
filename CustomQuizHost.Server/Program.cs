@@ -13,13 +13,22 @@ var highScoresPath = Path.Combine(builder.Environment.ContentRootPath, "highscor
 Directory.CreateDirectory(highScoresPath);
 builder.Services.AddSingleton(new HighScoreService(highScoresPath));
 
+// The soundboard definition lives in a subfolder of the uploads volume, next to
+// the sound files it references, so no extra Docker volume is required
+var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+Directory.CreateDirectory(uploadsPath);
+var soundboardPath = Path.Combine(uploadsPath, "soundboard");
+Directory.CreateDirectory(soundboardPath);
+SoundboardService.MigrateLegacyStorage(
+    Path.Combine(builder.Environment.ContentRootPath, "soundboard"), soundboardPath);
+builder.Services.AddSingleton(new SoundboardService(soundboardPath));
+
 builder.Services.AddSingleton<GameService>();
 builder.Services.AddSingleton<AdminAuthService>();
 
 var app = builder.Build();
 
 // Ensure uploads directory exists
-var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
 Directory.CreateDirectory(uploadsPath);
 
 app.UseDefaultFiles();
