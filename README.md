@@ -96,7 +96,7 @@ The easiest way to get started is with Docker Compose using the pre-built image 
    - Planner: `http://localhost:8080/plan`
    - Merger: `http://localhost:8080/merge`
 
-Uploaded media files (images, audio) are persisted in the `uploads` Docker volume and survive container restarts. Highscores are stored separately in the `highscores` volume for independent persistence, and the soundboard definition is stored in the `soundboard` volume (the sound files themselves live in `uploads`).
+Uploaded media files (images, audio) are persisted in the `uploads` Docker volume and survive container restarts. Highscores are stored separately in the `highscores` volume for independent persistence. The soundboard definition is kept in the `soundboard` subfolder of the `uploads` volume, next to the sound files it references, so no extra volume is needed.
 
 The `/admin` page (media management and soundboard) is password protected. Set the `ADMIN_PAGE_PASSWORD` environment variable to configure the password; if it is not set, an unsafe built-in default password is used, so you should always configure your own.
 
@@ -154,9 +154,9 @@ The `/admin` page (media management and soundboard) is password protected. Set t
    docker run -p 8080:8080 custom-quiz-host
    ```
 
-   Option B: With a volume mount (uploads, highscores and the soundboard are persisted)
+   Option B: With a volume mount (uploads including the soundboard, and highscores are persisted)
    ```bash
-   docker run -p 8080:8080 -v custom-quiz-host-uploads:/app/uploads -v custom-quiz-host-highscores:/app/highscores -v custom-quiz-host-soundboard:/app/soundboard custom-quiz-host
+   docker run -p 8080:8080 -v custom-quiz-host-uploads:/app/uploads -v custom-quiz-host-highscores:/app/highscores custom-quiz-host
    ```
 
 3. **Access the application**

@@ -228,7 +228,7 @@
         <article class="feature-card anim-fade-up" data-animate>
           <div class="feature-icon">🐳</div>
           <h3>Single Docker Container</h3>
-          <p>Deploy anywhere with one <code>docker compose up</code> command. Media uploads, highscores, and the soundboard are stored in named volumes.</p>
+          <p>Deploy anywhere with one <code>docker compose up</code> command. Media uploads (including the soundboard) and highscores are stored in named volumes.</p>
         </article>
 
       </div>
@@ -415,13 +415,11 @@
     volumes:
       - uploads:/app/uploads
       - highscores:/app/highscores
-      - soundboard:/app/soundboard
     restart: unless-stopped
 
 volumes:
   uploads:
-  highscores:
-  soundboard:</code></pre>
+  highscores:</code></pre>
         </div>
 
         <div class="install-step anim-fade-up" data-animate>

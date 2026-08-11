@@ -37,7 +37,6 @@ RUN dotnet publish "./CustomQuizHost.Server.csproj" -c $BUILD_CONFIGURATION -o /
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-RUN mkdir -p /app/uploads
+RUN mkdir -p /app/uploads/soundboard
 RUN mkdir -p /app/highscores
-RUN mkdir -p /app/soundboard
 ENTRYPOINT ["dotnet", "CustomQuizHost.Server.dll"]

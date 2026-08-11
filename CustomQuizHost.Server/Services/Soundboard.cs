@@ -5,11 +5,13 @@ namespace CustomQuizHost.Server.Services;
 
 /// <summary>
 /// Stores the soundboard definition (sound name + uploaded file name) on the
-/// file system so the soundboard survives server restarts. The audio files
-/// themselves live in the regular uploads folder.
+/// file system so the soundboard survives server restarts. It is kept in a
+/// subfolder of the uploads folder, next to the audio files it references.
 /// </summary>
 public class SoundboardService
 {
+    private const string FileName = "soundboard.json";
+
     private readonly string _filePath;
     private readonly Lock _fileLock = new();
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -21,7 +23,23 @@ public class SoundboardService
     public SoundboardService(string soundboardDirectory)
     {
         Directory.CreateDirectory(soundboardDirectory);
-        _filePath = Path.Combine(soundboardDirectory, "soundboard.json");
+        _filePath = Path.Combine(soundboardDirectory, FileName);
+    }
+
+    /// <summary>
+    /// Moves a soundboard definition written by older versions (which used a
+    /// dedicated volume) into the new location inside the uploads folder.
+    /// </summary>
+    public static void MigrateLegacyStorage(string legacyDirectory, string soundboardDirectory)
+    {
+        var legacyFile = Path.Combine(legacyDirectory, FileName);
+        var targetFile = Path.Combine(soundboardDirectory, FileName);
+
+        if (!File.Exists(legacyFile) || File.Exists(targetFile))
+            return;
+
+        Directory.CreateDirectory(soundboardDirectory);
+        File.Move(legacyFile, targetFile);
     }
 
     public List<SoundboardSound> LoadAll()
