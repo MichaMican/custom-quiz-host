@@ -1,7 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import UploadProgressModal from "../components/UploadProgressModal";
+import { uploadFileWithProgress } from "../utils/uploadWithProgress";
+import {
+  buildQuizArchive,
+  getArchiveText,
+  listArchiveMedia,
+  readQuizArchive,
+} from "../utils/quizArchive";
 import "./RemoteControl.css";
 import "./Plan.css";
 import "./Admin.css";
+
+interface SoundboardSound {
+  id: string;
+  name: string;
+  fileName: string;
+}
+
+/** Name of the metadata file inside an exported soundboard ZIP. */
+const SOUNDBOARD_JSON = "soundboard.json";
 
 interface MediaFile {
   fileName: string;
@@ -47,6 +64,18 @@ function Admin() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sounds, setSounds] = useState<SoundboardSound[]>([]);
+  const [soundName, setSoundName] = useState("");
+  const [soundFile, setSoundFile] = useState<File | null>(null);
+  const [soundError, setSoundError] = useState<string | null>(null);
+  const [soundBusy, setSoundBusy] = useState(false);
+  const [selectedSoundId, setSelectedSoundId] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const soundFileInputRef = useRef<HTMLInputElement>(null);
+  const soundImportInputRef = useRef<HTMLInputElement>(null);
+  const [tab, setTab] = useState<"media" | "soundboard">("media");
 
   const showToast = (message: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -115,6 +144,33 @@ function Admin() {
       })
       .finally(() => {
         if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [reloadToken, password]);
+
+  useEffect(() => {
+    if (!password) return;
+    let ignore = false;
+    fetch("/api/soundboard", { headers: { "X-Admin-Password": password } })
+      .then(async (res) => {
+        if (res.status === 401) {
+          if (!ignore) handleUnauthorized();
+          return;
+        }
+        if (!res.ok) throw new Error(`Failed to load sounds (${res.status})`);
+        const data: SoundboardSound[] = await res.json();
+        if (ignore) return;
+        setSoundError(null);
+        setSounds(data);
+        setSelectedSoundId((prev) =>
+          data.some((s) => s.id === prev) ? prev : ""
+        );
+      })
+      .catch((e: unknown) => {
+        if (ignore) return;
+        setSoundError(e instanceof Error ? e.message : "Failed to load sounds.");
       });
     return () => {
       ignore = true;
@@ -223,6 +279,194 @@ function Admin() {
     }
   };
 
+  const handleAddSound = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!soundFile || soundName.trim().length === 0) return;
+    setSoundBusy(true);
+    setSoundError(null);
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadMessage(`Uploading ${soundFile.name}…`);
+    try {
+      const { fileName } = await uploadFileWithProgress(soundFile, (percent) =>
+        setUploadProgress(percent)
+      );
+      setUploading(false);
+      const res = await fetch("/api/soundboard", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Password": password ?? "",
+        },
+        body: JSON.stringify({ name: soundName.trim(), fileName }),
+      });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (!res.ok) throw new Error((await res.text()) || `Upload failed (${res.status})`);
+      setSounds(await res.json());
+      setSoundName("");
+      setSoundFile(null);
+      if (soundFileInputRef.current) soundFileInputRef.current.value = "";
+      loadFiles();
+    } catch (err) {
+      setSoundError(err instanceof Error ? err.message : "Adding the sound failed.");
+    } finally {
+      setUploading(false);
+      setSoundBusy(false);
+    }
+  };
+
+  const handleDeleteSound = async () => {
+    if (!selectedSoundId) return;
+    const sound = sounds.find((s) => s.id === selectedSoundId);
+    if (!window.confirm(`Delete the sound "${sound?.name ?? ""}"? This cannot be undone.`)) {
+      return;
+    }
+    setSoundBusy(true);
+    setSoundError(null);
+    try {
+      const res = await fetch("/api/soundboard/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Password": password ?? "",
+        },
+        body: JSON.stringify({ id: selectedSoundId }),
+      });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (!res.ok) throw new Error((await res.text()) || `Delete failed (${res.status})`);
+      setSounds(await res.json());
+      setSelectedSoundId("");
+      loadFiles();
+    } catch (err) {
+      setSoundError(err instanceof Error ? err.message : "Deleting the sound failed.");
+    } finally {
+      setSoundBusy(false);
+    }
+  };
+
+  const handleExportSounds = async () => {
+    if (sounds.length === 0) return;
+    setSoundBusy(true);
+    setSoundError(null);
+    try {
+      const media = new Map<string, Blob>();
+      for (const sound of sounds) {
+        if (media.has(sound.fileName)) continue;
+        const res = await fetch(`/uploads/${encodeURIComponent(sound.fileName)}`);
+        if (!res.ok) throw new Error(`Could not download "${sound.fileName}".`);
+        media.set(sound.fileName, await res.blob());
+      }
+      const metadata = {
+        sounds: sounds.map((s) => ({ name: s.name, fileName: s.fileName })),
+      };
+      const blob = await buildQuizArchive(SOUNDBOARD_JSON, metadata, media);
+      triggerBlobDownload(
+        blob,
+        `soundboard-${new Date().toISOString().slice(0, 10)}.zip`
+      );
+    } catch (err) {
+      setSoundError(err instanceof Error ? err.message : "Export failed.");
+    } finally {
+      setSoundBusy(false);
+    }
+  };
+
+  const handleImportSounds = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setSoundBusy(true);
+    setSoundError(null);
+    try {
+      const archive = await readQuizArchive(file);
+      const jsonText = getArchiveText(archive, SOUNDBOARD_JSON);
+      if (jsonText === null) {
+        throw new Error(`The ZIP file does not contain a ${SOUNDBOARD_JSON} file.`);
+      }
+      const parsed: unknown = JSON.parse(jsonText);
+      const importedSounds = (parsed as { sounds?: unknown })?.sounds;
+      if (!Array.isArray(importedSounds) || importedSounds.length === 0) {
+        throw new Error("The ZIP file does not contain any sounds.");
+      }
+
+      const mediaEntries = new Map(
+        listArchiveMedia(archive).map((entry) => [entry.name, entry.data])
+      );
+
+      // Upload every referenced audio file once and remember its new server
+      // name, so imported sounds never overwrite existing uploads.
+      const uploadedNames = new Map<string, string>();
+      const wanted = importedSounds
+        .map((s) => (s as { fileName?: string }).fileName)
+        .filter((n): n is string => typeof n === "string" && mediaEntries.has(n));
+      const uniqueNames = [...new Set(wanted)];
+
+      setUploading(true);
+      setUploadProgress(0);
+      for (let i = 0; i < uniqueNames.length; i++) {
+        const name = uniqueNames[i];
+        setUploadMessage(`Uploading file ${i + 1} of ${uniqueNames.length}: ${name}`);
+        const blob = new Blob([mediaEntries.get(name)! as BlobPart]);
+        const { fileName } = await uploadFileWithProgress(
+          blob,
+          (percent) =>
+            setUploadProgress(((i + percent / 100) / uniqueNames.length) * 100),
+          name
+        );
+        uploadedNames.set(name, fileName);
+      }
+      setUploading(false);
+
+      let imported = 0;
+      let skipped = 0;
+      let latest: SoundboardSound[] | null = null;
+      for (const entry of importedSounds) {
+        const { name, fileName } = (entry ?? {}) as {
+          name?: string;
+          fileName?: string;
+        };
+        const uploadedName = fileName ? uploadedNames.get(fileName) : undefined;
+        if (!name || !name.trim() || !uploadedName) {
+          skipped++;
+          continue;
+        }
+        const res = await fetch("/api/soundboard", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Password": password ?? "",
+          },
+          body: JSON.stringify({ name: name.trim(), fileName: uploadedName }),
+        });
+        if (res.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+        if (!res.ok) throw new Error((await res.text()) || `Import failed (${res.status})`);
+        latest = await res.json();
+        imported++;
+      }
+
+      if (latest) setSounds(latest);
+      loadFiles();
+      showToast(
+        `Imported ${imported} sound${imported === 1 ? "" : "s"}` +
+          (skipped > 0 ? `, skipped ${skipped} invalid entr${skipped === 1 ? "y" : "ies"}.` : ".")
+      );
+    } catch (err) {
+      setSoundError(err instanceof Error ? err.message : "Import failed.");
+    } finally {
+      setUploading(false);
+      setSoundBusy(false);
+    }
+  };
+
   if (!password) {
     return (
       <div className="remote-page">
@@ -271,6 +515,22 @@ function Admin() {
           </p>
         </div>
 
+        <div className="remote-tabs">
+          <button
+            className={`tab-btn ${tab === "media" ? "active" : ""}`}
+            onClick={() => setTab("media")}
+          >
+            Media Files
+          </button>
+          <button
+            className={`tab-btn ${tab === "soundboard" ? "active" : ""}`}
+            onClick={() => setTab("soundboard")}
+          >
+            Soundboard
+          </button>
+        </div>
+
+        {tab === "media" && (
         <div className="remote-panel">
           <section className="remote-section">
             <h2>Media Files</h2>
@@ -376,7 +636,116 @@ function Admin() {
             )}
           </section>
         </div>
+        )}
+
+        {tab === "soundboard" && (
+        <div className="remote-panel">
+          <section className="remote-section">
+            <h2>Soundboard</h2>
+            <p className="plan-hint">
+              Sounds added here appear as buttons on the Remote Control's Sounds
+              tab and are played on the Display.
+            </p>
+            <form className="admin-sound-form" onSubmit={handleAddSound}>
+              <input
+                type="text"
+                className="admin-password-input"
+                value={soundName}
+                onChange={(e) => setSoundName(e.target.value)}
+                placeholder="Sound name"
+                aria-label="Sound name"
+                disabled={soundBusy}
+              />
+              <input
+                type="file"
+                accept="audio/*"
+                ref={soundFileInputRef}
+                onChange={(e) => setSoundFile(e.target.files?.[0] ?? null)}
+                aria-label="Sound file"
+                disabled={soundBusy}
+              />
+              <button
+                type="submit"
+                className="btn-sort"
+                disabled={soundBusy || !soundFile || soundName.trim().length === 0}
+              >
+                {soundBusy ? "Uploading…" : "Add Sound"}
+              </button>
+            </form>
+
+            {soundError && <p className="plan-hint admin-error">{soundError}</p>}
+
+            <h3 className="admin-subheading">Import / Export</h3>
+            <p className="plan-hint">
+              Export packs all sounds into a ZIP file containing the audio files
+              and a {SOUNDBOARD_JSON} file with their names. Importing such a ZIP
+              adds its sounds to the current soundboard.
+            </p>
+            <div className="admin-sound-form">
+              <button
+                type="button"
+                className="btn-sort"
+                onClick={handleExportSounds}
+                disabled={soundBusy || sounds.length === 0}
+              >
+                Export Sounds
+              </button>
+              <button
+                type="button"
+                className="btn-sort"
+                onClick={() => soundImportInputRef.current?.click()}
+                disabled={soundBusy}
+              >
+                Import Sounds
+              </button>
+              <input
+                type="file"
+                accept=".zip"
+                ref={soundImportInputRef}
+                onChange={handleImportSounds}
+                aria-label="Soundboard ZIP file"
+                hidden
+              />
+            </div>
+
+            <h3 className="admin-subheading">Delete Sound</h3>
+            {sounds.length === 0 ? (
+              <p className="plan-hint">No sounds on the soundboard yet.</p>
+            ) : (
+              <div className="admin-sound-form">
+                <select
+                  className="admin-password-input"
+                  value={selectedSoundId}
+                  onChange={(e) => setSelectedSoundId(e.target.value)}
+                  aria-label="Sound to delete"
+                  disabled={soundBusy}
+                >
+                  <option value="">Select a sound…</option>
+                  {sounds.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn-remove"
+                  onClick={handleDeleteSound}
+                  disabled={soundBusy || !selectedSoundId}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+        )}
       </div>
+      <UploadProgressModal
+        visible={uploading}
+        progress={uploadProgress}
+        message={uploadMessage}
+      />
       {toast && (
         <div className="admin-toast" role="alert">
           ⚠️ {toast}
