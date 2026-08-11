@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import UploadProgressModal from "../components/UploadProgressModal";
 import { uploadFileWithProgress } from "../utils/uploadWithProgress";
+import {
+  buildQuizArchive,
+  getArchiveText,
+  listArchiveMedia,
+  readQuizArchive,
+} from "../utils/quizArchive";
 import "./RemoteControl.css";
 import "./Plan.css";
 import "./Admin.css";
@@ -10,6 +16,9 @@ interface SoundboardSound {
   name: string;
   fileName: string;
 }
+
+/** Name of the metadata file inside an exported soundboard ZIP. */
+const SOUNDBOARD_JSON = "soundboard.json";
 
 interface MediaFile {
   fileName: string;
@@ -65,6 +74,7 @@ function Admin() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadMessage, setUploadMessage] = useState("");
   const soundFileInputRef = useRef<HTMLInputElement>(null);
+  const soundImportInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<"media" | "soundboard">("media");
 
   const showToast = (message: string) => {
@@ -340,6 +350,123 @@ function Admin() {
     }
   };
 
+  const handleExportSounds = async () => {
+    if (sounds.length === 0) return;
+    setSoundBusy(true);
+    setSoundError(null);
+    try {
+      const media = new Map<string, Blob>();
+      for (const sound of sounds) {
+        if (media.has(sound.fileName)) continue;
+        const res = await fetch(`/uploads/${encodeURIComponent(sound.fileName)}`);
+        if (!res.ok) throw new Error(`Could not download "${sound.fileName}".`);
+        media.set(sound.fileName, await res.blob());
+      }
+      const metadata = {
+        sounds: sounds.map((s) => ({ name: s.name, fileName: s.fileName })),
+      };
+      const blob = await buildQuizArchive(SOUNDBOARD_JSON, metadata, media);
+      triggerBlobDownload(
+        blob,
+        `soundboard-${new Date().toISOString().slice(0, 10)}.zip`
+      );
+    } catch (err) {
+      setSoundError(err instanceof Error ? err.message : "Export failed.");
+    } finally {
+      setSoundBusy(false);
+    }
+  };
+
+  const handleImportSounds = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setSoundBusy(true);
+    setSoundError(null);
+    try {
+      const archive = await readQuizArchive(file);
+      const jsonText = getArchiveText(archive, SOUNDBOARD_JSON);
+      if (jsonText === null) {
+        throw new Error(`The ZIP file does not contain a ${SOUNDBOARD_JSON} file.`);
+      }
+      const parsed: unknown = JSON.parse(jsonText);
+      const importedSounds = (parsed as { sounds?: unknown })?.sounds;
+      if (!Array.isArray(importedSounds) || importedSounds.length === 0) {
+        throw new Error("The ZIP file does not contain any sounds.");
+      }
+
+      const mediaEntries = new Map(
+        listArchiveMedia(archive).map((entry) => [entry.name, entry.data])
+      );
+
+      // Upload every referenced audio file once and remember its new server
+      // name, so imported sounds never overwrite existing uploads.
+      const uploadedNames = new Map<string, string>();
+      const wanted = importedSounds
+        .map((s) => (s as { fileName?: string }).fileName)
+        .filter((n): n is string => typeof n === "string" && mediaEntries.has(n));
+      const uniqueNames = [...new Set(wanted)];
+
+      setUploading(true);
+      setUploadProgress(0);
+      for (let i = 0; i < uniqueNames.length; i++) {
+        const name = uniqueNames[i];
+        setUploadMessage(`Uploading file ${i + 1} of ${uniqueNames.length}: ${name}`);
+        const blob = new Blob([mediaEntries.get(name)! as BlobPart]);
+        const { fileName } = await uploadFileWithProgress(
+          blob,
+          (percent) =>
+            setUploadProgress(((i + percent / 100) / uniqueNames.length) * 100),
+          name
+        );
+        uploadedNames.set(name, fileName);
+      }
+      setUploading(false);
+
+      let imported = 0;
+      let skipped = 0;
+      let latest: SoundboardSound[] | null = null;
+      for (const entry of importedSounds) {
+        const { name, fileName } = (entry ?? {}) as {
+          name?: string;
+          fileName?: string;
+        };
+        const uploadedName = fileName ? uploadedNames.get(fileName) : undefined;
+        if (!name || !name.trim() || !uploadedName) {
+          skipped++;
+          continue;
+        }
+        const res = await fetch("/api/soundboard", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Password": password ?? "",
+          },
+          body: JSON.stringify({ name: name.trim(), fileName: uploadedName }),
+        });
+        if (res.status === 401) {
+          handleUnauthorized();
+          return;
+        }
+        if (!res.ok) throw new Error((await res.text()) || `Import failed (${res.status})`);
+        latest = await res.json();
+        imported++;
+      }
+
+      if (latest) setSounds(latest);
+      loadFiles();
+      showToast(
+        `Imported ${imported} sound${imported === 1 ? "" : "s"}` +
+          (skipped > 0 ? `, skipped ${skipped} invalid entr${skipped === 1 ? "y" : "ies"}.` : ".")
+      );
+    } catch (err) {
+      setSoundError(err instanceof Error ? err.message : "Import failed.");
+    } finally {
+      setUploading(false);
+      setSoundBusy(false);
+    }
+  };
+
   if (!password) {
     return (
       <div className="remote-page">
@@ -547,6 +674,39 @@ function Admin() {
             </form>
 
             {soundError && <p className="plan-hint admin-error">{soundError}</p>}
+
+            <h3 className="admin-subheading">Import / Export</h3>
+            <p className="plan-hint">
+              Export packs all sounds into a ZIP file containing the audio files
+              and a {SOUNDBOARD_JSON} file with their names. Importing such a ZIP
+              adds its sounds to the current soundboard.
+            </p>
+            <div className="admin-sound-form">
+              <button
+                type="button"
+                className="btn-sort"
+                onClick={handleExportSounds}
+                disabled={soundBusy || sounds.length === 0}
+              >
+                Export Sounds
+              </button>
+              <button
+                type="button"
+                className="btn-sort"
+                onClick={() => soundImportInputRef.current?.click()}
+                disabled={soundBusy}
+              >
+                Import Sounds
+              </button>
+              <input
+                type="file"
+                accept=".zip"
+                ref={soundImportInputRef}
+                onChange={handleImportSounds}
+                aria-label="Soundboard ZIP file"
+                hidden
+              />
+            </div>
 
             <h3 className="admin-subheading">Delete Sound</h3>
             {sounds.length === 0 ? (
