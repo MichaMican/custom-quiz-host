@@ -148,3 +148,23 @@
     transform: translateX(-50%) translateY(0);
   }
 }
+
+.admin-sound-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-sound-form button {
+  width: auto;
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+
+.admin-subheading {
+  font-size: 1rem;
+  color: #e0e7ff;
+  margin: 16px 0 8px;
+}
