@@ -998,6 +998,7 @@ public class GameService
         }
         state.Soundboard = _soundboardService.LoadAll();
         state.PlayingSounds = new();
+        state.SoundboardMasterVolume = Math.Clamp(state.SoundboardMasterVolume, 0, 100);
         _gameState = state;
         _pointsAwardedThisRound = false;
         _pendingSelectorPlayerId = null;
@@ -1054,7 +1055,8 @@ public class GameService
                 SoundId = sound.Id,
                 Name = sound.Name,
                 FileName = sound.FileName,
-                StartedAt = DateTimeOffset.UtcNow
+                StartedAt = DateTimeOffset.UtcNow,
+                Volume = Math.Clamp(sound.Volume, 0, 100)
             });
         }
         await BroadcastGameState();
@@ -1069,6 +1071,44 @@ public class GameService
         }
         if (removed)
             await BroadcastGameState();
+    }
+
+    /// <summary>
+    /// Sets the volume of a single playing instance and remembers it as the
+    /// default volume of the underlying sound, so replaying that sound uses
+    /// the same volume again.
+    /// </summary>
+    public async Task SetSoundVolume(string instanceId, int volume)
+    {
+        var clamped = Math.Clamp(volume, 0, 100);
+        string? soundId = null;
+        lock (_soundLock)
+        {
+            var playing = _gameState.PlayingSounds.FirstOrDefault(p => p.InstanceId == instanceId);
+            if (playing == null) return;
+
+            playing.Volume = clamped;
+            soundId = playing.SoundId;
+
+            var sound = _gameState.Soundboard.FirstOrDefault(s => s.Id == soundId);
+            if (sound != null)
+                sound.Volume = clamped;
+        }
+
+        if (soundId != null)
+            _soundboardService.SetVolume(soundId, clamped);
+
+        await BroadcastGameState();
+    }
+
+    /// <summary>
+    /// Scales every soundboard instance at once. The individual volumes stay
+    /// untouched, the Display multiplies both values when playing.
+    /// </summary>
+    public async Task SetSoundboardMasterVolume(int volume)
+    {
+        _gameState.SoundboardMasterVolume = Math.Clamp(volume, 0, 100);
+        await BroadcastGameState();
     }
 
     public async Task StopAllSounds()

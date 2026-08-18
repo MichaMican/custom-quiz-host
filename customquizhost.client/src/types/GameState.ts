@@ -60,6 +60,7 @@ export interface SoundboardSound {
   id: string;
   name: string;
   fileName: string;
+  volume: number;
 }
 
 export interface PlayingSound {
@@ -68,6 +69,7 @@ export interface PlayingSound {
   name: string;
   fileName: string;
   startedAt: string;
+  volume: number;
 }
 
 export interface GameState {
@@ -113,4 +115,5 @@ export interface GameState {
   showQrCode: boolean;
   soundboard: SoundboardSound[];
   playingSounds: PlayingSound[];
+  soundboardMasterVolume: number;
 }

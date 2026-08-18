@@ -1078,3 +1078,14 @@
   font-size: 0.85rem;
   margin: 0;
 }
+
+.item-list li.playing-sound-item {
+  display: block;
+}
+
+.playing-sound-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}

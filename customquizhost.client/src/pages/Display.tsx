@@ -8,6 +8,15 @@ import type { Player, Question, HighScoreEntry } from "../types/GameState";
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import "./Display.css";
 
+// The volume a soundboard instance is played with: its individual volume
+// scaled by the soundboard master volume, so the ratios between the individual
+// sounds are preserved.
+function soundboardInstanceVolume(soundVolume: number | undefined, masterVolume: number) {
+  const sound = Math.max(0, Math.min(100, soundVolume ?? 100));
+  const master = Math.max(0, Math.min(100, masterVolume));
+  return (sound / 100) * (master / 100);
+}
+
 function QuestionDisplay({ question, categoryName, revealed, mediaPlaying, mozaikRevealing, mozaikRevealSpeed, questionTextRevealed, answerRevealed, mediaVolume, imageFullscreen, mediaVisible }: {
   question: Question;
   categoryName: string;
@@ -1198,7 +1207,7 @@ function Display() {
   // report back so the server removes them from the list.
   const soundboardAudioRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const playingSounds = gameState?.playingSounds;
-  const soundboardVolume = gameState?.mediaVolume ?? 70;
+  const soundboardMasterVolume = gameState?.soundboardMasterVolume ?? 100;
 
   useEffect(() => {
     const audioMap = soundboardAudioRef.current;
@@ -1207,7 +1216,7 @@ function Display() {
     for (const sound of playingSounds ?? []) {
       if (audioMap.has(sound.instanceId)) continue;
       const audio = new Audio(`/uploads/${encodeURIComponent(sound.fileName)}`);
-      audio.volume = Math.max(0, Math.min(1, soundboardVolume / 100));
+      audio.volume = soundboardInstanceVolume(sound.volume, soundboardMasterVolume);
       audioMap.set(sound.instanceId, audio);
       audio.addEventListener("ended", () => {
         audioMap.delete(sound.instanceId);
@@ -1227,15 +1236,17 @@ function Display() {
       audio.load();
       audioMap.delete(instanceId);
     }
-  }, [playingSounds, soundboardVolume, invoke]);
+  }, [playingSounds, soundboardMasterVolume, invoke]);
 
-  // Keep already playing soundboard instances in sync with the volume slider
+  // Keep already playing soundboard instances in sync with the individual and
+  // master volume sliders
   useEffect(() => {
-    const volume = Math.max(0, Math.min(1, soundboardVolume / 100));
-    for (const audio of soundboardAudioRef.current.values()) {
-      audio.volume = volume;
+    for (const sound of playingSounds ?? []) {
+      const audio = soundboardAudioRef.current.get(sound.instanceId);
+      if (!audio) continue;
+      audio.volume = soundboardInstanceVolume(sound.volume, soundboardMasterVolume);
     }
-  }, [soundboardVolume]);
+  }, [playingSounds, soundboardMasterVolume]);
 
   // Stop every soundboard instance when the Display unmounts
   useEffect(() => {
