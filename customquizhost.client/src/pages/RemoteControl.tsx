@@ -83,6 +83,8 @@ function RemoteControl() {
   };
   const [tab, setTab] = useState<"setup" | "host" | "sounds" | "history">("setup");
   const [soundDurations, setSoundDurations] = useState<Record<string, number>>({});
+  const [noAudioOutput, setNoAudioOutput] = useState(false);
+  const noAudioOutputTimerRef = useRef<number | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>("unknown");
   const [accessDeadline, setAccessDeadline] = useState<number | null>(null);
@@ -155,6 +157,30 @@ function RemoteControl() {
         );
       }),
     [on],
+  );
+
+  // A sound was dropped again because no Display (= no audio output) is
+  // connected. Show a short hint instead of leaving the host guessing.
+  useEffect(
+    () =>
+      on("SoundboardNoAudioOutput", () => {
+        if (noAudioOutputTimerRef.current)
+          window.clearTimeout(noAudioOutputTimerRef.current);
+        setNoAudioOutput(true);
+        noAudioOutputTimerRef.current = window.setTimeout(
+          () => setNoAudioOutput(false),
+          4000,
+        );
+      }),
+    [on],
+  );
+
+  useEffect(
+    () => () => {
+      if (noAudioOutputTimerRef.current)
+        window.clearTimeout(noAudioOutputTimerRef.current);
+    },
+    [],
   );
 
   // Keep countdowns ticking while a decision is outstanding
@@ -1777,6 +1803,11 @@ function RemoteControl() {
         progress={exportProgress}
         message={exportMessage}
       />
+      {noAudioOutput && (
+        <div className="remote-toast" role="alert">
+          🔇 No audio output detected – open the display page to hear sounds.
+        </div>
+      )}
       </div>
     </div>
   );

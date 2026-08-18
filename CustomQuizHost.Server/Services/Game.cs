@@ -12,6 +12,11 @@ public class GameService
     private readonly Lock _soundLock = new();
     private readonly Lock _buzzLock = new();
     private readonly Lock _remoteClientsLock = new();
+    private readonly Lock _displayClientsLock = new();
+    private readonly HashSet<string> _displayClients = new();
+    // How long a soundboard instance stays visible when there is no Display
+    // (and therefore no audio output) before it is dropped again.
+    private const int NoAudioOutputSoundLifetimeMs = 1200;
     private readonly HashSet<string> _approvedRemoteClients = new();
     private readonly Dictionary<string, PendingRemoteClient> _pendingRemoteClients = new();
     private const int RemoteAccessDecisionSeconds = 30;
@@ -54,6 +59,47 @@ public class GameService
     {
         _gameState.QuestionTimerSnapshotAt = DateTimeOffset.UtcNow;
         await _hubContext.Clients.Client(connectionId).SendAsync("ReceiveGameState", _gameState);
+    }
+
+    /// <summary>
+    /// Remembers a connected Display so the soundboard knows whether there is
+    /// any audio output at all.
+    /// </summary>
+    public void RegisterDisplayClient(string connectionId)
+    {
+        lock (_displayClientsLock)
+        {
+            _displayClients.Add(connectionId);
+        }
+    }
+
+    /// <summary>
+    /// Forgets a disconnected Display. When the last one is gone nothing can
+    /// play audio anymore, so the "currently playing" list is cleared instead
+    /// of keeping entries around forever.
+    /// </summary>
+    public async Task UnregisterDisplayClient(string connectionId)
+    {
+        bool wasLastDisplay;
+        lock (_displayClientsLock)
+        {
+            if (!_displayClients.Remove(connectionId)) return;
+            wasLastDisplay = _displayClients.Count == 0;
+        }
+
+        if (wasLastDisplay)
+            await StopAllSounds();
+    }
+
+    private bool HasDisplayClient
+    {
+        get
+        {
+            lock (_displayClientsLock)
+            {
+                return _displayClients.Count > 0;
+            }
+        }
     }
 
     public async Task RegisterRemoteClient(string connectionId)
@@ -1043,6 +1089,7 @@ public class GameService
 
     public async Task PlaySound(string soundId)
     {
+        string? instanceId = null;
         lock (_soundLock)
         {
             var sound = _gameState.Soundboard.FirstOrDefault(s => s.Id == soundId);
@@ -1050,16 +1097,52 @@ public class GameService
 
             // Every click starts an independent instance so the same sound can
             // be layered on top of itself.
-            _gameState.PlayingSounds.Add(new PlayingSound
+            var playing = new PlayingSound
             {
                 SoundId = sound.Id,
                 Name = sound.Name,
                 FileName = sound.FileName,
                 StartedAt = DateTimeOffset.UtcNow,
                 Volume = Math.Clamp(sound.Volume, 0, 100)
-            });
+            };
+            _gameState.PlayingSounds.Add(playing);
+            instanceId = playing.InstanceId;
         }
         await BroadcastGameState();
+
+        // Without a Display nothing ever reports the sound as finished, so the
+        // instance would stay in the list forever. Drop it again shortly after
+        // and let the remotes know why.
+        if (instanceId != null && !HasDisplayClient)
+            _ = DropSoundWithoutAudioOutput(instanceId);
+    }
+
+    private async Task DropSoundWithoutAudioOutput(string instanceId)
+    {
+        try
+        {
+            await Task.Delay(NoAudioOutputSoundLifetimeMs);
+
+            // A Display may have connected in the meantime and is now playing
+            // the sound, in which case it reports the end itself.
+            if (HasDisplayClient) return;
+
+            bool removed;
+            lock (_soundLock)
+            {
+                removed = _gameState.PlayingSounds.RemoveAll(p => p.InstanceId == instanceId) > 0;
+            }
+
+            if (removed)
+            {
+                await BroadcastGameState();
+                await _hubContext.Clients.All.SendAsync("SoundboardNoAudioOutput");
+            }
+        }
+        catch (Exception)
+        {
+            // Cleanup is best effort – never let it take the connection down.
+        }
     }
 
     public async Task StopSound(string instanceId)
