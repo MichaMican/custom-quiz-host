@@ -61,6 +61,25 @@ public class SoundboardService
         }
     }
 
+    /// <summary>
+    /// Persists the volume a sound was last played with so new instances of
+    /// that sound start with the same volume again.
+    /// </summary>
+    public List<SoundboardSound> SetVolume(string id, int volume)
+    {
+        lock (_fileLock)
+        {
+            var sounds = LoadInternal();
+            var sound = sounds.FirstOrDefault(s => s.Id == id);
+            if (sound != null)
+            {
+                sound.Volume = Math.Clamp(volume, 0, 100);
+                Save(sounds);
+            }
+            return sounds;
+        }
+    }
+
     public (List<SoundboardSound> Sounds, SoundboardSound? Removed) Remove(string id)
     {
         lock (_fileLock)

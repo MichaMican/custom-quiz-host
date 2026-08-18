@@ -287,6 +287,7 @@ function RemoteControl() {
         // restored from disk on import, playing instances are cleared.
         soundboard: [],
         playingSounds: [],
+        soundboardMasterVolume: 100,
       };
       await invoke("ImportGameSettings", emptyState);
       markClean();
@@ -1623,6 +1624,24 @@ function RemoteControl() {
           </section>
 
           <section className="remote-section">
+            <div className="volume-control">
+              <label htmlFor="soundboard-master-volume-slider">
+                🔊 Master Volume: {gameState.soundboardMasterVolume}%
+              </label>
+              <input
+                id="soundboard-master-volume-slider"
+                type="range"
+                min={0}
+                max={100}
+                value={gameState.soundboardMasterVolume}
+                onChange={(e) =>
+                  invoke("SetSoundboardMasterVolume", parseInt(e.target.value))
+                }
+              />
+            </div>
+          </section>
+
+          <section className="remote-section">
             <h2>Currently Playing</h2>
             {gameState.playingSounds.length === 0 ? (
               <p className="soundboard-hint">No sound is playing right now.</p>
@@ -1630,14 +1649,34 @@ function RemoteControl() {
               <>
                 <ul className="item-list">
                   {gameState.playingSounds.map((playing) => (
-                    <li key={playing.instanceId}>
-                      <span>🎵 {playing.name}</span>
-                      <button
-                        className="btn-remove"
-                        onClick={() => invoke("StopSound", playing.instanceId)}
-                      >
-                        Stop
-                      </button>
+                    <li key={playing.instanceId} className="playing-sound-item">
+                      <div className="playing-sound-header">
+                        <span>🎵 {playing.name}</span>
+                        <button
+                          className="btn-remove"
+                          onClick={() => invoke("StopSound", playing.instanceId)}
+                        >
+                          Stop
+                        </button>
+                      </div>
+                      <div className="volume-control">
+                        <label htmlFor={`sound-volume-${playing.instanceId}`}>
+                          🔊 Volume: {playing.volume}%
+                          {gameState.soundboardMasterVolume !== 100 && (
+                            <> (playing at {Math.round((playing.volume * gameState.soundboardMasterVolume) / 100)}%)</>
+                          )}
+                        </label>
+                        <input
+                          id={`sound-volume-${playing.instanceId}`}
+                          type="range"
+                          min={0}
+                          max={100}
+                          value={playing.volume}
+                          onChange={(e) =>
+                            invoke("SetSoundVolume", playing.instanceId, parseInt(e.target.value))
+                          }
+                        />
+                      </div>
                     </li>
                   ))}
                 </ul>
