@@ -65,6 +65,7 @@ public class GameState
     public bool ShowQrCode { get; set; }
     public List<SoundboardSound> Soundboard { get; set; } = new();
     public List<PlayingSound> PlayingSounds { get; set; } = new();
+    public int SoundboardMasterVolume { get; set; } = 100;
 }
 
 public class SoundboardSound
@@ -72,6 +73,11 @@ public class SoundboardSound
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Name { get; set; } = "";
     public string FileName { get; set; } = "";
+    /// <summary>
+    /// Volume this sound was last played with. Used as the default whenever a
+    /// new instance of the sound is started.
+    /// </summary>
+    public int Volume { get; set; } = 100;
 }
 
 public class PlayingSound
@@ -81,6 +87,11 @@ public class PlayingSound
     public string Name { get; set; } = "";
     public string FileName { get; set; } = "";
     public DateTimeOffset StartedAt { get; set; } = DateTimeOffset.UtcNow;
+    /// <summary>
+    /// Volume of this individual instance (0-100). The volume the Display
+    /// actually plays with is this value scaled by the master volume.
+    /// </summary>
+    public int Volume { get; set; } = 100;
 }
 
 public class Player

@@ -109,6 +109,10 @@ public class GameHub : Hub
 
     public async Task StopAllSounds() => await _gameService.StopAllSounds();
 
+    public async Task SetSoundVolume(string instanceId, int volume) => await _gameService.SetSoundVolume(instanceId, volume);
+
+    public async Task SetSoundboardMasterVolume(int volume) => await _gameService.SetSoundboardMasterVolume(volume);
+
     // Reported by the Display when a sound reached its end so it disappears
     // from the "currently playing" list automatically.
     public async Task SoundFinished(string instanceId) => await _gameService.StopSound(instanceId);
