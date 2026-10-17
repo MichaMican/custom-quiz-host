@@ -22,7 +22,16 @@ public class GameHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         await _gameService.UnregisterRemoteClient(Context.ConnectionId);
+        await _gameService.UnregisterDisplayClient(Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
+    }
+
+    // Called by the Display page so the server knows whether any audio output
+    // is available for the soundboard.
+    public Task RegisterDisplayClient()
+    {
+        _gameService.RegisterDisplayClient(Context.ConnectionId);
+        return Task.CompletedTask;
     }
 
     public async Task RegisterRemoteClient() => await _gameService.RegisterRemoteClient(Context.ConnectionId);

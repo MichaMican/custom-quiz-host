@@ -1040,6 +1040,14 @@ function Display() {
     [on],
   );
 
+  // Announce this Display to the server so the soundboard knows that there is
+  // an audio output available. Re-announced after every reconnect because the
+  // connection (and therefore the registration) is a new one.
+  useEffect(() => {
+    if (connectionStatus !== "Connected") return;
+    invoke("RegisterDisplayClient").catch(() => {});
+  }, [connectionStatus, invoke]);
+
   // === View transition management ===
   const [activeView, setActiveView] = useState<"board" | "question">("board");
   const [viewAnimClass, setViewAnimClass] = useState("");
